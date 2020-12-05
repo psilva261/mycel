@@ -1,8 +1,12 @@
-echo Compiling...
-GOOS=plan9 GOARCH=amd64 go build -o opossum-plan9-amd64.bin
 rm -rf ./opossum-plan9-amd64
 mkdir ./opossum-plan9-amd64
 mkdir ./opossum-plan9-amd64/domino-lib
+
+echo Compiling...
+cd cmd/browse
+go build -o opossum-plan9-amd64.bin
+cd ../..
+mv cmd/browse/opossum-plan9-amd64.bin .
 mv opossum-plan9-amd64.bin ./opossum-plan9-amd64/
 cp normalize.css ./opossum-plan9-amd64/
 dircp domino-lib ./opossum-plan9-amd64/domino-lib
