@@ -1,0 +1,14 @@
+/possum
+/opossum
+/possum-src
+/possum-plan9-amd64
+*.bin
+*.out
+*.pdf
+/-cpuprofile
+*.prof
+*.swp
+*.tgz
+~*
+.DS_Store
+/cmd/browse/browse
