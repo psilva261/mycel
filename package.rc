@@ -2,20 +2,9 @@ echo Compiling...
 GOOS=plan9 GOARCH=amd64 go build -o opossum-plan9-amd64.bin
 rm -rf ./opossum-plan9-amd64
 mkdir ./opossum-plan9-amd64
+mkdir ./opossum-plan9-amd64/domino-lib
 mv opossum-plan9-amd64.bin ./opossum-plan9-amd64/
 cp normalize.css ./opossum-plan9-amd64/
-cp -r domino-lib ./opossum-plan9-amd64/domino-lib
+dircp domino-lib ./opossum-plan9-amd64/domino-lib
 tar czf opossum-plan9-amd64.tgz opossum-plan9-amd64
 echo Created opossum-plan9-amd64.tgz
-
-rm -rf ./opossum-src
-mkdir ./opossum-src
-cp go.mod opossum-src
-cp go.sum opossum-src
-cp main*.go opossum-src
-cp normalize.css ./opossum-src/
-cp -r domino-lib ./opossum-src/domino-lib
-cp -r stylesheets ./opossum-src/stylesheets 
-cp -r tokenization ./opossum-src/tokenization 
-tar czf opossum-src.tgz opossum-src
-echo Created opossum-src.tgz
