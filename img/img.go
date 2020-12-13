@@ -35,17 +35,31 @@ func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) 
 	}
 	parts := strings.Split(addr, ",")
 	
-	header := strings.Split(parts[0], ";")
-	if ct, err = opossum.NewContentType(header[1]); err != nil {
+	var ctStr string
+	if strings.Contains(parts[0], ";") {
+		header := strings.Split(parts[0], ";")
+		ctStr = header[1]
+	} else {
+		ctStr = parts[0]
+	}
+	if ct, err = opossum.NewContentType(ctStr); err != nil {
 		return nil, ct, err
 	}
 	
-	e := base64.RawStdEncoding
-	if strings.HasSuffix(addr, "=") {
-		e = base64.StdEncoding
-	}
-	if data, err = e.DecodeString(parts[1]); err != nil {
-		return nil, ct, fmt.Errorf("decode %v src: %w", addr, err)
+	if strings.Contains(addr, "base64") {
+		e := base64.RawStdEncoding
+		if strings.HasSuffix(addr, "=") {
+			e = base64.StdEncoding
+		}
+		if data, err = e.DecodeString(parts[1]); err != nil {
+			return nil, ct, fmt.Errorf("base64 decode %v src: %w", addr, err)
+		}
+	} else {
+		out, err := url.QueryUnescape(parts[1])
+		if err != nil {
+			return nil, ct, fmt.Errorf("url decode: %w", err)
+		}
+		data = []byte(out)
 	}
 	return
 }
@@ -72,8 +86,10 @@ func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
 	if contentType.IsSvg() {
 		r := bytes.NewReader(data)
 		icon, _ := oksvg.ReadIconStream(r)
-		w := 100
-		h := 100
+		if w == 0 || h == 0 {
+			w = 20
+			h = 20
+		}
 		icon.SetTarget(0, 0, float64(w), float64(h))
 		rgba := image.NewRGBA(image.Rect(0, 0, w, h))
 		icon.Draw(rasterx.NewDasher(w, h, rasterx.NewScannerGV(w, h, rgba, rgba.Bounds())), 1)
@@ -82,9 +98,7 @@ func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
 			return nil, fmt.Errorf("encode: %w", err)
 		}
 		data = buf.Bytes()
-	}
-
-	if w != 0 || h != 0 {
+	} else if w != 0 || h != 0 {
 		image, _, err := image.Decode(bytes.NewReader(data))
 		if err != nil {
 			return nil, fmt.Errorf("decode %v: %w", imgUrl, err)
