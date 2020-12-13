@@ -65,49 +65,61 @@ func (cs Map) backgroundColor() draw.Color {
 	return draw.Color(uint32(draw.White))
 }
 
+func backgroundImageUrl(decl css.Declaration) (url string, ok bool) {
+	if v := decl.Value; strings.Contains(v, "url(") && strings.Contains(v, ")") {
+		v = strings.ReplaceAll(v, `"`, "")
+		v = strings.ReplaceAll(v, `'`, "")
+		from := strings.Index(v, "url(")
+		if from < 0 {
+			log.Printf("bg img: no url: %v", decl.Value)
+			return
+		}
+		from += len("url(")
+		imgUrl := v[from:]
+		to := strings.Index(imgUrl, ")")
+		if to < 0 {
+			log.Printf("bg img: no ): %v", decl.Value)
+			return
+		}
+		imgUrl = imgUrl[:to]
+		return imgUrl, true
+	} else {
+		log.Printf("bg img: missing ( or ) '%+v'", decl.Value)
+		return
+	}
+}
+
 func (cs Map) backgroundImage() (img *draw.Image) {
-	decl, ok := cs.Declarations["background"]
+	decl, ok := cs.Declarations["background-image"]
+	if !ok {
+		decl, ok = cs.Declarations["background"]
+	}
 	log.Printf("decl=%+v\n", decl)
 	if ok {
-		log.Printf("bg img ok")
-		if strings.Contains(decl.Value, "url(") && strings.Contains(decl.Value, ")") {
-			from := strings.Index(decl.Value, "url(")
-			if from < 0 {
-				log.Printf("bg img: no url: %v", decl.Value)
-				return
-			}
-			from += len("url('")
-			imgUrl := decl.Value[from:]
-			to := strings.Index(imgUrl, ")")
-			if to < 0 {
-				log.Printf("bg img: no ): %v", decl.Value)
-				return
-			}
-			to -= len("'")
-			imgUrl = imgUrl[:to]
-			uri, err := fetcher.LinkedUrl(imgUrl)
-			if err != nil {
-				log.Printf("bg img interpet url: %v", err)
-				return nil
-			}
-			buf, contentType, err := fetcher.Get(uri)
-			if err != nil {
-				log.Printf("bg img get %v (%v): %v", uri, contentType, err)
-				return nil
-			}
-			r := bytes.NewReader(buf)
-			log.Printf("Read %v...", imgUrl)
-			img, err = duit.ReadImage(dui.Display, r)
-			if err != nil {
-				log.Printf("bg read image: %v", err)
-				return
-			}
-			return img
-		} else {
-			log.Printf("bg img: missing fixes '%+v'", decl.Value)
+		imgUrl, ok := backgroundImageUrl(decl)
+		if !ok {
+			log.Printf("bg img not ok")
+			return
 		}
-	} else {
-		log.Printf("bg img not ok")
+		log.Printf("bg img ok")
+		uri, err := fetcher.LinkedUrl(imgUrl)
+		if err != nil {
+			log.Errorf("bg img interpret url: %v", err)
+			return nil
+		}
+		buf, contentType, err := fetcher.Get(uri)
+		if err != nil {
+			log.Errorf("bg img get %v (%v): %v", uri, contentType, err)
+			return nil
+		}
+		r := bytes.NewReader(buf)
+		log.Printf("Read %v...", imgUrl)
+		img, err = duit.ReadImage(dui.Display, r)
+		if err != nil {
+			log.Errorf("bg read image: %v", err)
+			return
+		}
+		return img
 	}
 	return
 }
