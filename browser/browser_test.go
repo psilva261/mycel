@@ -45,7 +45,7 @@ func TestLinkedUrl(t *testing.T) {
 		if err != nil {
 			panic(err.Error())
 		}
-		b.URL = origin
+		b.History.Push(origin)
 		res, err := b.LinkedUrl(i.href)
 		if err != nil {
 			panic(err.Error())

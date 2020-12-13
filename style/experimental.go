@@ -90,7 +90,7 @@ func (cs Map) backgroundImage() (img *draw.Image) {
 				log.Printf("bg img interpet url: %v", err)
 				return nil
 			}
-			buf, contentType, err := fetcher.Get(*uri)
+			buf, contentType, err := fetcher.Get(uri)
 			if err != nil {
 				log.Printf("bg img get %v (%v): %v", uri, contentType, err)
 				return nil

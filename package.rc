@@ -8,6 +8,7 @@ go build -o opossum-plan9-amd64.bin
 cd ../..
 mv cmd/browse/opossum-plan9-amd64.bin .
 mv opossum-plan9-amd64.bin ./opossum-plan9-amd64/
+cp README.md ./opossum-plan9-amd64/
 cp normalize.css ./opossum-plan9-amd64/
 dircp domino-lib ./opossum-plan9-amd64/domino-lib
 tar czf opossum-plan9-amd64.tgz opossum-plan9-amd64

@@ -164,8 +164,8 @@ func newImage(display *draw.Display, n nodes.Node) (ui duit.UI, err error) {
 		if imgUrl, err = browser.LinkedUrl(src); err != nil {
 			return nil, err
 		}
-		if data, _, err = browser.Get(*imgUrl); err != nil {
-			return nil, fmt.Errorf("get %v: %w", *imgUrl, err)
+		if data, _, err = browser.Get(imgUrl); err != nil {
+			return nil, fmt.Errorf("get %v: %w", imgUrl, err)
 		}
 	}
 
@@ -182,7 +182,7 @@ func newImage(display *draw.Display, n nodes.Node) (ui duit.UI, err error) {
 	if w != 0 || h != 0 {
 		image, _, err := image.Decode(bytes.NewReader(data))
 		if err != nil {
-			return nil, fmt.Errorf("decode %v: %w", *imgUrl, err)
+			return nil, fmt.Errorf("decode %v: %w", imgUrl, err)
 		}
 		// check err
 
@@ -387,8 +387,6 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 	if 5 <= x && x <= (maxX-5) && 5 <= y && y <= (maxY-5) {
 		//log.Printf("Mouse %v    (m ~ %v); Kid.R.Dx/Dy=%v/%v\n", el.UI, m.Point, self.R.Dx(), self.R.Dy())
 		if el.IsLink {
-			//fmt.Printf("do hover\n")
-			// dui.Display.SetCursor(nil) // set to system cursor
 			yolo := [2 * 16]uint8{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 90, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}
 			dui.Display.SetCursor(&draw.Cursor{
 				Set: yolo,
@@ -400,8 +398,6 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 		}
 	} else {
 		if el.IsLink {
-			// this never hhappens :/
-			//fmt.Printf("unhover\n")
 			dui.Display.SetCursor(nil)
 		} else {
 			dui.Display.SetCursor(nil)
@@ -480,7 +476,7 @@ func (b *Browser) submit(form *html.Node) {
 	if m := attr(*form, "method"); m != "" {
 		method = strings.ToUpper(m)
 	}
-	uri := b.URL
+	uri := b.URL()
 	log.Printf("form = %+v", form)
 	if action := attr(*form, "action"); action != "" {
 		uri, err = b.LinkedUrl(action)
@@ -499,10 +495,10 @@ func (b *Browser) submit(form *html.Node) {
 		}
 		uri.RawQuery = q.Encode()
 		log.Printf("uri raw query=%v", uri.RawQuery)
-		buf, contentType, err = b.get(*uri, true)
+		buf, contentType, err = b.get(uri, true)
 		log.Printf("uri=%v", uri.String())
 	} else {
-		buf, contentType, err = b.PostForm(*uri, formData(*form))
+		buf, contentType, err = b.PostForm(uri, formData(*form))
 	}
 	if err == nil {
 		if contentType.IsHTML() {
@@ -1128,10 +1124,36 @@ func printTree(r int, ui duit.UI) {
 	}
 }
 
+type History struct {
+	urls []*url.URL
+}
+
+func (h History) URL() *url.URL {
+	return h.urls[len(h.urls)-1]
+}
+
+func (h *History) Push(u *url.URL) {
+	h.urls = append(h.urls, u)
+}
+
+func (h *History) Back() {
+	if len(h.urls) > 1 {
+		h.urls = h.urls[:len(h.urls)-1]
+	}
+}
+
+func (h *History) String() string {
+	addrs := make([]string, len(h.urls))
+	for i, u := range h.urls {
+		addrs[i] = u.String()
+	}
+	return strings.Join(addrs, ", ")
+}
+
 type Browser struct {
+	History
 	dui       *duit.DUI
 	html      string
-	URL       *url.URL
 	Website   *Website
 	StatusBar *duit.Label
 	LocationField *duit.Field
@@ -1158,16 +1180,15 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	b.LocationField = &duit.Field{
 		Text:    initUrl,
 		Font:    Style.Font(),
-		Changed: b.SetUrl,
 	}
 
 	u, err := url.Parse(initUrl)
 	if err != nil {
 		log.Fatalf("parse: %v", err)
 	}
-	b.URL = u
+	b.History.Push(u)
 
-	buf, _, err := b.Get(*u)
+	buf, _, err := b.Get(u)
 	if err != nil {
 		log.Fatalf("get: %v", err)
 	}
@@ -1178,27 +1199,26 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	dui = _dui
 
 	b.layoutWebsite()
-	b.SetUrl(initUrl)
 
 	return
 }
 
 func (b *Browser) LinkedUrl(addr string) (a *url.URL, err error) {
-	log.Printf("LinkedUrl: addr=%v, b.URL=%v", addr, b.URL)
+	log.Printf("LinkedUrl: addr=%v, b.URL=%v", addr, b.URL())
 	if strings.HasPrefix(addr, "//") {
-		addr = b.URL.Scheme + ":" + addr
+		addr = b.URL().Scheme + ":" + addr
 	} else if strings.HasPrefix(addr, "/") {
-		addr = b.URL.Scheme + "://" + b.URL.Host + addr
+		addr = b.URL().Scheme + "://" + b.URL().Host + addr
 	} else if !strings.HasPrefix(addr, "http") {
-		if strings.HasSuffix(b.URL.Path, "/") {
+		if strings.HasSuffix(b.URL().Path, "/") {
 			log.Printf("A")
-			addr = "/" + b.URL.Path + "/" + addr
+			addr = "/" + b.URL().Path + "/" + addr
 		} else {
 			log.Printf("B")
-			m := strings.LastIndex(b.URL.Path, "/")
+			m := strings.LastIndex(b.URL().Path, "/")
 			if m > 0 {
 				log.Printf("B.>")
-				folder := b.URL.Path[0:m]
+				folder := b.URL().Path[0:m]
 				addr = "/" + folder + "/" + addr
 			} else {
 				log.Printf("B.<=")
@@ -1206,19 +1226,29 @@ func (b *Browser) LinkedUrl(addr string) (a *url.URL, err error) {
 			}
 		}
 		addr = strings.ReplaceAll(addr, "//", "/")
-		addr = b.URL.Scheme + "://" + b.URL.Host + addr
+		addr = b.URL().Scheme + "://" + b.URL().Host + addr
 	}
 	return url.Parse(addr)
+}
+
+func (b *Browser) Back() (e duit.Event) {
+	if len(b.History.urls) > 0 {
+		b.History.Back()
+		b.LocationField.Text = b.History.URL().String()
+		b.LoadUrl()
+	}
+	e.Consumed = true
+	return
 }
 
 func (b *Browser) SetAndLoadUrl(addr string) func() duit.Event {
 	a := addr
 	return func() duit.Event {
 		log.Printf("SetAndLoadUrl::callback: addr=%v", addr)
-		log.Printf("       b.URL=%v", b.URL)
+		log.Printf("       b.URL=%v", b.URL())
 		url, err := b.LinkedUrl(addr)
 		if err == nil {
-			b.SetUrl(url.String())
+			b.LocationField.Text = url.String()
 			b.LoadUrl()
 		} else {
 			log.Printf("parse url %v: %v", a, err)
@@ -1227,22 +1257,6 @@ func (b *Browser) SetAndLoadUrl(addr string) func() duit.Event {
 		return duit.Event{
 			Consumed: true,
 		}
-	}
-}
-
-func (b *Browser) SetUrl(addr string) (e duit.Event) {
-	log.Printf("SetUrl(%v)", addr)
-	var err error
-	if !strings.HasPrefix(addr, "http") {
-		addr = "https://" + addr
-	}
-	b.URL, err = url.Parse(addr)
-	if err != nil {
-		log.Printf("could not parse url: %v", err)
-	}
-	log.Printf("   b.Url=%v", b.URL)
-	return duit.Event{
-		Consumed: true,
 	}
 }
 
@@ -1257,18 +1271,22 @@ func (b *Browser) showBodyMessage(msg string) {
 }
 
 func (b *Browser) LoadUrl() (e duit.Event) {
-	if b.URL == nil {
-		e.Consumed = true
+	addr := b.LocationField.Text
+	if !strings.HasPrefix(addr, "http") {
+		addr = "https://" + addr
+	}
+	log.Printf("Getting %v...", addr)
+	url, err := url.Parse(addr)
+	if err != nil {
+		log.Errorf("load url: error parsing %v", addr)
 		return
 	}
-	addr := b.URL.String()
-	log.Printf("Getting %v...", addr)
-	buf, contentType, err := b.get(*b.URL, true)
+	buf, contentType, err := b.get(url, true)
 	if err != nil {
 		log.Errorf("error loading %v: %v", addr, err)
 		err = errors.Unwrap(err)
 		if strings.Contains(err.Error(), "HTTP response to HTTPS client") {
-			b.SetUrl(strings.Replace(b.URL.String(), "https://", "http://", 1))
+			b.LocationField.Text = strings.Replace(url.String(), "https://", "http://", 1)
 			return b.LoadUrl()
 		}
 		b.showBodyMessage(err.Error())
@@ -1306,7 +1324,7 @@ func (b *Browser) render(buf []byte) {
 	log.Printf("Rendering done")
 }
 
-func (b *Browser) Get(uri url.URL) (buf []byte, contentType opossum.ContentType, err error) {
+func (b *Browser) Get(uri *url.URL) (buf []byte, contentType opossum.ContentType, err error) {
 	c, ok := cache[uri.String()]
 	if ok {
 		log.Printf("use %v from cache", uri)
@@ -1332,7 +1350,7 @@ func (b *Browser) statusBarMsg(msg string, emptyBody bool) {
 	dui.Render()
 }
 
-func (b *Browser) get(uri url.URL, isNewOrigin bool) (buf []byte, contentType opossum.ContentType, err error) {
+func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType opossum.ContentType, err error) {
 	msg := fmt.Sprintf("Get %v", uri.String())
 	log.Printf(msg)
 	b.statusBarMsg(msg, true)
@@ -1349,10 +1367,6 @@ func (b *Browser) get(uri url.URL, isNewOrigin bool) (buf []byte, contentType op
 		return nil, opossum.ContentType{}, fmt.Errorf("error loading %v: %w", uri, err)
 	}
 	defer resp.Body.Close()
-	if isNewOrigin {
-		b.URL = resp.Request.URL
-		b.LocationField.Text = b.URL.String()
-	}
 	buf, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, opossum.ContentType{}, fmt.Errorf("error reading")
@@ -1362,10 +1376,15 @@ func (b *Browser) get(uri url.URL, isNewOrigin bool) (buf []byte, contentType op
 	if err == nil && (contentType.IsHTML() || contentType.IsCSS() || contentType.IsPlain()) {
 		buf = contentType.Utf8(buf)
 	}
+	if isNewOrigin {
+		b.History.Push(resp.Request.URL)
+		log.Printf("b.History is now %s", b.History.String())
+		b.LocationField.Text = b.URL().String()
+	}
 	return
 }
 
-func (b *Browser) PostForm(uri url.URL, data url.Values) (buf []byte, contentType opossum.ContentType, err error) {
+func (b *Browser) PostForm(uri *url.URL, data url.Values) (buf []byte, contentType opossum.ContentType, err error) {
 	b.Website.UI = &duit.Label{Text: "Posting..."}
 	dui.MarkLayout(dui.Top.UI)
 	dui.MarkDraw(dui.Top.UI)
@@ -1381,7 +1400,7 @@ func (b *Browser) PostForm(uri url.URL, data url.Values) (buf []byte, contentTyp
 		return nil, opossum.ContentType{}, fmt.Errorf("error loading %v: %w", uri, err)
 	}
 	defer resp.Body.Close()
-	b.URL = resp.Request.URL
+	b.History.Push(resp.Request.URL)
 	buf, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, opossum.ContentType{}, fmt.Errorf("error reading")
@@ -1446,7 +1465,7 @@ func (b *Browser) layoutWebsite() {
 			continue
 		}
 		log.Printf("Download %v", url)
-		buf, contentType, err := b.Get(*url)
+		buf, contentType, err := b.Get(url)
 		if err != nil {
 			log.Printf("error downloading %v", url)
 			continue
@@ -1462,9 +1481,6 @@ func (b *Browser) layoutWebsite() {
 
 	if *ExperimentalJsInsecure {
 		log.Printf("3rd pass")
-		if b.URL == nil {
-			b.SetUrl("opossum://go")
-		}
 		nt := nodes.NewNodeTree(doc, style.Map{}, nodeMap, nil)
 		jsSrcs := domino.Srcs(nt)
 		downloads := make(map[string]string)
@@ -1475,7 +1491,7 @@ func (b *Browser) layoutWebsite() {
 				continue
 			}
 			log.Printf("Download %v", url)
-			buf, _ /*contentType*/, err := b.Get(*url)
+			buf, _, err := b.Get(url)
 			if err != nil {
 				log.Printf("error downloading %v", url)
 				continue

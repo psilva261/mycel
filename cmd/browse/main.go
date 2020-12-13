@@ -55,11 +55,16 @@ func Main() (err error) {
 	dui.Top.UI = &duit.Box{
 		Kids: duit.NewKids(
 			&duit.Grid{
-				Columns: 2,
-				Padding: duit.NSpace(2, duit.SpaceXY(5, 3)),
-				Halign:  []duit.Halign{duit.HalignLeft, duit.HalignRight},
-				Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle},
+				Columns: 3,
+				Padding: duit.NSpace(3, duit.SpaceXY(5, 3)),
+				Halign:  []duit.Halign{duit.HalignLeft, duit.HalignLeft, duit.HalignRight},
+				Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle, duit.ValignMiddle},
 				Kids: duit.NewKids(
+					&duit.Button{
+						Text:  "Back",
+						Font:  browser.Style.Font(),
+						Click: b.Back,
+					},
 					&duit.Button{
 						Text:  "Load",
 						Font:  browser.Style.Font(),

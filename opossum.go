@@ -20,7 +20,7 @@ type Fetcher interface {
 	// LinkedUrl relative to current page
 	LinkedUrl(string) (*url.URL, error)
 
-	Get(url.URL) ([]byte, ContentType, error)
+	Get(*url.URL) ([]byte, ContentType, error)
 }
 
 type ContentType struct {
