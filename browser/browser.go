@@ -2,21 +2,18 @@ package browser
 
 import (
 	"9fans.net/go/draw"
-	"bytes"
-	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/nfnt/resize"
 	"golang.org/x/net/html"
 	"golang.org/x/net/publicsuffix"
 	"image"
-	"image/jpeg"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"opossum"
 	"opossum/domino"
+	"opossum/img"
 	"opossum/logger"
 	"opossum/nodes"
 	"opossum/style"
@@ -134,39 +131,10 @@ func NewImage(display *draw.Display, n nodes.Node) duit.UI {
 	return img
 }
 
-func parseDataUri(addr string) (data []byte, err error) {
-	if strings.Contains(addr, "charset=UTF-8") {
-		return nil, fmt.Errorf("cannot handle charset")
-	}
-	parts := strings.Split(addr, ",")
-	e := base64.RawStdEncoding
-	if strings.HasSuffix(addr, "=") {
-		e = base64.StdEncoding
-	}
-	if data, err = e.DecodeString(parts[1]); err != nil {
-		return nil, fmt.Errorf("decode %v src: %w", addr, err)
-	}
-	return
-}
-
 func newImage(display *draw.Display, n nodes.Node) (ui duit.UI, err error) {
 	src := attr(*n.DomSubtree, "src")
 	if src == "" {
 		return nil, fmt.Errorf("no src in %+v", n.Attr)
-	}
-	var imgUrl *url.URL
-	var data []byte
-	if strings.HasPrefix(src, "data:") {
-		if data, err = parseDataUri(src); err != nil {
-			return nil, fmt.Errorf("parse data uri %v: %w", src, err)
-		}
-	} else {
-		if imgUrl, err = browser.LinkedUrl(src); err != nil {
-			return nil, err
-		}
-		if data, _, err = browser.Get(imgUrl); err != nil {
-			return nil, fmt.Errorf("get %v: %w", imgUrl, err)
-		}
 	}
 
 	var w int
@@ -179,29 +147,16 @@ func newImage(display *draw.Display, n nodes.Node) (ui duit.UI, err error) {
 	if ok {
 		h, _ = strconv.Atoi(strings.TrimSuffix(hStr.Value, "px"))
 	}
-	if w != 0 || h != 0 {
-		image, _, err := image.Decode(bytes.NewReader(data))
-		if err != nil {
-			return nil, fmt.Errorf("decode %v: %w", imgUrl, err)
-		}
-		// check err
-
-		newImage := resize.Resize(uint(w), uint(h), image, resize.Lanczos3)
-
-		// Encode uses a Writer, use a Buffer if you need the raw []byte
-		buf := bytes.NewBufferString("")
-		if err = jpeg.Encode(buf, newImage, nil); err != nil {
-			return nil, fmt.Errorf("encode: %w", err)
-		}
-		data = buf.Bytes()
+	r, err := img.Load(browser, src, w, h)
+	if err != nil {
+		return nil, fmt.Errorf("load draw image: %w", err)
 	}
-	r := bytes.NewReader(data)
-	log.Printf("Read %v...", imgUrl)
+	log.Printf("Read %v...", src)
 	img, err := duit.ReadImage(display, r)
 	if err != nil {
-		return nil, fmt.Errorf("duit read image: %w (len=%v)", err, len(data))
+		return nil, fmt.Errorf("duit read image: %w", err)
 	}
-	log.Printf("Done reading %v", imgUrl)
+	log.Printf("Done reading %v", src)
 	return &Element{
 		UI: &Image{
 			Image: &duit.Image{

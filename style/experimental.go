@@ -2,12 +2,12 @@ package style
 
 import (
 	"9fans.net/go/draw"
-	"bytes"
 	"github.com/chris-ramon/douceur/css"
 	"fmt"
 	"github.com/mjl-/duit"
 	"image"
 	"opossum"
+	"opossum/img"
 	"strings"
 )
 
@@ -89,7 +89,7 @@ func backgroundImageUrl(decl css.Declaration) (url string, ok bool) {
 	}
 }
 
-func (cs Map) backgroundImage() (img *draw.Image) {
+func (cs Map) backgroundImage() (i *draw.Image) {
 	decl, ok := cs.Declarations["background-image"]
 	if !ok {
 		decl, ok = cs.Declarations["background"]
@@ -102,24 +102,18 @@ func (cs Map) backgroundImage() (img *draw.Image) {
 			return
 		}
 		log.Printf("bg img ok")
-		uri, err := fetcher.LinkedUrl(imgUrl)
+		r, err := img.Load(fetcher, imgUrl, 0, 0)
 		if err != nil {
-			log.Errorf("bg img interpret url: %v", err)
+			log.Errorf("bg img load %v: %v", imgUrl, err)
 			return nil
 		}
-		buf, contentType, err := fetcher.Get(uri)
-		if err != nil {
-			log.Errorf("bg img get %v (%v): %v", uri, contentType, err)
-			return nil
-		}
-		r := bytes.NewReader(buf)
 		log.Printf("Read %v...", imgUrl)
-		img, err = duit.ReadImage(dui.Display, r)
+		i, err = duit.ReadImage(dui.Display, r)
 		if err != nil {
 			log.Errorf("bg read image: %v", err)
 			return
 		}
-		return img
+		return i
 	}
 	return
 }

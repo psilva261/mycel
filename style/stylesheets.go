@@ -465,10 +465,10 @@ func (cs Map) IsDisplayNone() bool {
 	if ok && propVal.Value == "none" {
 		return true
 	}
-	propVal, ok = cs.Declarations["position"]
+	/*propVal, ok = cs.Declarations["position"]
 	if ok && propVal.Value == "fixed" {
 		return true
-	}
+	}*/
 	propVal, ok = cs.Declarations["clip"]
 	if ok && strings.ReplaceAll(propVal.Value, " ", "") == "rect(1px,1px,1px,1px)" {
 		return true

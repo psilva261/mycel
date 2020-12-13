@@ -8,6 +8,7 @@ import (
 	"opossum"
 	"opossum/browser"
 	"opossum/domino"
+	"opossum/img"
 	"opossum/logger"
 	"opossum/style"
 	"opossum/nodes"
@@ -48,6 +49,7 @@ func Main() (err error) {
 	log.Printf("w'=%v", dui.Scale(w))
 	log.Printf("kid=%v", dui.Top.R)
 	browser.SetLogger(log)
+	img.SetLogger(log)
 	opossum.SetLogger(log)
 	nodes.SetLogger(log)
 	b := browser.NewBrowser(dui, *startPage)
