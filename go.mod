@@ -19,6 +19,8 @@ require (
 	github.com/mjl-/duit v0.0.0-20200330125617-580cb0b2843f
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/psilva261/css v0.1.0
+	github.com/srwiley/oksvg v0.0.0-20200311192757-870daf9aa564
+	github.com/srwiley/rasterx v0.0.0-20200120212402-85cb7272f5e9
 	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 	golang.org/x/text v0.3.4

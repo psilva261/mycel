@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	//"github.com/mjl-/duit"
+	"github.com/srwiley/oksvg"
+	"github.com/srwiley/rasterx"
 	"image"
 	"image/jpeg"
 	"io"
@@ -26,17 +28,24 @@ func SetLogger(l *logger.Logger) {
 	log = l
 }
 
-func parseDataUri(addr string) (data []byte, err error) {
+func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) {
+	addr = strings.TrimPrefix(addr, "data:")
 	if strings.Contains(addr, "charset=UTF-8") {
-		return nil, fmt.Errorf("cannot handle charset")
+		return nil, ct, fmt.Errorf("cannot handle charset")
 	}
 	parts := strings.Split(addr, ",")
+	
+	header := strings.Split(parts[0], ";")
+	if ct, err = opossum.NewContentType(header[1]); err != nil {
+		return nil, ct, err
+	}
+	
 	e := base64.RawStdEncoding
 	if strings.HasSuffix(addr, "=") {
 		e = base64.StdEncoding
 	}
 	if data, err = e.DecodeString(parts[1]); err != nil {
-		return nil, fmt.Errorf("decode %v src: %w", addr, err)
+		return nil, ct, fmt.Errorf("decode %v src: %w", addr, err)
 	}
 	return
 }
@@ -45,17 +54,34 @@ func parseDataUri(addr string) (data []byte, err error) {
 func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
 	var imgUrl *url.URL
 	var data []byte
+	var contentType opossum.ContentType
+
 	if strings.HasPrefix(src, "data:") {
-		if data, err = parseDataUri(src); err != nil {
+		if data, contentType, err = parseDataUri(src); err != nil {
 			return nil, fmt.Errorf("parse data uri %v: %w", src, err)
 		}
 	} else {
 		if imgUrl, err = f.LinkedUrl(src); err != nil {
 			return nil, err
 		}
-		if data, _, err = f.Get(imgUrl); err != nil {
+		if data, contentType, err = f.Get(imgUrl); err != nil {
 			return nil, fmt.Errorf("get %v: %w", imgUrl, err)
 		}
+	}
+
+	if contentType.IsSvg() {
+		r := bytes.NewReader(data)
+		icon, _ := oksvg.ReadIconStream(r)
+		w := 100
+		h := 100
+		icon.SetTarget(0, 0, float64(w), float64(h))
+		rgba := image.NewRGBA(image.Rect(0, 0, w, h))
+		icon.Draw(rasterx.NewDasher(w, h, rasterx.NewScannerGV(w, h, rgba, rgba.Bounds())), 1)
+		buf := bytes.NewBufferString("")
+		if err = jpeg.Encode(buf, rgba, nil); err != nil {
+			return nil, fmt.Errorf("encode: %w", err)
+		}
+		data = buf.Bytes()
 	}
 
 	if w != 0 || h != 0 {

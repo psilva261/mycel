@@ -59,6 +59,10 @@ func (c ContentType) IsDownload() bool {
 		c.MediaType == "application/zip"
 }
 
+func (c ContentType) IsSvg() bool {
+	return c.MediaType == "image/svg+xml"	
+}
+
 func (c ContentType) Utf8(buf []byte) []byte {
 	charset, ok := c.Params["charset"]
 	if !ok || charset == "utf8" || charset == "utf-8" {
