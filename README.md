@@ -16,11 +16,27 @@ Supported features:
 
 You can download a tarball with the binary at http://psilva.sdf.org/opossum-plan9-amd64.tgz
 
+```
+./opossum-plan9-amd64.bin
+```
+
 To compile the source Go 1.15 is needed. Probably `$GOPROXY` should be set to `https://proxy.golang.org`
 
 ```
 cd cmd/browse
 go run .
+```
+
+There are various command line options, visible with `-h`, most importantly to see errors:
+
+```
+go run . '-quiet=false'
+```
+
+or all messages:
+
+```
+go run . '-quiet=false' '-debug=true'
 ```
 
 ## macOS
