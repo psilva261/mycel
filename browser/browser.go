@@ -296,13 +296,11 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 		Font: n.Font(),
 		Click: func() (r duit.Event) {
 			b.submit(n.ParentForm().DomSubtree)
-			//r.Consumed = true
 			return duit.Event{
 				Consumed:   true,
 				NeedLayout: true,
 				NeedDraw:   true,
 			}
-			//return
 		},
 	}
 	return &Element{
@@ -320,9 +318,20 @@ func NewInputField(n *nodes.Node) *Element {
 				Placeholder: attr(*n.DomSubtree, "placeholder"),
 				Password:    t == "password",
 				Text:        attr(*n.DomSubtree, "value"),
-				Changed: func(t string) (r duit.Event) {
+				Changed: func(t string) (e duit.Event) {
 					setAttr(n.DomSubtree, "value", t)
-					r.Consumed = true
+					e.Consumed = true
+					return
+				},
+				Keys: func(k rune, m draw.Mouse) (e duit.Event) {
+					if k == 10 {
+						browser.submit(n.ParentForm().DomSubtree)
+						return duit.Event{
+							Consumed:   true,
+							NeedLayout: true,
+							NeedDraw:   true,
+						}
+					}
 					return
 				},
 			}),
