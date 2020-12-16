@@ -49,6 +49,7 @@ var cache = make(map[string]struct {
 var numElements int64
 var log *logger.Logger
 var scroller *duit.Scroll
+var display *draw.Display
 
 func SetLogger(l *logger.Logger) {
 	log = l
@@ -122,8 +123,8 @@ type Image struct {
 	src string
 }
 
-func NewImage(display *draw.Display, n nodes.Node) duit.UI {
-	img, err := newImage(display, n)
+func NewImage(n nodes.Node) duit.UI {
+	img, err := newImage(n)
 	if err != nil {
 		log.Errorf("could not load image: %v", err)
 		return &duit.Label{}
@@ -131,7 +132,11 @@ func NewImage(display *draw.Display, n nodes.Node) duit.UI {
 	return img
 }
 
-func newImage(display *draw.Display, n nodes.Node) (ui duit.UI, err error) {
+func newImage(n nodes.Node) (ui duit.UI, err error) {
+	if display == nil {
+		// probably called from a unit test
+		return nil, fmt.Errorf("display nil")
+	}
 	src := attr(*n.DomSubtree, "src")
 	if src == "" {
 		return nil, fmt.Errorf("no src in %+v", n.Attr)
@@ -604,11 +609,11 @@ func check(err error, msg string) {
 	}
 }
 
-func RichInnerContentFrom(r int, b *Browser, display *draw.Display, n *nodes.Node) *Element {
+func RichInnerContentFrom(r int, b *Browser, n *nodes.Node) *Element {
 	childrenAsEls := make([]*Element, 0, 1)
 
 	for _, c := range n.Children {
-		tmp := NodeToBox(r+1, b, display, c)
+		tmp := NodeToBox(r+1, b, c)
 		if tmp != nil {
 			numElements++
 			el := NewElement(tmp, c.Map.ApplyChildStyle(style.TextNode))
@@ -683,7 +688,7 @@ func (t *Table) numColsMax() (max int) {
 	return
 }
 
-func (t *Table) Element(r int, b *Browser, display *draw.Display, cs style.Map) *Element {
+func (t *Table) Element(r int, b *Browser, cs style.Map) *Element {
 	numRows := len(t.rows)
 	numCols := t.numColsMax()
 	useOneGrid := t.numColsMin() == t.numColsMax()
@@ -692,7 +697,7 @@ func (t *Table) Element(r int, b *Browser, display *draw.Display, cs style.Map) 
 		uis := make([]duit.UI, 0, numRows*numCols)
 		for _, row := range t.rows {
 			for _, td := range row.columns {
-				uis = append(uis, NodeToBox(r+1, b, display, td))
+				uis = append(uis, NodeToBox(r+1, b, td))
 			}
 		}
 
@@ -722,7 +727,7 @@ func (t *Table) Element(r int, b *Browser, display *draw.Display, cs style.Map) 
 		for _, row := range t.rows {
 			rowEls := make([]*Element, 0, len(row.columns))
 			for _, col := range row.columns {
-				ui := NodeToBox(r+1, b, display, col)
+				ui := NodeToBox(r+1, b, col)
 				if ui != nil {
 					el := NewElement(ui, col.Map)
 					rowEls = append(rowEls, el)
@@ -788,7 +793,7 @@ func grepBody(n *html.Node) *html.Node {
 	return body
 }
 
-func NodeToBox(r int, b *Browser, display *draw.Display, n *nodes.Node) *Element {
+func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 	if attr(*n.DomSubtree, "aria-hidden") == "true" || hasAttr(*n.DomSubtree, "hidden") {
 		return nil
 	}
@@ -800,11 +805,6 @@ func NodeToBox(r int, b *Browser, display *draw.Display, n *nodes.Node) *Element
 		switch n.Data() {
 		case "style", "script", "svg", "template":
 			return nil
-		case "noscript":
-			if *ExperimentalJsInsecure {
-				return nil
-			}
-			fallthrough
 		case "input":
 			numElements++
 			t := attr(*n.DomSubtree, "type")
@@ -831,7 +831,12 @@ func NodeToBox(r int, b *Browser, display *draw.Display, n *nodes.Node) *Element
 			}
 		case "table":
 			numElements++
-			return NewTable(n).Element(r+1, b, display, n.Map)
+			return NewTable(n).Element(r+1, b, n.Map)
+		case "noscript":
+			if *ExperimentalJsInsecure {
+				return nil
+			}
+			fallthrough
 		case "body", "p", "h1", "center", "nav", "article", "header", "div", "td":
 			var innerContent duit.UI
 			if nodes.IsPureTextContent(*n) {
@@ -844,7 +849,7 @@ func NodeToBox(r int, b *Browser, display *draw.Display, n *nodes.Node) *Element
 					Map: n.Map.ApplyChildStyle(style.TextNode),
 				}
 			} else {
-				innerContent = RichInnerContentFrom(r+1, b, display, n)
+				innerContent = RichInnerContentFrom(r+1, b, n)
 			}
 
 			numElements++
@@ -855,7 +860,7 @@ func NodeToBox(r int, b *Browser, display *draw.Display, n *nodes.Node) *Element
 		case "img":
 			numElements++
 			return NewElement(
-				NewImage(display, *n),
+				NewImage(*n),
 				n.Map,
 			)
 		case "pre":
@@ -879,7 +884,7 @@ func NodeToBox(r int, b *Browser, display *draw.Display, n *nodes.Node) *Element
 					Map: n.Map,
 				}
 			} else {
-				innerContent = RichInnerContentFrom(r+1, b, display, n)
+				innerContent = RichInnerContentFrom(r+1, b, n)
 			}
 
 			numElements++
@@ -907,7 +912,7 @@ func NodeToBox(r int, b *Browser, display *draw.Display, n *nodes.Node) *Element
 			} else {
 				// TODO: make blue borders and different
 				//       mouse cursor and actually clickable
-				innerContent = RichInnerContentFrom(r+1, b, display, n)
+				innerContent = RichInnerContentFrom(r+1, b, n)
 			}
 			numElements++
 			if innerContent == nil {
@@ -926,7 +931,7 @@ func NodeToBox(r int, b *Browser, display *draw.Display, n *nodes.Node) *Element
 			// Internal node object
 			els := make([]*Element, 0, 10)
 			for _, c := range n.Children {
-				el := NodeToBox(r+1, b, display, c)
+				el := NodeToBox(r+1, b, c)
 				if el != nil && !c.IsDisplayNone() {
 					els = append(els, el)
 				}
@@ -1152,6 +1157,7 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	browser = b
 	style.SetFetcher(b)
 	dui = _dui
+	display = dui.Display
 
 	b.layoutWebsite()
 
@@ -1485,14 +1491,14 @@ func (b *Browser) layoutWebsite() {
 	log.Printf("Layout website...")
 	numElements = 0
 	scroller = duit.NewScroll(
-		NodeToBox(0, b, b.dui.Display, nodes.NewNodeTree(body, style.Map{}, nodeMap, nil)),
+		NodeToBox(0, b, nodes.NewNodeTree(body, style.Map{}, nodeMap, nil)),
 	)
 	b.Website.UI = scroller
 	log.Printf("Layouting done (%v elements created)", numElements)
 	if numElements < 10 {
 		log.Errorf("Less than 10 elements layouted, seems css processing failed. Will layout without css")
 		scroller = duit.NewScroll(
-			NodeToBox(0, b, b.dui.Display, nodes.NewNodeTree(body, style.Map{}, make(map[*html.Node]style.Map), nil)),
+			NodeToBox(0, b, nodes.NewNodeTree(body, style.Map{}, make(map[*html.Node]style.Map), nil)),
 		)
 		b.Website.UI = scroller
 	}

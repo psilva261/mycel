@@ -1,12 +1,23 @@
 package browser
 
 import (
+	"github.com/mjl-/duit"
+	"golang.org/x/net/html"
+	"net/http"
 	"net/url"
 	"opossum/logger"
+	"opossum/nodes"
+	"opossum/style"
+	"strings"
 	"testing"
 )
 
 func init() {
+	quiet := false
+	logger.Quiet = &quiet
+	js := false
+	ExperimentalJsInsecure = &js
+	logger.Init()
 	SetLogger(&logger.Logger{})
 }
 
@@ -46,3 +57,44 @@ func TestLinkedUrl(t *testing.T) {
 func TestNilPanic(t *testing.T) {
 	//f, err := os.Open()
 }
+
+func TestNodeToBoxNoscript(t *testing.T) {
+	htm := `
+		<body>
+			<noscript>
+				<a href="https://example.com">Link</a>
+			</noscript>
+			<a>Other</a>
+			<input value=123>
+		</body>
+	`
+	doc, err := html.ParseWithOptions(
+		strings.NewReader(string(htm)),
+		html.ParseOptionEnableScripting(false),
+	)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	nodeMap := make(map[*html.Node]style.Map)
+	body := grepBody(doc)
+	b := &Browser{}
+	b.client = &http.Client{}
+	browser = b
+	u, err := url.Parse("https://example.com")
+	if err != nil {
+		log.Fatalf("parse: %v", err)
+	}
+	b.History.Push(u)
+	nt := nodes.NewNodeTree(body, style.Map{}, nodeMap, nil)
+	boxed := NodeToBox(0, b, nt)
+	numInputs := 0
+	TraverseTree(boxed, func(ui duit.UI) {
+		if _, ok := ui.(*duit.Field); ok {
+			numInputs++
+		}
+	})
+	if numInputs != 1 {
+		t.Fail()
+	}
+}
+
