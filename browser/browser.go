@@ -34,6 +34,7 @@ const experimentalUseSlicedDrawing = false
 
 var DebugDumpCSS *bool
 var ExperimentalJsInsecure *bool
+var EnableNoScriptTag *bool
 
 var browser *Browser // TODO: limit global objects;
 //       at least put them in separate pkgs
@@ -833,7 +834,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			numElements++
 			return NewTable(n).Element(r+1, b, n.Map)
 		case "noscript":
-			if *ExperimentalJsInsecure {
+			if *ExperimentalJsInsecure || !*EnableNoScriptTag {
 				return nil
 			}
 			fallthrough

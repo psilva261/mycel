@@ -59,6 +59,8 @@ func TestNilPanic(t *testing.T) {
 }
 
 func TestNodeToBoxNoscript(t *testing.T) {
+	enable := true
+	EnableNoScriptTag = &enable
 	htm := `
 		<body>
 			<noscript>

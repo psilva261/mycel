@@ -33,6 +33,7 @@ func init() {
 	browser.DebugDumpCSS = flag.Bool("debugDumpCSS", false, "write css to info.css")
 	domino.DebugDumpJS = flag.Bool("debugDumpJS", false, "write js to main.js")
 	browser.ExperimentalJsInsecure = flag.Bool("experimentalJsInsecure", false, "DO NOT ACTIVATE UNLESS INSTRUCTED OTHERWISE")
+	browser.EnableNoScriptTag = flag.Bool("enableNoScriptTag", false, "enable noscript tag")
 	logger.Quiet = flag.Bool("quiet", defaultQuietActive, "don't print info messages and non-fatal errors")
 }
 
