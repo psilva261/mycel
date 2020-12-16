@@ -1,12 +1,10 @@
 package img
 
 import (
-	//"9fans.net/go/draw"
 	"bytes"
 	"github.com/nfnt/resize"
 	"encoding/base64"
 	"fmt"
-	//"github.com/mjl-/duit"
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
 	"image"

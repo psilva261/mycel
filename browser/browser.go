@@ -43,6 +43,7 @@ var browser *Browser // TODO: limit global objects;
 var Style = style.Map{}
 var dui *duit.DUI
 var colorCache = make(map[draw.Color]*draw.Image)
+var imageCache = make(map[string]*draw.Image)
 var cache = make(map[string]struct {
 	opossum.ContentType
 	buf []byte
@@ -143,30 +144,42 @@ func newImage(n nodes.Node) (ui duit.UI, err error) {
 		return nil, fmt.Errorf("no src in %+v", n.Attr)
 	}
 
-	var w int
-	var h int
-	wStr, ok := n.Declarations["width"]
-	if ok {
-		w, _ = strconv.Atoi(strings.TrimSuffix(wStr.Value, "px"))
+	var i *draw.Image
+	var cached bool
+	if i, cached = imageCache[src]; !cached {
+		var w int
+		var h int
+		wStr, ok := n.Declarations["width"]
+		if ok {
+			w, err = strconv.Atoi(strings.TrimSuffix(wStr.Value, "px"))
+			if err != nil {
+				return nil, fmt.Errorf("atoi: %w", err)
+			}
+		}
+		hStr, ok := n.Declarations["height"]
+		if ok {
+			h, err = strconv.Atoi(strings.TrimSuffix(hStr.Value, "px"))
+			if err != nil {
+				return nil, fmt.Errorf("atoi: %w", err)
+			}
+		}
+		r, err := img.Load(browser, src, w, h)
+		if err != nil {
+			return nil, fmt.Errorf("load draw image: %w", err)
+		}
+		log.Printf("Read %v...", src)
+		i, err = duit.ReadImage(display, r)
+		if err != nil {
+			return nil, fmt.Errorf("duit read image: %w", err)
+		}
+		log.Printf("Done reading %v", src)
+		imageCache[src] = i
 	}
-	hStr, ok := n.Declarations["height"]
-	if ok {
-		h, _ = strconv.Atoi(strings.TrimSuffix(hStr.Value, "px"))
-	}
-	r, err := img.Load(browser, src, w, h)
-	if err != nil {
-		return nil, fmt.Errorf("load draw image: %w", err)
-	}
-	log.Printf("Read %v...", src)
-	img, err := duit.ReadImage(display, r)
-	if err != nil {
-		return nil, fmt.Errorf("duit read image: %w", err)
-	}
-	log.Printf("Done reading %v", src)
+
 	return &Element{
 		UI: &Image{
 			Image: &duit.Image{
-				Image: img,
+				Image: i,
 			},
 			src: src,
 		},
@@ -1104,6 +1117,7 @@ func (h History) URL() *url.URL {
 
 func (h *History) Push(u *url.URL) {
 	h.urls = append(h.urls, u)
+	imageCache = make(map[string]*draw.Image)
 }
 
 func (h *History) Back() {
