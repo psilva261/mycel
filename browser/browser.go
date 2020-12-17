@@ -1163,6 +1163,12 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	b.LocationField = &duit.Field{
 		Text:    initUrl,
 		Font:    Style.Font(),
+		Keys:    func(k rune, m draw.Mouse) (e duit.Event) {
+			if k == 10 {
+				return b.LoadUrl()
+			}
+			return
+		},
 	}
 
 	u, err := url.Parse(initUrl)
