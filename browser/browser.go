@@ -17,7 +17,6 @@ import (
 	"opossum/logger"
 	"opossum/nodes"
 	"opossum/style"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -147,23 +146,7 @@ func newImage(n nodes.Node) (ui duit.UI, err error) {
 	var i *draw.Image
 	var cached bool
 	if i, cached = imageCache[src]; !cached {
-		var w int
-		var h int
-		wStr, ok := n.Declarations["width"]
-		if ok {
-			w, err = strconv.Atoi(strings.TrimSuffix(wStr.Value, "px"))
-			if err != nil {
-				return nil, fmt.Errorf("atoi: %w", err)
-			}
-		}
-		hStr, ok := n.Declarations["height"]
-		if ok {
-			h, err = strconv.Atoi(strings.TrimSuffix(hStr.Value, "px"))
-			if err != nil {
-				return nil, fmt.Errorf("atoi: %w", err)
-			}
-		}
-		r, err := img.Load(browser, src, w, h)
+		r, err := img.Load(browser, src, n.Width(), n.Height())
 		if err != nil {
 			return nil, fmt.Errorf("load draw image: %w", err)
 		}
@@ -225,18 +208,12 @@ func NewBoxElement(ui duit.UI, cs style.Map) *Element {
 	if cs.IsDisplayNone() {
 		return nil
 	}
-	var w int
-	var h int
-	wStr, ok := cs.Declarations["width"]
-	if ok {
-		w, _ = strconv.Atoi(strings.TrimSuffix(wStr.Value, "px"))
-	}
-	hStr, ok := cs.Declarations["height"]
-	if ok {
-		h, _ = strconv.Atoi(strings.TrimSuffix(hStr.Value, "px"))
-	}
+
 	var i *draw.Image
 	var err error
+	w := cs.Width()
+	h := cs.Height()
+
 	if w == 0 && h == 0 {
 		return NewElement(ui, cs)
 	}

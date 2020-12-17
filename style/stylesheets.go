@@ -129,11 +129,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 		return nil, fmt.Errorf("douceur parse: %w", err)
 	}
 	processRule := func(m map[*html.Node][]*css.Rule, r *css.Rule) (err error) {
-		log.Printf("r: %+v", r)
-		log.Printf("r.Rules: %+v", r.Rules)
-		log.Printf("r.Prelude: %+v", r.Prelude)
 		for _, sel := range r.Selectors {
-			log.Printf("sel=%+v", sel)
 			cs, err := cssSel.Compile(sel.Value)
 			if err != nil {
 				log.Printf("cssSel compile %v: %v", sel.Value, err)
@@ -252,7 +248,7 @@ func (cs Map) ApplyChildStyle(ccs Map) (res Map) {
 	// overwrite with higher prio child props
 	for k, v := range ccs.Declarations {
 		switch k {
-		case "height", "width":
+		/*case "height", "width":
 			parentL, ok := res.Declarations[k]
 			if ok && strings.HasSuffix(v.Value, "%") && strings.HasSuffix(parentL.Value, "px") {
 				parentLNum, err := strconv.Atoi(strings.TrimSuffix(parentL.Value, "px"))
@@ -272,7 +268,7 @@ func (cs Map) ApplyChildStyle(ccs Map) (res Map) {
 				}
 				continue
 			}
-			fallthrough
+			fallthrough*/
 		default:
 			res.Declarations[k] = v
 		}
@@ -502,4 +498,49 @@ func (cs Map) IsFlexDirectionRow() bool {
 		}
 	}
 	return true // TODO: be more specific
+}
+
+func length(l string) (f float64, unit string, err error) {
+	var s string
+	if s == "auto" {
+		return 0, "px", nil
+	}
+	for _, suffix := range []string{"px", "%", "rem", "em"} {
+		if strings.HasSuffix(l, suffix) {
+			s = strings.TrimSuffix(l, suffix)
+			unit = suffix
+			break
+		}
+	}
+	if unit == "" {
+		return f, unit, fmt.Errorf("unknown suffix: %v", l)
+	}
+	if unit == "px" {
+		f, err = strconv.ParseFloat(s, 64)
+	}
+	return
+}
+
+func (cs Map) Height() int {
+	d, ok := cs.Declarations["height"]
+	if ok {
+		f, _, err := length(d.Value)
+		if err != nil {
+			log.Errorf("cannot parse height: %v", err)
+		}
+		return int(f)
+	}
+	return 0
+}
+
+func (cs Map) Width() int {
+	d, ok := cs.Declarations["width"]
+	if ok {
+		f, _, err := length(d.Value)
+		if err != nil {
+			log.Errorf("cannot parse width: %v", err)
+		}
+		return int(f)
+	}
+	return 0
 }

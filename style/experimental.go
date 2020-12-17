@@ -101,8 +101,10 @@ func (cs Map) backgroundImage() (i *draw.Image) {
 			log.Printf("bg img not ok")
 			return
 		}
+		w := cs.Width()
+		h := cs.Height()
 		log.Printf("bg img ok")
-		r, err := img.Load(fetcher, imgUrl, 0, 0)
+		r, err := img.Load(fetcher, imgUrl, w, h)
 		if err != nil {
 			log.Errorf("bg img load %v: %v", imgUrl, err)
 			return nil
