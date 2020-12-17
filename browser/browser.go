@@ -1117,7 +1117,6 @@ func (h History) URL() *url.URL {
 
 func (h *History) Push(u *url.URL) {
 	h.urls = append(h.urls, u)
-	imageCache = make(map[string]*draw.Image)
 }
 
 func (h *History) Back() {
@@ -1290,6 +1289,13 @@ func (b *Browser) LoadUrl() (e duit.Event) {
 }
 
 func (b *Browser) render(buf []byte) {
+	log.Printf("Empty cache...")
+	cache = make(map[string]struct {
+		opossum.ContentType
+		buf []byte
+	})
+	imageCache = make(map[string]*draw.Image)
+
 	b.html = string(buf) // TODO: correctly interpret UTF8
 	b.layoutWebsite()
 
@@ -1302,8 +1308,6 @@ func (b *Browser) render(buf []byte) {
 		}
 	})
 	PrintTree(b.Website.UI)
-	//log.Printf("Empty image cache...")
-	//cache = make(map[string][]byte)
 	log.Printf("Render...")
 	dui.Render()
 	log.Printf("Rendering done")
