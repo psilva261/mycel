@@ -75,15 +75,16 @@ func (n Node) Data() string {
 	return n.DomSubtree.Data
 }
 
-func (n *Node) ParentForm() *Node {
+// Ancestor of tag
+func (n *Node) Ancestor(tag string) *Node {
 	log.Printf("<%v>.ParentForm()", n.DomSubtree.Data)
-	if n.DomSubtree.Data == "form" {
-		log.Printf("  I'm a form :-)")
+	if n.DomSubtree.Data == tag {
+		log.Printf("  I'm a %v :-)", tag)
 		return n
 	}
 	if n.Parent != nil {
 		log.Printf("  go to my parent")
-		return n.Parent.ParentForm()
+		return n.Parent.Ancestor(tag)
 	}
 	return nil
 }

@@ -285,7 +285,7 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 		Text: t,
 		Font: n.Font(),
 		Click: func() (r duit.Event) {
-			b.submit(n.ParentForm().DomSubtree)
+			b.submit(n.Ancestor("form").DomSubtree)
 			return duit.Event{
 				Consumed:   true,
 				NeedLayout: true,
@@ -315,7 +315,7 @@ func NewInputField(n *nodes.Node) *Element {
 				},
 				Keys: func(k rune, m draw.Mouse) (e duit.Event) {
 					if k == 10 {
-						browser.submit(n.ParentForm().DomSubtree)
+						browser.submit(n.Ancestor("form").DomSubtree)
 						return duit.Event{
 							Consumed:   true,
 							NeedLayout: true,
