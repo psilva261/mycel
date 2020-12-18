@@ -455,7 +455,7 @@ default_value:
 func (cs Map) IsInline() bool {
 	propVal, ok := cs.Declarations["float"]
 	if ok && propVal.Value == "left" {
-		return false
+		return true
 	}
 	propVal, ok = cs.Declarations["display"]
 	if ok {
