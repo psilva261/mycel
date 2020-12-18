@@ -36,7 +36,11 @@ a, span, i, tt, b {
   display: inline;
 }
 
-h1, h2, h3, div, center {
+button, textarea, input, select {
+  display: inline-block;
+}
+
+h1, h2, h3, h4. h5, h6, div, center, frame, frameset, p, ul, menu, pre, dir {
 	display: block;
 }
 
@@ -227,6 +231,11 @@ func NewMap(n *html.Node) Map {
 			}
 			for _, d := range decls {
 				s.Declarations[d.Property] = *d
+			}
+		} else if a.Key == "height" || a.Key == "width" {
+			s.Declarations[a.Key] = css.Declaration{
+				Property: a.Key,
+				Value: a.Val+"px",
 			}
 		} else if a.Key == "bgcolor" {
 			s.Declarations["background-color"] = css.Declaration{
