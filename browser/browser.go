@@ -18,7 +18,7 @@ import (
 	"opossum/nodes"
 	"opossum/style"
 	"strings"
-	"unicode"
+	//"unicode"
 
 	"github.com/mjl-/duit"
 
@@ -88,13 +88,13 @@ func NewCodeView(s string, n style.Map) (cv *CodeView) {
 	log.Printf("NewCodeView(%+v)", s)
 	cv = &CodeView{}
 	edit := &duit.Edit{}
-	edit.Keys = func(k rune, m draw.Mouse) (e duit.Event) {
+	/*edit.Keys = func(k rune, m draw.Mouse) (e duit.Event) {
 		//log.Printf("k=%v (c %v    p %v)", k, unicode.IsControl(k), unicode.IsPrint(k))
 		if unicode.IsPrint(k) {
 			e.Consumed = true
 		}
 		return
-	}
+	}*/
 	formatted := ""
 	lines := strings.Split(s, "\n")
 	for _, line := range lines {
@@ -104,7 +104,7 @@ func NewCodeView(s string, n style.Map) (cv *CodeView) {
 	edit.Append([]byte(formatted))
 	cv.UI = &duit.Box{
 		Kids:   duit.NewKids(edit),
-		Height: (int(n.FontSize()) + 4) * len(lines),
+		Height: (int(n.FontSize()) + 4) * (len(lines)+2),
 	}
 	return
 }
@@ -1343,7 +1343,7 @@ func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType o
 	if err != nil {
 		return nil, opossum.ContentType{}, fmt.Errorf("error reading")
 	}
-	contentType, err = opossum.NewContentType(resp.Header.Get("Content-Type"))
+	contentType, err = opossum.NewContentType(resp.Header.Get("Content-Type"), resp.Request.URL)
 	log.Printf("%v\n", resp.Header)
 	if err == nil && (contentType.IsHTML() || contentType.IsCSS() || contentType.IsPlain()) {
 		buf = contentType.Utf8(buf)
@@ -1377,7 +1377,7 @@ func (b *Browser) PostForm(uri *url.URL, data url.Values) (buf []byte, contentTy
 	if err != nil {
 		return nil, opossum.ContentType{}, fmt.Errorf("error reading")
 	}
-	contentType, err = opossum.NewContentType(resp.Header.Get("Content-Type"))
+	contentType, err = opossum.NewContentType(resp.Header.Get("Content-Type"), resp.Request.URL)
 	return
 }
 

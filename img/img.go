@@ -40,7 +40,7 @@ func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) 
 	} else {
 		ctStr = parts[0]
 	}
-	if ct, err = opossum.NewContentType(ctStr); err != nil {
+	if ct, err = opossum.NewContentType(ctStr, nil); err != nil {
 		return nil, ct, err
 	}
 	

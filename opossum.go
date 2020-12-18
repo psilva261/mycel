@@ -28,7 +28,20 @@ type ContentType struct {
 	Params map[string]string
 }
 
-func NewContentType(s string) (c ContentType, err error) {
+// NewContentType based on mime type string and url including file extension as fallback
+func NewContentType(s string, u *url.URL) (c ContentType, err error) {
+	if s == "" && u != nil && strings.Contains(u.String(), ".") {
+		l := strings.Split(u.String(), ".")
+		ext := l[len(l)-1]
+		switch ext {
+		case "jpg":
+			return NewContentType("image/jpeg", u)
+		case "png":
+			return NewContentType("image/png", u)
+		case "gif":
+			return NewContentType("image/gif", u)
+		}
+	}
 	c.MediaType, c.Params, err = mime.ParseMediaType(s)
 	return
 }

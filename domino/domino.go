@@ -299,7 +299,7 @@ func iterateJsElements(doc *nodes.Node, fn func(src string, inlineCode string)) 
 			for _, a := range n.Attr {
 				switch strings.ToLower(a.Key) {
 				case "type":
-					t, err := opossum.NewContentType(a.Val)
+					t, err := opossum.NewContentType(a.Val, nil)
 					if err != nil {
 						log.Printf("t: %v", err)
 					}
