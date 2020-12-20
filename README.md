@@ -20,6 +20,12 @@ You can download a tarball with the binary at http://psilva.sdf.org/opossum-plan
 ./opossum-plan9-amd64.bin
 ```
 
+Also `/sys/lib/tls/ca.pem` needs to be present for TLS to work. ca certs can be downloaded from the curl homepage:
+
+```
+hget https://curl.haxx.se/ca/cacert.pem > /sys/lib/tls/ca.pem
+```
+
 To compile the source Go 1.15 is needed. Probably `$GOPROXY` should be set to `https://proxy.golang.org`
 
 ```
