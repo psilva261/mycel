@@ -83,7 +83,7 @@ func (c ContentType) Utf8(buf []byte) []byte {
 	}
 	if strings.ToLower(charset) == "iso-8859-1" {
 		r := bytes.NewReader(buf)
-	    cr := charmap.ISO8859_1.NewDecoder().Reader(r)
+		cr := charmap.ISO8859_1.NewDecoder().Reader(r)
 
 		updated, err := ioutil.ReadAll(cr)
 		if err == nil {
