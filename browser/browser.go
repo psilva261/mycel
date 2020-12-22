@@ -363,8 +363,9 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 	return el.UI.Mouse(dui, self, m, origM, orig)
 }
 
-func (el *Element) onClickLeafes(f func() duit.Event) {
-	PrintTree(el) // todo: debug remove me
+// makeLink of el and its children
+func (el *Element) makeLink(href string) {
+	f := browser.SetAndLoadUrl(href)
 	TraverseTree(el, func(ui duit.UI) {
 		el, ok := ui.(*Element)
 		if ok && el != nil {
@@ -863,10 +864,9 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				innerContent,
 				n.Map,
 			)
-			el.IsLink = true // TODO make this cascading
 			//      also a way to bubble up
 			// will be needed eventually
-			el.onClickLeafes(browser.SetAndLoadUrl(href))
+			el.makeLink(href)
 			return el
 		default:
 			// Internal node object
