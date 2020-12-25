@@ -188,15 +188,16 @@ func (d *Domino) Export(expr string) (res string, err error) {
 func (d *Domino) TriggerClick(selector string) (newHTML string, ok bool, err error) {
 	res, err := d.vm.RunString(`
 		var sel = '` + selector + `';
-		console.log('sel=' + sel);
 		var sell = document.querySelector(sel);
-		console.log('sell=' + sell);
-		var selfn = sell.click.bind(sell);
-		console.log('selfn=' + selfn);
-		if (selfn) {
-			selfn();
+		if (sell._listeners && sell._listeners.click) {
+			var selfn = sell.click.bind(sell);
+			if (selfn) {
+				selfn();
+			}
+			!!selfn;
+		} else {
+			false;
 		}
-		!!selfn;
 	`)
 
 	ok = fmt.Sprintf("%v", res) == "true"

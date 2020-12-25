@@ -15,6 +15,7 @@ import (
 type Website struct {
 	duit.UI
 	html      string
+	d *domino.Domino
 }
 
 func (w *Website) layout(f opossum.Fetcher) {
@@ -108,7 +109,13 @@ func (w *Website) layout(f opossum.Fetcher) {
 		}
 		codes := domino.Scripts(nt, downloads)
 		log.Infof("JS pipeline start")
-		jsProcessed, err := processJS2(w.html, nt, codes)
+		if w.d != nil {
+			log.Infof("Stop existing JS instance")
+			w.d.Stop()
+		}
+		w.d = domino.NewDomino(w.html)
+		w.d.Start()
+		jsProcessed, err := processJS2(w.d, nt, codes)
 		if err == nil {
 			if w.html != jsProcessed {
 				log.Infof("html changed")

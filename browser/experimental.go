@@ -1,11 +1,8 @@
 package browser
 
 import (
-	//"bytes"
 	"fmt"
 	"image"
-	//"io/ioutil"
-	//"net/http"
 	"strings"
 	"opossum/domino"
 	"opossum/nodes"
@@ -13,7 +10,6 @@ import (
 
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
-	//"opossum/nodes"
 )
 
 func (el *Element) slicedDraw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) bool {
@@ -141,7 +137,6 @@ func CleanTree(ui duit.UI) {
 	})
 }
 
-
 func processJS(htm string) (resHtm string, err error) {
 	_ = strings.Replace(htm, "window.", "", -1)
 	d := domino.NewDomino(htm)
@@ -156,10 +151,7 @@ func processJS(htm string) (resHtm string, err error) {
 	return
 }
 
-func processJS2(htm string, doc *nodes.Node, scripts []string) (resHtm string, err error) {
-	//_ = strings.Replace(htm, "window.", "", -1)
-	d := domino.NewDomino(htm)
-	d.Start()
+func processJS2(d *domino.Domino, doc *nodes.Node, scripts []string) (resHtm string, err error) {
 	code := ""
 	for _, script := range scripts {
 		code += `
@@ -178,7 +170,6 @@ func processJS2(htm string, doc *nodes.Node, scripts []string) (resHtm string, e
 			}
 		`
 	}
-	log.Printf("code=%v\n", code)
 	if err = d.Exec/*6*/(code); err != nil {
 		return "", fmt.Errorf("exec <script>s: %w", err)
 	}
@@ -187,8 +178,6 @@ func processJS2(htm string, doc *nodes.Node, scripts []string) (resHtm string, e
 	if err != nil {
 		return "", fmt.Errorf("track changes: %w", err)
 	}
-	log.Printf("processJS: changes = %v", changed)
-	log.Printf("exp. resHtm=%v\n", resHtm)
-	d.Stop()
+	log.Printf("processJS: changed = %v", changed)
 	return
 }
