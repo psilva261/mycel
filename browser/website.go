@@ -138,7 +138,7 @@ func (w *Website) layout(f opossum.Fetcher) {
 	log.Printf("Layout website...")
 	numElements = 0
 	scroller = duit.NewScroll(
-		NodeToBox(0, browser, nodes.NewNodeTree(body, style.Map{}, nodeMap, nil)),
+		NodeToBox(0, browser, nodes.NewNodeTree(body, style.Map{}, nodeMap, &nodes.Node{})),
 	)
 	w.UI = scroller
 	log.Printf("Layouting done (%v elements created)", numElements)

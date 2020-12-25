@@ -56,12 +56,12 @@ func SetLogger(l *logger.Logger) {
 type ColoredLabel struct {
 	*duit.Label
 
-	Map style.Map
+	n *nodes.Node
 }
 
 func (ui *ColoredLabel) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
 	// TODO: hacky function, might lead to crashes and memory leaks
-	c := ui.Map.Color()
+	c := ui.n.Map.Color()
 	i, ok := colorCache[c]
 	if !ok {
 		var err error
@@ -121,7 +121,7 @@ type Image struct {
 	src string
 }
 
-func NewImage(n nodes.Node) duit.UI {
+func NewImage(n *nodes.Node) duit.UI {
 	img, err := newImage(n)
 	if err != nil {
 		log.Errorf("could not load image: %v", err)
@@ -130,7 +130,7 @@ func NewImage(n nodes.Node) duit.UI {
 	return img
 }
 
-func newImage(n nodes.Node) (ui duit.UI, err error) {
+func newImage(n *nodes.Node) (ui duit.UI, err error) {
 	if display == nil {
 		// probably called from a unit test
 		return nil, fmt.Errorf("display nil")
@@ -156,65 +156,68 @@ func newImage(n nodes.Node) (ui duit.UI, err error) {
 		imageCache[src] = i
 	}
 
-	return &Element{
-		UI: &Image{
+	return NewElement(
+		&Image{
 			Image: &duit.Image{
 				Image: i,
 			},
 			src: src,
 		},
-	}, nil
+		n,
+	), nil
 }
 
 type Element struct {
 	duit.UI
-	CS     style.Map
+	n       *nodes.Node
 	IsLink bool
 	Click  func() duit.Event
 }
 
-func NewElement(ui duit.UI, cs style.Map) *Element {
+func NewElement(ui duit.UI, n *nodes.Node) *Element {
 	if ui == nil {
 		return nil
 	}
-	if cs.IsDisplayNone() {
+	if n == nil {
+		log.Errorf("NewElement: n is nil")
+		return nil
+	}
+	if n.IsDisplayNone() {
 		return nil
 	}
 
 	if stashElements {
 		existingEl, ok := ui.(*Element)
 		if ok && existingEl != nil {
-			// TODO: check is cs and existingEl shouldn't be vice-versa
-			ccs := cs.ApplyChildStyle(existingEl.CS)
 			return &Element{
 				UI: existingEl.UI,
-				CS: ccs,
+				n: existingEl.n,
 			}
 		}
 	}
 	return &Element{
 		UI: ui,
-		CS: cs,
+		n: n,
 	}
 }
 
-func NewBoxElement(ui duit.UI, cs style.Map) *Element {
+func NewBoxElement(ui duit.UI, n *nodes.Node) *Element {
 	if ui == nil {
 		return nil
 	}
-	if cs.IsDisplayNone() {
+	if n.IsDisplayNone() {
 		return nil
 	}
 
 	var i *draw.Image
 	var err error
-	w := cs.Width()
-	h := cs.Height()
+	w := n.Width()
+	h := n.Height()
 
 	if w == 0 && h == 0 {
-		return NewElement(ui, cs)
+		return NewElement(ui, n)
 	}
-	if i, err = cs.BoxBackground(); err != nil {
+	if i, err = n.BoxBackground(); err != nil {
 		log.Printf("box background: %f", err)
 	}
 	box := &duit.Box{
@@ -223,7 +226,7 @@ func NewBoxElement(ui duit.UI, cs style.Map) *Element {
 		Height:     h,
 		Background: i,
 	}
-	el := NewElement(box, cs)
+	el := NewElement(box, n)
 	return el
 }
 
@@ -290,16 +293,13 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 			}
 		},
 	}
-	return &Element{
-		UI: btn,
-		CS: n.Map,
-	}
+	return NewElement(btn, n)
 }
 
 func NewInputField(n *nodes.Node) *Element {
 	t := attr(*n.DomSubtree, "type")
-	return &Element{
-		UI: &duit.Box{
+	return NewElement(
+		&duit.Box{
 			Kids: duit.NewKids(&duit.Field{
 				Font:        n.Font(),
 				Placeholder: attr(*n.DomSubtree, "placeholder"),
@@ -324,8 +324,8 @@ func NewInputField(n *nodes.Node) *Element {
 			}),
 			MaxWidth: 200,
 		},
-		CS: n.Map,
-	}
+		n,
+	)
 }
 
 func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (r duit.Result) {
@@ -413,12 +413,12 @@ func setAttr(n *html.Node, key, val string) {
 	n.Attr = append(n.Attr, newAttr)
 }
 
-func Arrange(cs style.Map, elements ...*Element) *Element {
-	if cs.IsFlex() {
-		if cs.IsFlexDirectionRow() {
-			return NewElement(horizontalSequenceOf(true, elements), cs)
+func Arrange(n *nodes.Node, elements ...*Element) *Element {
+	if n.IsFlex() {
+		if n.IsFlexDirectionRow() {
+			return NewElement(horizontalSequenceOf(true, elements), n)
 		} else {
-			return NewElement(verticalSequenceOf(elements), cs)
+			return NewElement(verticalSequenceOf(elements), n)
 		}
 	}
 
@@ -432,11 +432,12 @@ func Arrange(cs style.Map, elements ...*Element) *Element {
 	}
 
 	for _, e := range elements {
-		if !e.CS.IsInline() {
+		isInline := e.n.IsInline() || e.n.Type() == html.TextNode
+		if !isInline {
 			flushCurrentRow()
 		}
 		currentRow = append(currentRow, e)
-		if !e.CS.IsInline() {
+		if !isInline {
 			flushCurrentRow()
 		}
 	}
@@ -451,16 +452,16 @@ func Arrange(cs style.Map, elements ...*Element) *Element {
 			return rows[0][0]
 		}
 		numElements++
-		return NewElement(horizontalSequenceOf(true, rows[0]), cs)
+		return NewElement(horizontalSequenceOf(true, rows[0]), n)
 	} else {
 		seqs := make([]*Element, 0, len(rows))
 		for _, row := range rows {
 			seq := horizontalSequenceOf(true, row)
 			numElements++
-			seqs = append(seqs, NewElement(seq, cs))
+			seqs = append(seqs, NewElement(seq, n))
 		}
 		numElements++
-		return NewElement(verticalSequenceOf(seqs), cs)
+		return NewElement(verticalSequenceOf(seqs), n)
 	}
 }
 
@@ -499,7 +500,7 @@ func horizontalSequenceOf(wrap bool, es []*Element) duit.UI {
 						finalUis = append(finalUis, NewElement(&duit.Label{
 							Text: t,
 							Font: label.Font,
-						}, el.CS))
+						}, el.n))
 					}
 				} else {
 					finalUis = append(finalUis, ui)
@@ -558,7 +559,7 @@ func RichInnerContentFrom(r int, b *Browser, n *nodes.Node) *Element {
 		tmp := NodeToBox(r+1, b, c)
 		if tmp != nil {
 			numElements++
-			el := NewElement(tmp, c.Map.ApplyChildStyle(style.TextNode))
+			el := NewElement(tmp, c)
 			childrenAsEls = append(childrenAsEls, el)
 		}
 	}
@@ -567,7 +568,7 @@ func RichInnerContentFrom(r int, b *Browser, n *nodes.Node) *Element {
 	} else if len(childrenAsEls) == 1 {
 		return childrenAsEls[0]
 	}
-	res := Arrange(n.Map, childrenAsEls...)
+	res := Arrange(n, childrenAsEls...)
 	return res
 }
 
@@ -630,7 +631,7 @@ func (t *Table) numColsMax() (max int) {
 	return
 }
 
-func (t *Table) Element(r int, b *Browser, cs style.Map) *Element {
+func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 	numRows := len(t.rows)
 	numCols := t.numColsMax()
 	useOneGrid := t.numColsMin() == t.numColsMax()
@@ -660,7 +661,7 @@ func (t *Table) Element(r int, b *Browser, cs style.Map) *Element {
 				Valign:  valign,
 				Kids:    duit.NewKids(uis...),
 			},
-			cs,
+			n,
 		)
 	} else {
 		log.Printf("combine")
@@ -671,7 +672,7 @@ func (t *Table) Element(r int, b *Browser, cs style.Map) *Element {
 			for _, col := range row.columns {
 				ui := NodeToBox(r+1, b, col)
 				if ui != nil {
-					el := NewElement(ui, col.Map)
+					el := NewElement(ui, col)
 					rowEls = append(rowEls, el)
 				}
 			}
@@ -680,20 +681,22 @@ func (t *Table) Element(r int, b *Browser, cs style.Map) *Element {
 			if len(rowEls) > 0 {
 				seq := horizontalSequenceOf(false, rowEls)
 				numElements++
-				seqs = append(seqs, NewElement(seq, cs))
+				seqs = append(seqs, NewElement(seq, row.n))
 			}
 		}
 		numElements++
-		return NewElement(verticalSequenceOf(seqs), cs)
+		return NewElement(verticalSequenceOf(seqs), n)
 	}
 }
 
 type TableRow struct {
+	n *nodes.Node
 	columns []*nodes.Node
 }
 
 func NewTableRow(n *nodes.Node) (tr *TableRow) {
 	tr = &TableRow{
+		n: n,
 		columns: make([]*nodes.Node, 0, 5),
 	}
 
@@ -768,12 +771,12 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				}
 				return NewElement(
 					btn,
-					n.Map,
+					n,
 				)
 			}
 		case "table":
 			numElements++
-			return NewTable(n).Element(r+1, b, n.Map)
+			return NewTable(n).Element(r+1, b, n)
 		case "noscript":
 			if *ExperimentalJsInsecure || !*EnableNoScriptTag {
 				return nil
@@ -788,7 +791,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 						Text: t,
 						Font: n.Font(),
 					},
-					Map: n.Map.ApplyChildStyle(style.TextNode),
+					n: n,
 				}
 			} else {
 				innerContent = RichInnerContentFrom(r+1, b, n)
@@ -797,19 +800,19 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			numElements++
 			return NewBoxElement(
 				innerContent,
-				n.Map.ApplyChildStyle(style.TextNode),
+				n,
 			)
 		case "img":
 			numElements++
 			return NewElement(
-				NewImage(*n),
-				n.Map,
+				NewImage(n),
+				n,
 			)
 		case "pre":
 			numElements++
 			return NewElement(
 				NewCodeView(nodes.ContentFrom(*n), n.Map),
-				n.Map,
+				n,
 			)
 		case "li":
 			var innerContent duit.UI
@@ -823,7 +826,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 						Text: t,
 						Font: n.Font(),
 					},
-					Map: n.Map,
+					n: n,
 				}
 			} else {
 				innerContent = RichInnerContentFrom(r+1, b, n)
@@ -832,7 +835,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			numElements++
 			return NewElement(
 				innerContent,
-				n.Map,
+				n,
 			)
 		case "a":
 			var href string
@@ -849,7 +852,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 						Font:  n.Font(),
 						Click: browser.SetAndLoadUrl(href),
 					},
-					Map: n.Map, //.ApplyIsLink(),
+					n: n,
 				}
 			} else {
 				// TODO: make blue borders and different
@@ -862,7 +865,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			}
 			el := NewElement(
 				innerContent,
-				n.Map,
+				n,
 			)
 			//      also a way to bubble up
 			// will be needed eventually
@@ -886,7 +889,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				for _, e := range els {
 					_ = e
 				}
-				return Arrange(n.Map, els...)
+				return Arrange(n, els...)
 			}
 		}
 	} else if n.Type() == html.TextNode {
@@ -910,7 +913,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			numElements++
 			return NewElement(
 				ui,
-				style.TextNode,
+				n,
 			)
 		} else {
 			return nil
