@@ -72,6 +72,9 @@ func (n Node) Type() html.NodeType {
 }
 
 func (n Node) Data() string {
+	if n.DomSubtree == nil {
+		return ""
+	}
 	return n.DomSubtree.Data
 }
 
