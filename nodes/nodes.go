@@ -89,6 +89,17 @@ func (n *Node) Ancestor(tag string) *Node {
 	return nil
 }
 
+func (n *Node) QueryRef() string {
+	path := make([]string, 0, 5)
+	path = append(path, n.Data())
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.Data() != "html" && p.Data() != "body" {
+			path = append([]string{p.Data()}, path...)
+		} 
+	}
+	return strings.TrimSpace(strings.Join(path, " "))
+}
+
 func IsPureTextContent(n Node) bool {
 	if n.Text != "" {
 		return true
