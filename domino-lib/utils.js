@@ -37,8 +37,8 @@ exports.TimeoutError = function() { throw new DOMException(ERR.TIMEOUT_ERR); };
 exports.InvalidNodeTypeError = function() { throw new DOMException(ERR.INVALID_NODE_TYPE_ERR); };
 exports.DataCloneError = function() { throw new DOMException(ERR.DATA_CLONE_ERR); };
 
-exports.nyi = function() {
-  throw new Error("NotYetImplemented");
+exports.nyi = function(what) {
+  throw new Error("NotYetImplemented " + what);
 };
 
 exports.shouldOverride = function() {

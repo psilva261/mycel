@@ -137,7 +137,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 	}
 	src := attr(*n.DomSubtree, "src")
 	if src == "" {
-		return nil, fmt.Errorf("no src in %+v", n.Attr)
+		return nil, fmt.Errorf("no src in %+v", n.Attrs)
 	}
 
 	var i *draw.Image
@@ -285,12 +285,15 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 		Text: t,
 		Font: n.Font(),
 		Click: func() (r duit.Event) {
-			b.submit(n.Ancestor("form").DomSubtree)
-			return duit.Event{
-				Consumed:   true,
-				NeedLayout: true,
-				NeedDraw:   true,
+			if f := n.Ancestor("form"); f != nil {
+				b.submit(f.DomSubtree, n.DomSubtree)
+				return duit.Event{
+					Consumed:   true,
+					NeedLayout: true,
+					NeedDraw:   true,
+				}
 			}
+			return
 		},
 	}
 	return NewElement(btn, n)
@@ -312,7 +315,7 @@ func NewInputField(n *nodes.Node) *Element {
 				},
 				Keys: func(k rune, m draw.Mouse) (e duit.Event) {
 					if k == 10 {
-						browser.submit(n.Ancestor("form").DomSubtree)
+						browser.submit(n.Ancestor("form").DomSubtree, nil)
 						return duit.Event{
 							Consumed:   true,
 							NeedLayout: true,
@@ -335,6 +338,21 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 	if m.Buttons == 1 {
 		if el.Click != nil {
 			el.Click()
+		} else {
+			if *ExperimentalJsInsecure {
+				res, changed, err := browser.Website.d.TriggerClick(el.n.QueryRef())
+				if changed && err == nil {
+					browser.Website.html = res
+					browser.Website.layout(browser)
+					dui.MarkLayout(dui.Top.UI)
+					dui.MarkDraw(dui.Top.UI)
+					dui.Render()
+
+					return duit.Result{
+						Consumed: true,
+					}
+				}
+			}
 		}
 	}
 	x := m.Point.X
@@ -365,6 +383,10 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 
 // makeLink of el and its children
 func (el *Element) makeLink(href string) {
+	if href == "" || strings.HasPrefix(href, "#") || strings.Contains(href, "javascript:void(0)") {
+		return
+	}
+
 	f := browser.SetAndLoadUrl(href)
 	TraverseTree(el, func(ui duit.UI) {
 		el, ok := ui.(*Element)
@@ -818,8 +840,11 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			var innerContent duit.UI
 			if nodes.IsPureTextContent(*n) {
 				t := nodes.ContentFrom(*n)
-				if s, ok := n.Map.Declarations["list-style"]; !ok || s.Value != "none" {
-					t = "• " + t
+
+				if ul := n.Ancestor("ul"); ul != nil {
+					if s, ok := ul.Map.Declarations["list-style"]; !ok || s.Value != "none" {
+						t = "• " + t
+					}
 				}
 				innerContent = &ColoredLabel{
 					Label: &duit.Label{
@@ -839,7 +864,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			)
 		case "a":
 			var href string
-			for _, a := range n.Attr {
+			for _, a := range n.Attrs {
 				if a.Key == "href" {
 					href = a.Val
 				}
@@ -850,7 +875,6 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 					Label: &duit.Label{
 						Text:  nodes.ContentFrom(*n),
 						Font:  n.Font(),
-						Click: browser.SetAndLoadUrl(href),
 					},
 					n: n,
 				}

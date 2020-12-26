@@ -18,7 +18,7 @@ type Node struct {
 	DomSubtree *html.Node
 	Text string
 	Wrappable bool
-	Attr []html.Attribute
+	Attrs []html.Attribute
 	style.Map
 	Children []*Node
 	Parent *Node
@@ -41,7 +41,7 @@ func NewNodeTree(doc *html.Node, cs style.Map, nodeMap map[*html.Node]style.Map,
 		//Data:           data,
 		//Type:           doc.Type,
 		DomSubtree:   doc,
-		Attr:           doc.Attr,
+		Attrs:           doc.Attr,
 		Map: ncs,
 		Children:       make([]*Node, 0, 2),
 		Parent: parent,
@@ -80,6 +80,9 @@ func (n Node) Data() string {
 
 // Ancestor of tag
 func (n *Node) Ancestor(tag string) *Node {
+	if n.DomSubtree == nil {
+		return nil
+	}
 	log.Printf("<%v>.ParentForm()", n.DomSubtree.Data)
 	if n.DomSubtree.Data == tag {
 		log.Printf("  I'm a %v :-)", tag)
@@ -92,13 +95,28 @@ func (n *Node) Ancestor(tag string) *Node {
 	return nil
 }
 
+func (n *Node) Attr(k string) string {
+	for _, a := range n.Attrs {
+		if a.Key == k {
+			return a.Val
+		}
+	}
+	return ""
+}
+
 func (n *Node) QueryRef() string {
+	if id := n.Attr("id"); id != "" {
+		return "#" + id
+	}
+
 	path := make([]string, 0, 5)
-	path = append(path, n.Data())
+	if n.Type() != html.TextNode {
+		path = append(path, n.Data())
+	}
 	for p := n.Parent; p != nil; p = p.Parent {
 		if p.Data() != "html" && p.Data() != "body" {
 			path = append([]string{p.Data()}, path...)
-		} 
+		}
 	}
 	return strings.TrimSpace(strings.Join(path, " "))
 }

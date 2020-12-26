@@ -161,11 +161,11 @@ func TestTriggerClick(t *testing.T) {
 	if res != "Hello" {
 		t.Fatalf(res)
 	}
-	_, ok, err := d.TriggerClick("h1")
+	_, changed, err := d.TriggerClick("h1")
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	if !ok {
+	if changed {
 		t.Fatal()
 	}
 	res, err = d.Export("clicked")

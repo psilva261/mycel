@@ -160,7 +160,7 @@ Document.prototype = Object.create(ContainerNode.prototype, {
   },
 
   // XXX: DOMCore may remove documentURI, so it is NYI for now
-  documentURI: { get: function() { return this._address; }, set: utils.nyi },
+  documentURI: { get: function() { return this._address; }, set: utils.nyi.bind(this, 'set documentURI') },
   compatMode: { get: function() {
     // The _quirks property is set by the HTML parser
     return this._quirks ? 'BackCompat' : 'CSS1Compat';
@@ -366,15 +366,15 @@ Document.prototype = Object.create(ContainerNode.prototype, {
   characterSet: { get: function characterSet() { return "UTF-8"; } },
   contentType: { get: function contentType() { return this._contentType; } },
   URL: { get: function URL() { return this._address; } },
-  domain: { get: utils.nyi, set: utils.nyi },
-  referrer: { get: utils.nyi },
-  cookie: { get: utils.nyi, set: utils.nyi },
-  lastModified: { get: utils.nyi },
+  domain: { get: utils.nyi.bind(this, 'domain'), set: utils.nyi.bind(this, 'domain') },
+  referrer: { get: utils.nyi.bind(this, 'referrer') },
+  cookie: { get: utils.nyi.bind(this, 'cookie get'), set: utils.nyi.bind(this, 'cookie set') },
+  lastModified: { get: utils.nyi.bind(this, 'lastModified get') },
   location: {
 	get: function() {
 	  return this.defaultView ? this.defaultView.location : null; // gh #75
 	},
-	set: utils.nyi
+	set: utils.nyi.bind(this, 'location set')
   },
   _titleElement: {
     get: function() {

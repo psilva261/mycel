@@ -109,11 +109,7 @@ func (d *Domino) Exec(script string) (err error) {
 	if *DebugDumpJS {
 		ioutil.WriteFile("main.js", []byte(SCRIPT), 0644)
 	}
-	prg, err := goja.Compile("main.js", SCRIPT, false)
-	if err != nil {
-		IntrospectError(err, SCRIPT)
-		return fmt.Errorf("compile: %w", err)
-	}
+
 	ready := make(chan int)
 	go func() {
 		d.loop.RunOnLoop(func(vm *goja.Runtime) {
@@ -136,7 +132,7 @@ func (d *Domino) Exec(script string) (err error) {
 				HTML: d.html,
 				Buf:  "yolo",
 			})
-			_, err := vm.RunProgram(prg)
+			_, err := vm.RunString(SCRIPT)
 			if err != nil {
 				log.Printf("run program: %v", err)
 				IntrospectError(err, script)
@@ -172,13 +168,23 @@ func (d *Domino) Exec6(script string) (err error) {
 }
 
 func (d *Domino) Export(expr string) (res string, err error) {
-	v, err := d.vm.RunString(expr)
+	var v goja.Value
+	ch := make(chan int, 1)
+
+	d.loop.RunOnLoop(func(vm *goja.Runtime) {
+		v, err = vm.RunString(expr)
+		ch <- 1
+	})
+
+	<-ch
+
 	if err != nil {
 		return "", fmt.Errorf("export: %w", err)
 	}
 	if v != nil {
 		res = fmt.Sprintf("%v", v.Export())
 	}
+
 	return
 }
 
@@ -186,21 +192,35 @@ func (d *Domino) Export(expr string) (res string, err error) {
 // ...then HTML5 parse it, diff the node tree
 // (probably faster and cleaner than anything else)
 func (d *Domino) TriggerClick(selector string) (newHTML string, ok bool, err error) {
-	res, err := d.vm.RunString(`
-		var sel = '` + selector + `';
-		var sell = document.querySelector(sel);
-		if (sell._listeners && sell._listeners.click) {
-			var selfn = sell.click.bind(sell);
-			if (selfn) {
-				selfn();
+	var res goja.Value
+	ch := make(chan int, 1)
+
+	d.loop.RunOnLoop(func(vm *goja.Runtime) {
+		res, err = vm.RunString(`
+			var sel = '` + selector + `';
+			console.log('sel=');
+			console.log(sel);
+			var sell = document.querySelector(sel);
+			if (sell._listeners && sell._listeners.click) {
+				var selfn = sell.click.bind(sell);
+				if (selfn) {
+					selfn();
+				}
+				!!selfn;
+			} else {
+				false;
 			}
-			!!selfn;
-		} else {
-			false;
-		}
-	`)
+		`)
+		ch <- 1
+	})
+	<- ch
+
 
 	ok = fmt.Sprintf("%v", res) == "true"
+
+	if ok {
+		newHTML, ok, err = d.TrackChanges()
+	}
 
 	return
 }
@@ -209,9 +229,7 @@ func (d *Domino) TriggerClick(selector string) (newHTML string, ok bool, err err
 func (d *Domino) PutAttr(selector, attr, val string) (ok bool, err error) {
 	res, err := d.vm.RunString(`
 		var sel = '` + selector + `';
-		console.log('sel=' + sel);
 		var sell = document.querySelector(sel);
-		console.log('sell=' + sell);
 		sell.attr('` + attr + `', '` + val + `');
 		!!sell;
 	`)
@@ -297,7 +315,7 @@ func iterateJsElements(doc *nodes.Node, fn func(src string, inlineCode string)) 
 			isJS := true
 			src := ""
 
-			for _, a := range n.Attr {
+			for _, a := range n.Attrs {
 				switch strings.ToLower(a.Key) {
 				case "type":
 					t, err := opossum.NewContentType(a.Val, nil)

@@ -159,22 +159,25 @@ func (w *Website) layout(f opossum.Fetcher) {
 	log.Flush()
 }
 
-func formData(n html.Node) (data url.Values) {
+func formData(n, submitBtn *html.Node) (data url.Values) {
 	data = make(url.Values)
 	if n.Data == "input" {
-		if k := attr(n, "name"); k != "" {
-			data.Set(k, attr(n, "value"))
+		if attr(*n, "type") == "submit" && n != submitBtn {
+			return
+		}
+		if k := attr(*n, "name"); k != "" {
+			data.Set(k, attr(*n, "value"))
 		}
 	}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		for k, vs := range formData(*c) {
+		for k, vs := range formData(c, submitBtn) {
 			data.Set(k, vs[0]) // TODO: what aboot the rest?
 		}
 	}
 	return
 }
 
-func (b *Browser) submit(form *html.Node) {
+func (b *Browser) submit(form *html.Node, submitBtn *html.Node) {
 	var err error
 	method := "GET" // TODO
 	if m := attr(*form, "method"); m != "" {
@@ -193,7 +196,7 @@ func (b *Browser) submit(form *html.Node) {
 	var contentType opossum.ContentType
 	if method == "GET" {
 		q := uri.Query()
-		for k, vs := range formData(*form) {
+		for k, vs := range formData(form, submitBtn) {
 			log.Printf("add query info %v => %v", k, vs[0])
 			q.Set(k, vs[0]) // TODO: what is with the rest?
 		}
@@ -202,7 +205,7 @@ func (b *Browser) submit(form *html.Node) {
 		buf, contentType, err = b.get(uri, true)
 		log.Printf("uri=%v", uri.String())
 	} else {
-		buf, contentType, err = b.PostForm(uri, formData(*form))
+		buf, contentType, err = b.PostForm(uri, formData(form, submitBtn))
 	}
 	if err == nil {
 		if contentType.IsHTML() {
