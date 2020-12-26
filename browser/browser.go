@@ -29,6 +29,8 @@ const debugPrintHtml = false
 const stashElements = true
 const experimentalUseSlicedDrawing = false
 
+var cursor = [2 * 16]uint8{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 90, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}
+
 var DebugDumpCSS *bool
 var ExperimentalJsInsecure *bool
 var EnableNoScriptTag *bool
@@ -277,24 +279,36 @@ func (el *Element) Mark(self *duit.Kid, o duit.UI, forLayout bool) (marked bool)
 }
 
 func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
-	t := attr(*n.DomSubtree, "value")
-	if t == "" {
+	var t string
+
+	if v := attr(*n.DomSubtree, "value"); v != "" {
+		t = v
+	} else if nodes.IsPureTextContent(*n) {
+		t = strings.TrimSpace(nodes.ContentFrom(*n))
+	} else {
 		t = "Submit"
 	}
+
+	click := func() (r duit.Event) {
+		f := n.Ancestor("form")
+
+		if f == nil {
+			return
+		}
+
+		b.submit(f, n)
+
+		return duit.Event{
+			Consumed:   true,
+			NeedLayout: true,
+			NeedDraw:   true,
+		}
+	}
+
 	btn := &duit.Button{
 		Text: t,
 		Font: n.Font(),
-		Click: func() (r duit.Event) {
-			if f := n.Ancestor("form"); f != nil {
-				b.submit(f.DomSubtree, n.DomSubtree)
-				return duit.Event{
-					Consumed:   true,
-					NeedLayout: true,
-					NeedDraw:   true,
-				}
-			}
-			return
-		},
+		Click: click,
 	}
 	return NewElement(btn, n)
 }
@@ -315,7 +329,7 @@ func NewInputField(n *nodes.Node) *Element {
 				},
 				Keys: func(k rune, m draw.Mouse) (e duit.Event) {
 					if k == 10 {
-						browser.submit(n.Ancestor("form").DomSubtree, nil)
+						browser.submit(n.Ancestor("form"), nil)
 						return duit.Event{
 							Consumed:   true,
 							NeedLayout: true,
@@ -335,50 +349,63 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 	if el == nil {
 		return
 	}
-	if m.Buttons == 1 {
-		if el.Click != nil {
-			el.Click()
-		} else {
-			if *ExperimentalJsInsecure {
-				res, changed, err := browser.Website.d.TriggerClick(el.n.QueryRef())
-				if changed && err == nil {
-					browser.Website.html = res
-					browser.Website.layout(browser)
-					dui.MarkLayout(dui.Top.UI)
-					dui.MarkDraw(dui.Top.UI)
-					dui.Render()
 
-					return duit.Result{
-						Consumed: true,
-					}
-				}
+	if m.Buttons == 1 {
+		if el.click() {
+			return duit.Result{
+				Consumed: true,
 			}
 		}
 	}
+
 	x := m.Point.X
 	y := m.Point.Y
 	maxX := self.R.Dx()
 	maxY := self.R.Dy()
-	if 5 <= x && x <= (maxX-5) && 5 <= y && y <= (maxY-5) {
-		//log.Printf("Mouse %v    (m ~ %v); Kid.R.Dx/Dy=%v/%v\n", el.UI, m.Point, self.R.Dx(), self.R.Dy())
-		if el.IsLink {
-			yolo := [2 * 16]uint8{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 90, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}
-			dui.Display.SetCursor(&draw.Cursor{
-				Set: yolo,
-			})
-			if m.Buttons == 0 {
-				r.Consumed = true
-				return r
-			}
+	if 5 <= x && x <= (maxX-5) && 5 <= y && y <= (maxY-5) && el.IsLink {
+		dui.Display.SetCursor(&draw.Cursor{
+			Set: cursor,
+		})
+
+		if m.Buttons == 0 {
+			r.Consumed = true
+			return r
 		}
 	} else {
-		if el.IsLink {
-			dui.Display.SetCursor(nil)
-		} else {
-			dui.Display.SetCursor(nil)
-		}
+		dui.Display.SetCursor(nil)
 	}
+
 	return el.UI.Mouse(dui, self, m, origM, orig)
+}
+
+func (el *Element) click() (consumed bool) {
+	if el.Click != nil {
+		el.Click()
+		return
+	}
+
+	if !*ExperimentalJsInsecure {
+		return
+	}
+
+	q := el.n.QueryRef()
+	res, consumed, err := browser.Website.d.TriggerClick(q)
+	if err != nil {
+		log.Errorf("trigger click %v: %v", q, err)
+		return
+	}
+
+	if !consumed {
+		return
+	}
+
+	browser.Website.html = res
+	browser.Website.layout(browser)
+	dui.MarkLayout(dui.Top.UI)
+	dui.MarkDraw(dui.Top.UI)
+	dui.Render()
+
+	return
 }
 
 // makeLink of el and its children
@@ -438,9 +465,9 @@ func setAttr(n *html.Node, key, val string) {
 func Arrange(n *nodes.Node, elements ...*Element) *Element {
 	if n.IsFlex() {
 		if n.IsFlexDirectionRow() {
-			return NewElement(horizontalSequenceOf(true, elements), n)
+			return NewElement(horizontalSeq(true, elements), n)
 		} else {
-			return NewElement(verticalSequenceOf(elements), n)
+			return NewElement(verticalSeq(elements), n)
 		}
 	}
 
@@ -474,20 +501,20 @@ func Arrange(n *nodes.Node, elements ...*Element) *Element {
 			return rows[0][0]
 		}
 		numElements++
-		return NewElement(horizontalSequenceOf(true, rows[0]), n)
+		return NewElement(horizontalSeq(true, rows[0]), n)
 	} else {
 		seqs := make([]*Element, 0, len(rows))
 		for _, row := range rows {
-			seq := horizontalSequenceOf(true, row)
+			seq := horizontalSeq(true, row)
 			numElements++
 			seqs = append(seqs, NewElement(seq, n))
 		}
 		numElements++
-		return NewElement(verticalSequenceOf(seqs), n)
+		return NewElement(verticalSeq(seqs), n)
 	}
 }
 
-func horizontalSequenceOf(wrap bool, es []*Element) duit.UI {
+func horizontalSeq(wrap bool, es []*Element) duit.UI {
 	if len(es) == 0 {
 		return nil
 	} else if len(es) == 1 {
@@ -547,7 +574,7 @@ func horizontalSequenceOf(wrap bool, es []*Element) duit.UI {
 	}
 }
 
-func verticalSequenceOf(es []*Element) duit.UI {
+func verticalSeq(es []*Element) duit.UI {
 	if len(es) == 0 {
 		return nil
 	} else if len(es) == 1 {
@@ -701,13 +728,13 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 
 			log.Printf("len rowsEls=%v", len(rowEls))
 			if len(rowEls) > 0 {
-				seq := horizontalSequenceOf(false, rowEls)
+				seq := horizontalSeq(false, rowEls)
 				numElements++
 				seqs = append(seqs, NewElement(seq, row.n))
 			}
 		}
 		numElements++
-		return NewElement(verticalSequenceOf(seqs), n)
+		return NewElement(verticalSeq(seqs), n)
 	}
 }
 

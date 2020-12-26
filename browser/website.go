@@ -159,17 +159,17 @@ func (w *Website) layout(f opossum.Fetcher) {
 	log.Flush()
 }
 
-func formData(n, submitBtn *html.Node) (data url.Values) {
+func formData(n, submitBtn *nodes.Node) (data url.Values) {
 	data = make(url.Values)
-	if n.Data == "input" {
-		if attr(*n, "type") == "submit" && n != submitBtn {
+	if n.Data() == "input" {
+		if n.Attr("type") == "submit" && (submitBtn == nil || n.DomSubtree != submitBtn.DomSubtree) {
 			return
 		}
-		if k := attr(*n, "name"); k != "" {
-			data.Set(k, attr(*n, "value"))
+		if k := n.Attr("name"); k != "" {
+			data.Set(k, n.Attr("value"))
 		}
 	}
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
+	for _, c := range n.Children {
 		for k, vs := range formData(c, submitBtn) {
 			data.Set(k, vs[0]) // TODO: what aboot the rest?
 		}
@@ -177,43 +177,46 @@ func formData(n, submitBtn *html.Node) (data url.Values) {
 	return
 }
 
-func (b *Browser) submit(form *html.Node, submitBtn *html.Node) {
+func (b *Browser) submit(form, submitBtn *nodes.Node) {
 	var err error
+	var buf []byte
+	var contentType opossum.ContentType
+
 	method := "GET" // TODO
-	if m := attr(*form, "method"); m != "" {
+	if m := form.Attr("method"); m != "" {
 		method = strings.ToUpper(m)
 	}
+
 	uri := b.URL()
-	log.Printf("form = %+v", form)
-	if action := attr(*form, "action"); action != "" {
+	if action := form.Attr("action"); action != "" {
 		uri, err = b.LinkedUrl(action)
 		if err != nil {
 			log.Printf("error parsing %v", action)
 			return
 		}
 	}
-	var buf []byte
-	var contentType opossum.ContentType
+
+
 	if method == "GET" {
 		q := uri.Query()
 		for k, vs := range formData(form, submitBtn) {
-			log.Printf("add query info %v => %v", k, vs[0])
 			q.Set(k, vs[0]) // TODO: what is with the rest?
 		}
 		uri.RawQuery = q.Encode()
-		log.Printf("uri raw query=%v", uri.RawQuery)
 		buf, contentType, err = b.get(uri, true)
-		log.Printf("uri=%v", uri.String())
 	} else {
 		buf, contentType, err = b.PostForm(uri, formData(form, submitBtn))
 	}
-	if err == nil {
-		if contentType.IsHTML() {
-			b.render(buf)
-		} else {
-			log.Fatalf("post: unexpected %v", contentType)
-		}
-	} else {
-		log.Printf("post form: %v", err)
+
+	if err != nil {
+		log.Errorf("submit form: %v", err)
+		return
 	}
+
+	if !contentType.IsHTML() {
+		log.Errorf("post: unexpected %v", contentType)
+		return
+	}
+
+	b.render(buf)
 }
