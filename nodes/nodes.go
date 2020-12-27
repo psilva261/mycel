@@ -1,6 +1,7 @@
 package nodes
 
 import (
+	"bytes"
 	"golang.org/x/net/html"
 	"opossum/logger"
 	"opossum/style"
@@ -95,6 +96,18 @@ func (n *Node) Ancestor(tag string) *Node {
 	return nil
 }
 
+func (n *Node) Find(tag string) (c *Node) {
+	for _, cc := range n.Children {
+		if cc.Data() == tag {
+			return cc
+		} else if f := cc.Find(tag); f != nil {
+			return f
+		}
+	}
+
+	return
+}
+
 func (n *Node) Attr(k string) string {
 	for _, a := range n.Attrs {
 		if a.Key == k {
@@ -148,3 +161,12 @@ func ContentFrom(n Node) string {
 
 	return strings.TrimSpace(content)
 }
+
+func (n *Node) Serialized() (string, error) {
+	var b bytes.Buffer
+	
+	err := html.Render(&b, n.DomSubtree)
+	
+	return b.String(), err
+}
+

@@ -2,6 +2,7 @@ package browser
 
 import (
 	"9fans.net/go/draw"
+	"bytes"
 	"errors"
 	"fmt"
 	"golang.org/x/net/html"
@@ -133,17 +134,39 @@ func NewImage(n *nodes.Node) duit.UI {
 }
 
 func newImage(n *nodes.Node) (ui duit.UI, err error) {
+	var i *draw.Image
+	var cached bool
+	src := attr(*n.DomSubtree, "src")
+
 	if display == nil {
 		// probably called from a unit test
 		return nil, fmt.Errorf("display nil")
 	}
-	src := attr(*n.DomSubtree, "src")
+
+	if n.Data() == "svg" {
+		xml, err := n.Serialized()
+		if  err != nil {
+			return nil, fmt.Errorf("serialize: %w", err)
+		}
+		buf, err := img.Svg(xml, n.Width(), n.Height())
+		if err == nil {
+			var err error
+			r := bytes.NewReader(buf)
+			i, err = duit.ReadImage(display, r)
+			if err != nil {
+				return nil, fmt.Errorf("read image %v: %v", xml, err)
+			}
+			
+			goto img_elem
+		} else {
+			return nil, fmt.Errorf("img svg %v: %v", xml, err)
+		}
+	}
+
 	if src == "" {
 		return nil, fmt.Errorf("no src in %+v", n.Attrs)
 	}
 
-	var i *draw.Image
-	var cached bool
 	if i, cached = imageCache[src]; !cached {
 		r, err := img.Load(browser, src, n.Width(), n.Height())
 		if err != nil {
@@ -158,6 +181,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 		imageCache[src] = i
 	}
 
+img_elem:
 	return NewElement(
 		&Image{
 			Image: &duit.Image{
@@ -283,8 +307,8 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 
 	if v := attr(*n.DomSubtree, "value"); v != "" {
 		t = v
-	} else if nodes.IsPureTextContent(*n) {
-		t = strings.TrimSpace(nodes.ContentFrom(*n))
+	} else if c := strings.TrimSpace(nodes.ContentFrom(*n)); c != "" {
+		t = c
 	} else {
 		t = "Submit"
 	}
@@ -797,7 +821,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 
 	if n.Type() == html.ElementNode {
 		switch n.Data() {
-		case "style", "script", "svg", "template":
+		case "style", "script", "template":
 			return nil
 		case "input":
 			numElements++
@@ -851,7 +875,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				innerContent,
 				n,
 			)
-		case "img":
+		case "img", "svg":
 			numElements++
 			return NewElement(
 				NewImage(n),
@@ -1230,7 +1254,7 @@ func (b *Browser) showBodyMessage(msg string) {
 func (b *Browser) LoadUrl() (e duit.Event) {
 	addr := b.LocationField.Text
 	if !strings.HasPrefix(addr, "http") {
-		addr = "https://" + addr
+		addr = "http://" + addr
 	}
 	log.Printf("Getting %v...", addr)
 	url, err := url.Parse(addr)

@@ -310,6 +310,7 @@ func (cs Map) Font() *draw.Font {
 
 func (cs Map) preferedFontName(preferences []string) string {
 	avails := availableFontNames
+
 	if len(avails) == 0 {
 		return preferences[0]
 	}
@@ -319,7 +320,7 @@ func (cs Map) preferedFontName(preferences []string) string {
 		pref, preferences = preferences[0], preferences[1:]
 
 		for _, avail := range avails {
-			if pref == avail {
+			if pref == strings.TrimSuffix(avail, "/") {
 				return avail
 			}
 		}

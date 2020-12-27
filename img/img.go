@@ -62,6 +62,33 @@ func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) 
 	return
 }
 
+// Svg returns the svg+xml encoded as jpg with the sizing defined in
+// viewbox unless w and h != 0
+func Svg(data string, w, h int) (bs []byte, err error) {
+	data = strings.ReplaceAll(data, "currentColor", "black")
+	r := bytes.NewReader([]byte(data))
+	icon, err := oksvg.ReadIconStream(r)
+	if err != nil {
+		return nil, fmt.Errorf("read icon stream: %w", err)
+	}
+
+	if w == 0 || h == 0 {
+		w = int(icon.ViewBox.W)
+		h = int(icon.ViewBox.H)
+	}
+
+	icon.SetTarget(0, 0, float64(w), float64(h))
+	rgba := image.NewRGBA(image.Rect(0, 0, w, h))
+	icon.Draw(rasterx.NewDasher(w, h, rasterx.NewScannerGV(w, h, rgba, rgba.Bounds())), 1)
+
+	buf := bytes.NewBufferString("")
+	if err = jpeg.Encode(buf, rgba, nil); err != nil {
+		return nil, fmt.Errorf("encode: %w", err)
+	}
+
+	return buf.Bytes(), nil
+}
+
 // Load and resize to w and h if != 0
 func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
 	var imgUrl *url.URL
@@ -82,20 +109,10 @@ func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
 	}
 
 	if contentType.IsSvg() {
-		r := bytes.NewReader(data)
-		icon, _ := oksvg.ReadIconStream(r)
-		if w == 0 || h == 0 {
-			w = 20
-			h = 20
+		data, err = Svg(string(data), w, h)
+		if err != nil {
+			return nil, fmt.Errorf("svg: %v", err)
 		}
-		icon.SetTarget(0, 0, float64(w), float64(h))
-		rgba := image.NewRGBA(image.Rect(0, 0, w, h))
-		icon.Draw(rasterx.NewDasher(w, h, rasterx.NewScannerGV(w, h, rgba, rgba.Bounds())), 1)
-		buf := bytes.NewBufferString("")
-		if err = jpeg.Encode(buf, rgba, nil); err != nil {
-			return nil, fmt.Errorf("encode: %w", err)
-		}
-		data = buf.Bytes()
 	} else if w != 0 || h != 0 {
 		image, _, err := image.Decode(bytes.NewReader(data))
 		if err != nil {
