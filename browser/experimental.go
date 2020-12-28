@@ -3,7 +3,6 @@ package browser
 import (
 	"fmt"
 	"image"
-	"strings"
 	"opossum/domino"
 	"opossum/nodes"
 	"time"
@@ -137,42 +136,16 @@ func CleanTree(ui duit.UI) {
 	})
 }
 
-func processJS(htm string) (resHtm string, err error) {
-	_ = strings.Replace(htm, "window.", "", -1)
-	d := domino.NewDomino(htm)
-	d.Start()
-	if err = d.ExecInlinedScripts(); err != nil {
-		return "", fmt.Errorf("exec <script>s: %w", err)
-	}
-	time.Sleep(time.Second)
-	resHtm, changed, err := d.TrackChanges()
-	log.Infof("processJS: changes = %v", changed)
-	d.Stop()
-	return
-}
-
 func processJS2(d *domino.Domino, doc *nodes.Node, scripts []string) (resHtm string, err error) {
-	code := ""
+	initialized := false
 	for _, script := range scripts {
-		code += `
-			try {
-		` + script + `;
-		` + fmt.Sprintf(`
-			console.log('==============');
-			console.log('Success!');
-			console.log('==============');
-		`) + `
-			} catch(e) {
-				console.log('==============');
-				console.log('Catch:');
-				console.log(e);
-				console.log('==============');
-			}
-		`
+		if _, err := d.Exec/*6*/(script, !initialized); err == nil {
+			initialized = true
+		} else {
+			log.Errorf("exec <script>: %v", err)
+		}
 	}
-	if err = d.Exec/*6*/(code); err != nil {
-		return "", fmt.Errorf("exec <script>s: %w", err)
-	}
+
 	time.Sleep(time.Second)
 	resHtm, changed, err := d.TrackChanges()
 	if err != nil {

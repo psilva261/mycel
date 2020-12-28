@@ -23,23 +23,34 @@ func init() {
 func TestSimple(t *testing.T) {
 	d := NewDomino(simpleHTML)
 	d.Start()
-	script := `
-	console.log('Hello!!');
-	var numberOne = 1;
+	s := `
+	var state = 'empty';
+	var a = 1;
+	b = 2;
 	`
-	err := d.Exec(script)
+	_, err := d.Exec(s, true)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	res, err := d.Export("numberOne+1")
-	t.Logf("res=%v", res)
+	s2 := `
+	(function() {
+		if (state !== 'empty') throw new Exception(state);
+
+		state = a + b;
+	})()
+	var a = 1;
+	b = 2;
+	`
+	_, err = d.Exec(s2, false)
 	if err != nil {
 		t.Fatalf("%v", err)
-	}
-	if res != "2" {
-		t.Fatal()
 	}
 	d.Stop()
+}
+
+func TestGlobals(t *testing.T) {
+	d := NewDomino(simpleHTML)
+	d.Start()
 }
 
 func TestJQuery(t *testing.T) {
@@ -66,11 +77,11 @@ func TestJQuery(t *testing.T) {
 	var numberOne = 1;
 	`
 	_=buf
-	err = d.Exec(string(buf) + ";" + script)
+	_, err = d.Exec(string(buf) + ";" + script, true)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	res, err := d.Export("numberOne+1")
+	res, err := d.Exec("numberOne+1", false)
 	t.Logf("res=%v", res)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -111,13 +122,13 @@ func TestRun(t *testing.T) {
 	`
 	d := NewDomino(simpleHTML)
 	d.Start()
-	err = d.Exec(SCRIPT)
+	_, err = d.Exec(SCRIPT, true)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
 	time.Sleep(2 * time.Second)
-	res, err := d.Export("$('h1').html()")
+	res, err := d.Exec("$('h1').html()", false)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -148,18 +159,22 @@ func TestTriggerClick(t *testing.T) {
 	`
 	d := NewDomino(simpleHTML)
 	d.Start()
-	err = d.Exec(SCRIPT)
+	_, err = d.Exec(SCRIPT, true)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
 	//time.Sleep(2 * time.Second)
-	res, err := d.Export("$('h1').html()")
+	res, err := d.Exec("$('h1').html()", false)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	if res != "Hello" {
 		t.Fatalf(res)
+	}
+
+	if _, _, err = d.TrackChanges(); err != nil {
+		t.Fatalf(err.Error())
 	}
 	_, changed, err := d.TriggerClick("h1")
 	if err != nil {
@@ -168,7 +183,7 @@ func TestTriggerClick(t *testing.T) {
 	if changed {
 		t.Fatal()
 	}
-	res, err = d.Export("clicked")
+	res, err = d.Exec("clicked", false)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -207,13 +222,13 @@ func TestDomChanged(t *testing.T) {
 	`
 	d := NewDomino(simpleHTML)
 	d.Start()
-	err = d.Exec(SCRIPT)
+	_, err = d.Exec(SCRIPT, true)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
 	time.Sleep(2 * time.Second)
-	res, err := d.Export("$('h1').html()")
+	res, err := d.Exec("$('h1').html()", false)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -221,7 +236,7 @@ func TestDomChanged(t *testing.T) {
 		t.Fatalf(res)
 	}*/
 	_=res
-	res, err = d.Export("$('h1').html('minor updates :-)'); $('h1').html();")
+	res, err = d.Exec("$('h1').html('minor updates :-)'); $('h1').html();", false)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -233,8 +248,12 @@ func TestDomChanged(t *testing.T) {
 func TestTrackChanges(t *testing.T) {
 	d := NewDomino(simpleHTML)
 	d.Start()
-	err := d.Exec(``)
+	_, err := d.Exec(``, true)
 	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	// 0th time: init
+	if _, _, err = d.TrackChanges(); err != nil {
 		t.Fatalf(err.Error())
 	}
 	// 1st time: no change
@@ -259,7 +278,7 @@ func TestTrackChanges(t *testing.T) {
 	if changed == true {
 		t.Fatal()
 	}
-	_, err = d.Export("document.getElementById('title').innerHTML='new title'; true;")
+	_, err = d.Exec("document.getElementById('title').innerHTML='new title'; true;", false)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -280,7 +299,7 @@ func TestTrackChanges(t *testing.T) {
 	d.Stop()
 }
 
-func TestExecInlinedScripts(t *testing.T) {
+/*func TestExecInlinedScripts(t *testing.T) {
 	const h = `
 	<html>
 	<body>
@@ -305,9 +324,9 @@ func TestExecInlinedScripts(t *testing.T) {
 		t.Fatalf(res)
 	}
 	d.Stop()
-}
+}*/
 
-func TestWindowEqualsGlobal(t *testing.T) {
+/*func TestWindowEqualsGlobal(t *testing.T) {
 	const h = `
 	<html>
 	<body>
@@ -347,7 +366,7 @@ func TestWindowEqualsGlobal(t *testing.T) {
 		t.Fatalf(res)
 	}
 	d.Stop()
-}
+}*/
 
 func TestES6(t *testing.T) {
 	d := NewDomino(simpleHTML)
@@ -356,11 +375,11 @@ func TestES6(t *testing.T) {
 	console.log('Hello!!');
 	const numberOne = 1;
 	`
-	err := d.Exec6(script)
+	_, err := d.Exec6(script)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	res, err := d.Export("numberOne+1")
+	res, err := d.Exec("numberOne+1", false)
 	t.Logf("res=%v", res)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -377,11 +396,11 @@ func TestWindowParent(t *testing.T) {
 	script := `
 	console.log('Hello!!')
 	`
-	err := d.Exec(script)
+	_, err := d.Exec(script, true)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	res, err := d.Export("window === window.parent")
+	res, err := d.Exec("window === window.parent", false)
 	t.Logf("res=%v", res)
 	if err != nil {
 		t.Fatalf("%v", err)

@@ -20,8 +20,8 @@ import (
 var DebugDumpJS *bool
 
 type Domino struct {
+	initialized bool
 	loop       *eventloop.EventLoop
-	vm         *goja.Runtime
 	html       string
 	outputHtml string
 	domChanged chan int
@@ -56,7 +56,6 @@ func IntrospectError(err error, script string) {
 		yx := strings.Split(yxStart, ":")
 		y, _ := strconv.Atoi(yx[0])
 		x, _ := strconv.Atoi(yx[1])
-		log.Printf("line %v, column %v", y, x)
 		lines := strings.Split(script, "\n")
 
 		if wholeLine := lines[y-1]; len(wholeLine) > 100 {
@@ -81,18 +80,19 @@ func IntrospectError(err error, script string) {
 	}
 }
 
-func (d *Domino) Exec(script string) (err error) {
+func (d *Domino) Exec(script string, initial bool) (res string, err error) {
+	if !initial && !d.initialized {
+		initial = true
+	}
 	script = strings.Replace(script, "const ", "var ", -1)
 	script = strings.Replace(script, "let ", "var ", -1)
 	script = strings.Replace(script, "<!--", "", -1)
 	SCRIPT := `
-	    global = {};
-	    //global.__domino_frozen__ = true; // Must precede any require('domino')
-	    var domino = require('domino-lib/index');
-	    var Element = domino.impl.Element; // etc
+		global = {};
+		//global.__domino_frozen__ = true; // Must precede any require('domino')
+		var domino = require('domino-lib/index');
+		var Element = domino.impl.Element; // etc
 
-	    // JSDOM also knows the style tag
-	    // https://github.com/jsdom/jsdom/issues/2485
 		Object.assign(this, domino.createWindow(s.html, 'http://example.com'));
 		window = this;
 		window.parent = window;
@@ -102,54 +102,57 @@ func (d *Domino) Exec(script string) (err error) {
 		window.location.href = 'http://example.com';
 		navigator = {};
 		HTMLElement = domino.impl.HTMLElement;
-	    // Fire DOMContentLoaded
-	    // to trigger $(document)readfy!!!!!!!
-	    document.close();
+		// Fire DOMContentLoaded to trigger $(document).ready(..)
+		document.close();
 	` + script
+	if !initial {
+		SCRIPT = script
+	}
 	if *DebugDumpJS {
 		ioutil.WriteFile("main.js", []byte(SCRIPT), 0644)
 	}
 
-	ready := make(chan int)
+	ready := make(chan goja.Value)
 	go func() {
 		d.loop.RunOnLoop(func(vm *goja.Runtime) {
 			log.Printf("RunOnLoop")
-			registry := require.NewRegistry(
-				require.WithGlobalFolders(".", ".."),
-			)
-			console.Enable(vm)
-			req := registry.Enable(vm)
-			_ = req
+			if initial {
+				registry := require.NewRegistry(
+					require.WithGlobalFolders(".", ".."),
+				)
+				console.Enable(vm)
+				req := registry.Enable(vm)
+				_ = req
 
-			vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
-			type S struct {
-				Buf  string `json:"buf"`
-				HTML string `json:"html"`
+				vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
+				type S struct {
+					Buf  string `json:"buf"`
+					HTML string `json:"html"`
+				}
+
+				vm.Set("s", S{
+					HTML: d.html,
+					Buf:  "yolo",
+				})
 			}
-			d.vm = vm
-
-			vm.Set("s", S{
-				HTML: d.html,
-				Buf:  "yolo",
-			})
-			_, err := vm.RunString(SCRIPT)
+			vv, err := vm.RunString(SCRIPT)
 			if err != nil {
 				log.Printf("run program: %v", err)
 				IntrospectError(err, script)
 			}
-			ready <- 1
+			ready <- vv
 		})
 	}()
-	<-ready
+	v := <-ready
 	<-time.After(10 * time.Millisecond)
-	//res = fmt.Sprintf("%v", v.Export())
-	if _, _, err = d.TrackChanges(); err != nil {
-		return fmt.Errorf("track changes: %w", err)
+	if v != nil {
+		res = v.String()
 	}
+	if err == nil { d.initialized=true }
 	return
 }
 
-func (d *Domino) Exec6(script string) (err error) {
+func (d *Domino) Exec6(script string) (res string, err error) {
 	babel.Init(4) // Setup 4 transformers (can be any number > 0)
 	r, err := babel.Transform(strings.NewReader(script), map[string]interface{}{
 		"plugins": []string{
@@ -158,67 +161,40 @@ func (d *Domino) Exec6(script string) (err error) {
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("babel: %v", err)
+		return "", fmt.Errorf("babel: %v", err)
 	}
 	buf, err := ioutil.ReadAll(r)
 	if err != nil {
-		return fmt.Errorf("read all: %v", err)
+		return "", fmt.Errorf("read all: %v", err)
 	}
-	return d.Exec(string(buf))
-}
-
-func (d *Domino) Export(expr string) (res string, err error) {
-	var v goja.Value
-	ch := make(chan int, 1)
-
-	d.loop.RunOnLoop(func(vm *goja.Runtime) {
-		v, err = vm.RunString(expr)
-		ch <- 1
-	})
-
-	<-ch
-
-	if err != nil {
-		return "", fmt.Errorf("export: %w", err)
-	}
-	if v != nil {
-		res = fmt.Sprintf("%v", v.Export())
-	}
-
-	return
+	return d.Exec(string(buf), true)
 }
 
 // TriggerClick, and return the result html
 // ...then HTML5 parse it, diff the node tree
 // (probably faster and cleaner than anything else)
 func (d *Domino) TriggerClick(selector string) (newHTML string, ok bool, err error) {
-	var res goja.Value
-	ch := make(chan int, 1)
+	res, err := d.Exec(`
+		var sel = '` + selector + `';
+		var el = document.querySelector(sel);
 
-	d.loop.RunOnLoop(func(vm *goja.Runtime) {
-		res, err = vm.RunString(`
-			var sel = '` + selector + `';
-			console.log('sel=');
-			console.log(sel);
-			var sell = document.querySelector(sel);
-			if (sell._listeners && sell._listeners.click) {
-				var selfn = sell.click.bind(sell);
-				if (selfn) {
-					selfn();
-				}
-				!!selfn;
-			} else {
-				false;
+		console.log('query ' + sel);
+
+		if (el._listeners && el._listeners.click) {
+			var fn = el.click.bind(el);
+
+			if (fn) {
+				console.log('  call click handler...');
+				fn();
 			}
-		`)
-		ch <- 1
-	})
-	<- ch
 
+			!!fn;
+		} else {
+			false;
+		}
+	`, false)
 
-	ok = fmt.Sprintf("%v", res) == "true"
-
-	if ok {
+	if ok = res == "true"; ok {
 		newHTML, ok, err = d.TrackChanges()
 	}
 
@@ -227,50 +203,26 @@ func (d *Domino) TriggerClick(selector string) (newHTML string, ok bool, err err
 
 // Put change into html (e.g. from input field mutation)
 func (d *Domino) PutAttr(selector, attr, val string) (ok bool, err error) {
-	res, err := d.vm.RunString(`
+	res, err := d.Exec(`
 		var sel = '` + selector + `';
-		var sell = document.querySelector(sel);
-		sell.attr('` + attr + `', '` + val + `');
-		!!sell;
-	`)
+		var el = document.querySelector(sel);
+		el.attr('` + attr + `', '` + val + `');
+		!!el;
+	`, false)
 
-	ok = fmt.Sprintf("%v", res) == "true"
+	ok = res == "true"
 
 	return
 }
 
 func (d *Domino) TrackChanges() (html string, changed bool, err error) {
-	html, err = d.Export("document.querySelector('html').innerHTML;")
+	html, err = d.Exec("document.querySelector('html').innerHTML;", false)
 	if err != nil {
 		return
 	}
 	changed = d.outputHtml != html
 	d.outputHtml = html
 	return
-}
-
-// https://stackoverflow.com/a/26716182
-// TODO: eval is evil
-func (d *Domino) ExecInlinedScripts() (err error) {
-	return d.Exec(`
-	navigator = {};
-
-    var scripts = Array.prototype.slice.call(document.getElementsByTagName("script"));
-    for (var i = 0; i < scripts.length; i++) {
-        if (scripts[i].src != "") {
-            var tag = document.createElement("script");
-            tag.src = scripts[i].src;
-            document.getElementsByTagName("head")[0].appendChild(tag);
-        }
-        else {
-        	try {
-            	eval.call(window, scripts[i].innerHTML);
-            } catch(e) {
-            	console.log(e);
-            }
-        }
-    }
-	`)
 }
 
 func Srcs(doc *nodes.Node) (srcs []string) {
