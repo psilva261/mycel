@@ -37,24 +37,7 @@ func init() {
 	logger.Quiet = flag.Bool("quiet", defaultQuietActive, "don't print info messages and non-fatal errors")
 }
 
-func Main() (err error) {
-	dui, err = duit.NewDUI("opossum", nil) // TODO: rm global var
-	if err != nil {
-		return fmt.Errorf("new dui: %w", err)
-	}
-
-	style.Init(dui, log)
-
-	w := dui.Display.Windows.Bounds().Dx()
-	log.Printf("w=%v", w)
-	log.Printf("w'=%v", dui.Scale(w))
-	log.Printf("kid=%v", dui.Top.R)
-	browser.SetLogger(log)
-	img.SetLogger(log)
-	opossum.SetLogger(log)
-	nodes.SetLogger(log)
-	b := browser.NewBrowser(dui, *startPage)
-
+func render(b *browser.Browser) {
 	dui.Top.UI = &duit.Box{
 		Kids: duit.NewKids(
 			&duit.Grid{
@@ -81,8 +64,88 @@ func Main() (err error) {
 	}
 	browser.PrintTree(b.Website.UI)
 	log.Printf("Render.....")
+	dui.MarkLayout(dui.Top.UI)
+	dui.MarkDraw(dui.Top.UI)
 	dui.Render()
 	log.Printf("Rendering done")
+}
+
+func confirm(b *browser.Browser, text, value string) chan string {
+	res := make(chan string)
+	
+	f := &duit.Field{
+		Text: value,
+	}
+
+	dui.Top.UI = &duit.Box{
+		Kids: duit.NewKids(
+			&duit.Grid{
+				Columns: 3,
+				Padding: duit.NSpace(3, duit.SpaceXY(5, 3)),
+				Halign:  []duit.Halign{duit.HalignLeft, duit.HalignLeft, duit.HalignRight},
+				Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle, duit.ValignMiddle},
+				Kids: duit.NewKids(
+					&duit.Button{
+						Text:  "Ok",
+						Font:  browser.Style.Font(),
+						Click: func() (e duit.Event) {
+							res <- f.Text
+							e.Consumed = true
+							return
+						},
+					},
+					&duit.Button{
+						Text:  "Abort",
+						Font:  browser.Style.Font(),
+						Click: func() (e duit.Event) {
+							res <- ""
+							e.Consumed = true
+							return
+						},
+					},
+					f,
+				),
+			},
+			&duit.Label{
+				Text: text,
+			},
+		),
+	}
+	log.Printf("Render.....")
+	dui.MarkLayout(dui.Top.UI)
+	dui.MarkDraw(dui.Top.UI)
+	dui.Render()
+	log.Printf("Rendering done")
+
+	return res
+}
+
+func Main() (err error) {
+	dui, err = duit.NewDUI("opossum", nil) // TODO: rm global var
+	if err != nil {
+		return fmt.Errorf("new dui: %w", err)
+	}
+
+	style.Init(dui, log)
+
+	w := dui.Display.Windows.Bounds().Dx()
+	log.Printf("w=%v", w)
+	log.Printf("w'=%v", dui.Scale(w))
+	log.Printf("kid=%v", dui.Top.R)
+	browser.SetLogger(log)
+	img.SetLogger(log)
+	opossum.SetLogger(log)
+	nodes.SetLogger(log)
+	b := browser.NewBrowser(dui, *startPage)
+	b.Download = func(done chan int) chan string {
+		go func() {
+			<-done
+			render(b)
+		}()
+		return confirm(b, fmt.Sprintf("Download %v", b.URL()), "/download.file")
+	}
+
+	render(b)
 
 	for {
 		select {

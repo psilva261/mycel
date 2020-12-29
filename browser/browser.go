@@ -17,6 +17,7 @@ import (
 	"opossum/logger"
 	"opossum/nodes"
 	"opossum/style"
+	"os"
 	"strings"
 
 	"github.com/mjl-/duit"
@@ -1132,6 +1133,7 @@ type Browser struct {
 	StatusBar *duit.Label
 	LocationField *duit.Field
 	client    *http.Client
+	Download func(done chan int) chan string
 }
 
 func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
@@ -1276,7 +1278,23 @@ func (b *Browser) LoadUrl() (e duit.Event) {
 	if contentType.IsHTML() || contentType.IsPlain() {
 		b.render(buf)
 	} else {
-		log.Errorf("unhandled content type: %v", contentType)
+		done := make(chan int)
+		res := b.Download(done)
+
+		log.Infof("Download unhandled content type: %v", contentType)
+
+		go func() {
+			fn := <-res
+
+			if fn != "" {
+				log.Infof("Download to %v", fn)
+				f, _ := os.Create(fn)
+				f.Write(buf)
+				f.Close()
+			}
+
+			done <- 1
+		}()
 	}
 	return duit.Event{
 		Consumed:   true,
