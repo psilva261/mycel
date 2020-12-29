@@ -93,6 +93,46 @@ func TestJQuery(t *testing.T) {
 	d.Stop()
 }
 
+func TestJQuery182(t *testing.T) {
+	buf, err := ioutil.ReadFile("jquery-1.8.2.js")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	d := NewDomino(simpleHTML)
+	d.Start()
+	script := `
+	console.log('Hello!!');
+	console.log(window.jQuery);
+	console.log(this);
+	Object.assign(this, window);
+	//console.log(this.jQuery);
+	console.log($);
+	$(document).ready(function() {
+		gfgf
+		console.log('yolo');
+	});
+	setTimeout(function() {
+		console.log("ok");
+	}, 1000);
+	var numberOne = 1;
+	`
+	_=buf
+	_, err = d.Exec(string(buf) + ";" + script, true)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	res, err := d.Exec("numberOne+1", false)
+	t.Logf("res=%v", res)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if res != "2" {
+		t.Fatal()
+	}
+	time.Sleep(2 * time.Second)
+	d.Stop()
+}
+
 func TestRun(t *testing.T) {
 	jQuery, err := ioutil.ReadFile("jquery-3.5.1.js")
 	if err != nil {

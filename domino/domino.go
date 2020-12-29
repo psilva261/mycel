@@ -100,7 +100,10 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 		window.self = window;
 		addEventListener = function() {};
 		window.location.href = 'http://example.com';
-		navigator = {};
+		location = window.location;
+		navigator = {
+			userAgent: 'opossum'
+		};
 		HTMLElement = domino.impl.HTMLElement;
 		// Fire DOMContentLoaded to trigger $(document).ready(..)
 		document.close();
