@@ -40,10 +40,16 @@ func NewContentType(s string, u *url.URL) (c ContentType, err error) {
 			return NewContentType("image/png", u)
 		case "gif":
 			return NewContentType("image/gif", u)
+		default:
+			return ContentType{}, nil
 		}
 	}
 	c.MediaType, c.Params, err = mime.ParseMediaType(s)
 	return
+}
+
+func (c ContentType) IsEmpty() bool {
+	return c.MediaType == ""
 }
 
 func (c ContentType) IsHTML() bool {

@@ -1267,7 +1267,9 @@ func (b *Browser) LoadUrl() (e duit.Event) {
 	buf, contentType, err := b.get(url, true)
 	if err != nil {
 		log.Errorf("error loading %v: %v", addr, err)
-		err = errors.Unwrap(err)
+		if er := errors.Unwrap(err); er != nil {
+			err = er
+		}
 		if strings.Contains(err.Error(), "HTTP response to HTTPS client") {
 			b.LocationField.Text = strings.Replace(url.String(), "https://", "http://", 1)
 			return b.LoadUrl()
@@ -1275,7 +1277,7 @@ func (b *Browser) LoadUrl() (e duit.Event) {
 		b.showBodyMessage(err.Error())
 		return
 	}
-	if contentType.IsHTML() || contentType.IsPlain() {
+	if contentType.IsHTML() || contentType.IsPlain() || contentType.IsEmpty() {
 		b.render(buf)
 	} else {
 		done := make(chan int)
