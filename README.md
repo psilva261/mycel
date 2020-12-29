@@ -1,6 +1,6 @@
 # Opossum Web Browser
 
-Basic portable Web browser; only needs a Go compiler to compile, no C dependencies
+Basic portable Web browser; only needs a Go compiler to compile, no C dependencies. The UI is built with https://github.com/mjl-/duit. Still very experimental and most features are missing, here's a screenshot: http://psilva.sdf.org/scr.png
 
 Supported features:
 
