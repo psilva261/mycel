@@ -710,6 +710,10 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 	numCols := t.numColsMax()
 	useOneGrid := t.numColsMin() == t.numColsMax()
 
+	if numCols == 0 {
+		return nil
+	}
+
 	if useOneGrid {
 		uis := make([]duit.UI, 0, numRows*numCols)
 		for _, row := range t.rows {
