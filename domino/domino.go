@@ -58,6 +58,10 @@ func IntrospectError(err error, script string) {
 		x, _ := strconv.Atoi(yx[1])
 		lines := strings.Split(script, "\n")
 
+		if y - 1 > len(lines) - 1 {
+			y = len(lines)
+		}
+
 		if wholeLine := lines[y-1]; len(wholeLine) > 100 {
 			from := x - 50
 			to := x + 50
@@ -72,12 +76,21 @@ func IntrospectError(err error, script string) {
 			if y > 0 && len(lines[y-1]) < 120 {
 				log.Printf("%v: %v", y-1, lines[y-1])
 			}
-			log.Printf("%v: %v", y, lines[y])
+			if y < len(lines) {
+				log.Printf("%v: %v", y, lines[y])
+			}
 			if y+1 < len(lines) && len(lines[y+1]) < 120 {
 				log.Printf("%v: %v", y+1, lines[y+1])
 			}
 		}
 	}
+}
+
+func printCode(code string, maxWidth int) {
+	if maxWidth > len(code) {
+		maxWidth = len(code)
+	}
+	fmt.Printf("js code: %v\n", code[:maxWidth])
 }
 
 func (d *Domino) Exec(script string, initial bool) (res string, err error) {
@@ -100,8 +113,12 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 		window.self = window;
 		addEventListener = function() {};
 		window.location.href = 'http://example.com';
+		window.getComputedStyle = function() {
+			// stub
+		}
 		location = window.location;
 		navigator = {
+			platform: 'plan9(port)',
 			userAgent: 'opossum'
 		};
 		HTMLElement = domino.impl.HTMLElement;
@@ -111,11 +128,13 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 	if !initial {
 		SCRIPT = script
 	}
+
 	if *DebugDumpJS {
 		ioutil.WriteFile("main.js", []byte(SCRIPT), 0644)
 	}
 
 	ready := make(chan goja.Value)
+	errChan := make(chan error)
 	go func() {
 		d.loop.RunOnLoop(func(vm *goja.Runtime) {
 			log.Printf("RunOnLoop")
@@ -138,20 +157,30 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 					Buf:  "yolo",
 				})
 			}
+
 			vv, err := vm.RunString(SCRIPT)
 			if err != nil {
-				log.Printf("run program: %v", err)
 				IntrospectError(err, script)
+				errChan <- fmt.Errorf("run program: %w", err)
+			} else {
+				ready <- vv
 			}
-			ready <- vv
 		})
 	}()
-	v := <-ready
-	<-time.After(10 * time.Millisecond)
-	if v != nil {
-		res = v.String()
+	select {
+		case v := <-ready:
+			<-time.After(10 * time.Millisecond)
+			if v != nil {
+				res = v.String()
+			}
+			if err == nil { d.initialized=true }
+		case er := <- errChan:
+			err = fmt.Errorf("event loop: %w", er)
 	}
-	if err == nil { d.initialized=true }
+
+	close(ready)
+	close(errChan)
+
 	return
 }
 
@@ -254,8 +283,11 @@ func Scripts(doc *nodes.Node, downloads map[string]string) (codes []string) {
 
 	iterateJsElements(doc, func(src, inlineCode string) {
 		if strings.TrimSpace(inlineCode) != "" {
+			fmt.Printf("domino.Scripts: inline code:\n")
+			printCode(inlineCode, 20)
 			codes = append(codes, inlineCode)
 		} else if c, ok := downloads[src]; ok {
+			fmt.Printf("domino.Scripts: referenced code (%v)\n", src)
 			codes = append(codes, c)
 		}
 	})

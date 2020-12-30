@@ -118,20 +118,60 @@ func (n *Node) Attr(k string) string {
 }
 
 func (n *Node) QueryRef() string {
-	if id := n.Attr("id"); id != "" {
-		return "#" + id
+	nRef, ok := n.queryRef()
+	if ok && strings.Contains(nRef, "#") {
+		return nRef
 	}
 
 	path := make([]string, 0, 5)
 	if n.Type() != html.TextNode {
-		path = append(path, n.Data())
+		if ok {
+			path = append(path, nRef)
+		}
 	}
 	for p := n.Parent; p != nil; p = p.Parent {
-		if p.Data() != "html" && p.Data() != "body" {
-			path = append([]string{p.Data()}, path...)
+		if part := p.Data(); part != "html" && part != "body" {
+			if pRef, ok := p.queryRef(); ok {
+				path = append([]string{pRef}, path...)
+				if strings.Contains(pRef, "#") {
+					break
+				}
+			}
 		}
 	}
 	return strings.TrimSpace(strings.Join(path, " "))
+}
+
+func (n *Node) queryRef() (ref string, ok bool) {
+	if n.DomSubtree == nil || n.Type() != html.ElementNode {
+		return
+	}
+
+	if id := n.Attr("id"); id != "" {
+		return "#" + id, true
+	}
+
+	ref = n.Data()
+
+	var sl []string
+	if c := strings.TrimSpace(n.Attr("class")); c != "" {
+		l := strings.Split(c, " ")
+		sl = make([]string, 0, len(l))
+
+		for _, cl := range l {
+			if cl == "" {
+				continue
+			}
+
+			sl = append(sl, cl)
+		}
+
+		if len(sl) > 0 {
+			ref += "." + strings.Join(sl, ".")
+		}
+	}
+
+	return ref, true
 }
 
 func IsPureTextContent(n Node) bool {
@@ -164,9 +204,9 @@ func ContentFrom(n Node) string {
 
 func (n *Node) Serialized() (string, error) {
 	var b bytes.Buffer
-	
+
 	err := html.Render(&b, n.DomSubtree)
-	
+
 	return b.String(), err
 }
 

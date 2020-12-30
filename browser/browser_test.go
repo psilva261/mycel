@@ -34,6 +34,11 @@ func TestLinkedUrl(t *testing.T) {
 			href:   "news",
 			expect: "https://news.ycombinator.com/news",
 		},
+		item{
+			orig: "https://golang.org/pkg/",
+			href: "net/http",
+			expect: "https://golang.org/pkg/net/http",
+		},
 	}
 
 	for _, i := range items {

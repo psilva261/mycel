@@ -425,7 +425,7 @@ func (el *Element) click() (consumed bool) {
 	}
 
 	browser.Website.html = res
-	browser.Website.layout(browser)
+	browser.Website.layout(browser, ClickRelayout)
 	dui.MarkLayout(dui.Top.UI)
 	dui.MarkDraw(dui.Top.UI)
 	dui.Render()
@@ -1185,7 +1185,7 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	dui = _dui
 	display = dui.Display
 
-	b.Website.layout(b)
+	b.Website.layout(b, InitialLayout)
 
 	return
 }
@@ -1318,7 +1318,7 @@ func (b *Browser) render(buf []byte) {
 	imageCache = make(map[string]*draw.Image)
 
 	b.Website.html = string(buf) // TODO: correctly interpret UTF8
-	b.Website.layout(b)
+	b.Website.layout(b, InitialLayout)
 
 	dui.MarkLayout(dui.Top.UI)
 	dui.MarkDraw(dui.Top.UI)

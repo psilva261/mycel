@@ -93,41 +93,51 @@ func TestJQuery(t *testing.T) {
 	d.Stop()
 }
 
-func TestJQuery182(t *testing.T) {
-	buf, err := ioutil.ReadFile("jquery-1.8.2.js")
+func TestGodoc(t *testing.T) {
+	buf, err := ioutil.ReadFile("godoc/pkg.html")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	d := NewDomino(simpleHTML)
+	d := NewDomino(string(buf))
 	d.Start()
 	script := `
-	console.log('Hello!!');
-	console.log(window.jQuery);
-	console.log(this);
 	Object.assign(this, window);
-	//console.log(this.jQuery);
-	console.log($);
-	$(document).ready(function() {
-		gfgf
-		console.log('yolo');
-	});
-	setTimeout(function() {
-		console.log("ok");
-	}, 1000);
-	var numberOne = 1;
 	`
-	_=buf
-	_, err = d.Exec(string(buf) + ";" + script, true)
+	_ = script
+	for i, fn := range []string{"initfuncs.js", "jquery-1.8.2.js", "goversion.js", "godocs.js"} {
+		buf, err := ioutil.ReadFile("godoc/"+fn)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		_, err = d.Exec(string(buf) /*+ ";" + script*/, i == 0)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+	}
+	time.Sleep(2 * time.Second)
+	d.Stop()
+}
+
+func TestJqueryUI(t *testing.T) {
+	buf, err := ioutil.ReadFile("jqueryui/tabs.html")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	res, err := d.Exec("numberOne+1", false)
-	t.Logf("res=%v", res)
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	if res != "2" {
-		t.Fatal()
+	d := NewDomino(string(buf))
+	d.Start()
+	script := `
+	Object.assign(this, window);
+	`
+	_ = script
+	for i, fn := range []string{"jquery-1.12.4.js", "jquery-ui.js", "tabs.js"} {
+		buf, err := ioutil.ReadFile("jqueryui/"+fn)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		_, err = d.Exec(string(buf) /*+ ";" + script*/, i == 0)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
 	}
 	time.Sleep(2 * time.Second)
 	d.Stop()

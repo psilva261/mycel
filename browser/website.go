@@ -12,13 +12,18 @@ import (
 	"strings"
 )
 
+const (
+	InitialLayout = iota
+	ClickRelayout
+)
+
 type Website struct {
 	duit.UI
 	html      string
 	d *domino.Domino
 }
 
-func (w *Website) layout(f opossum.Fetcher) {
+func (w *Website) layout(f opossum.Fetcher, layouting int) {
 	pass := func(htm string, csss ...string) (*html.Node, map[*html.Node]style.Map) {
 
 		if debugPrintHtml {
@@ -88,7 +93,9 @@ func (w *Website) layout(f opossum.Fetcher) {
 	csss = append([]string{ /*string(revertCSS), */ style.AddOnCSS}, csss...)
 	doc, nodeMap := pass(w.html, csss...)
 
-	if *ExperimentalJsInsecure {
+	// 3rd pass is only needed initially to load the scripts and set the goja VM
+	// state. During subsequent calls from click handlers that state is kept.
+	if *ExperimentalJsInsecure && layouting != ClickRelayout {
 		log.Printf("3rd pass")
 		nt := nodes.NewNodeTree(doc, style.Map{}, nodeMap, nil)
 		jsSrcs := domino.Srcs(nt)
