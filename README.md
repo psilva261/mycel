@@ -86,4 +86,4 @@ go run . -experimentalJsInsecure=true -startPage https://jqueryui.com/resources/
 - load images on the fly
 - implement more parts of HTML5 and CSS
 - create a widget for div/span
-- clean up code, support webfs, snarf,
+- clean up code, support webfs, snarf, font sizes vs. hidpi

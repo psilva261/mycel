@@ -150,10 +150,13 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 	body := grepBody(doc)
 
 	log.Printf("Layout website...")
-	numElements = 0
 	scroller = duit.NewScroll(
 		NodeToBox(0, browser, nodes.NewNodeTree(body, style.Map{}, nodeMap, &nodes.Node{})),
 	)
+	numElements := 0
+	TraverseTree(scroller, func(ui duit.UI) {
+		numElements++
+	})
 	w.UI = scroller
 	log.Printf("Layouting done (%v elements created)", numElements)
 	if numElements < 10 {

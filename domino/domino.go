@@ -9,8 +9,8 @@ import (
 	"github.com/jvatic/goja-babel"
 	"golang.org/x/net/html"
 	"io/ioutil"
-	"log"
 	"opossum"
+	"opossum/logger"
 	"opossum/nodes"
 	"strconv"
 	"strings"
@@ -18,6 +18,12 @@ import (
 )
 
 var DebugDumpJS *bool
+var log *logger.Logger
+var timeout = 10*time.Second
+
+func SetLogger(l *logger.Logger) {
+	log = l
+}
 
 type Domino struct {
 	initialized bool
@@ -90,7 +96,7 @@ func printCode(code string, maxWidth int) {
 	if maxWidth > len(code) {
 		maxWidth = len(code)
 	}
-	fmt.Printf("js code: %v\n", code[:maxWidth])
+	log.Infof("js code: %v", code[:maxWidth])
 }
 
 func (d *Domino) Exec(script string, initial bool) (res string, err error) {
@@ -116,6 +122,12 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 		window.getComputedStyle = function() {
 			// stub
 		}
+		window.screen = {
+			width: 1280,
+			height: 1024
+		};
+		window.screenX = 0;
+		window.screenY = 25;
 		location = window.location;
 		navigator = {
 			platform: 'plan9(port)',
@@ -134,52 +146,77 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 	}
 
 	ready := make(chan goja.Value)
-	errChan := make(chan error)
+	errCh := make(chan error)
+	intCh := make(chan int)
 	go func() {
 		d.loop.RunOnLoop(func(vm *goja.Runtime) {
 			log.Printf("RunOnLoop")
-			if initial {
-				registry := require.NewRegistry(
-					require.WithGlobalFolders(".", ".."),
-				)
-				console.Enable(vm)
-				req := registry.Enable(vm)
-				_ = req
 
-				vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
+			if initial {
+				// find domino-lib folder
+				registry := require.NewRegistry(
+					require.WithGlobalFolders(
+						".",     // standalone
+						"..",    // tests
+						"../..", // go run
+					),
+				)
+
+				console.Enable(vm)
+				registry.Enable(vm)
+
 				type S struct {
 					Buf  string `json:"buf"`
 					HTML string `json:"html"`
 				}
 
+				vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
 				vm.Set("s", S{
 					HTML: d.html,
 					Buf:  "yolo",
 				})
 			}
 
+			go func() {
+				for _ = range intCh {
+					vm.Interrupt("halt")
+				}
+			}()
+
 			vv, err := vm.RunString(SCRIPT)
 			if err != nil {
 				IntrospectError(err, script)
-				errChan <- fmt.Errorf("run program: %w", err)
+				errCh <- fmt.Errorf("run program: %w", err)
 			} else {
 				ready <- vv
 			}
 		})
 	}()
-	select {
-		case v := <-ready:
-			<-time.After(10 * time.Millisecond)
-			if v != nil {
-				res = v.String()
-			}
-			if err == nil { d.initialized=true }
-		case er := <- errChan:
-			err = fmt.Errorf("event loop: %w", er)
+
+	for {
+		select {
+			case v := <-ready:
+				log.Infof("ready")
+				<-time.After(10 * time.Millisecond)
+				if v != nil {
+					res = v.String()
+				}
+				if err == nil { d.initialized=true }
+				goto cleanup
+			case er := <- errCh:
+				log.Infof("err")
+				err = fmt.Errorf("event loop: %w", er)
+				goto cleanup
+			case <-time.After(timeout):
+				log.Errorf("Interrupt JS after %v", timeout)
+				intCh <- 1
+		}
 	}
 
+cleanup:
 	close(ready)
-	close(errChan)
+	close(errCh)
+	close(intCh)
 
 	return
 }
@@ -283,11 +320,11 @@ func Scripts(doc *nodes.Node, downloads map[string]string) (codes []string) {
 
 	iterateJsElements(doc, func(src, inlineCode string) {
 		if strings.TrimSpace(inlineCode) != "" {
-			fmt.Printf("domino.Scripts: inline code:\n")
+			log.Infof("domino.Scripts: inline code:")
 			printCode(inlineCode, 20)
 			codes = append(codes, inlineCode)
 		} else if c, ok := downloads[src]; ok {
-			fmt.Printf("domino.Scripts: referenced code (%v)\n", src)
+			log.Infof("domino.Scripts: referenced code (%v)", src)
 			codes = append(codes, c)
 		}
 	})

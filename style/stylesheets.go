@@ -31,6 +31,8 @@ var log *logger.Logger
 var rMinWidth = regexp.MustCompile(`min-width: (\d+)px`)
 var rMaxWidth = regexp.MustCompile(`max-width: (\d+)px`)
 
+const FontBaseSize = 14.0
+
 const AddOnCSS = `
 a, span, i, tt, b {
   display: inline;
@@ -225,17 +227,25 @@ func NewMap(n *html.Node) Map {
 	for _, a := range n.Attr {
 		if a.Key == "style" {
 			decls, err := parser.ParseDeclarations(a.Val)
+
 			if err != nil {
 				log.Printf("could not parse '%v'", a.Val)
 				break
 			}
+
 			for _, d := range decls {
 				s.Declarations[d.Property] = *d
 			}
 		} else if a.Key == "height" || a.Key == "width" {
+			v := a.Val
+
+			if !strings.HasSuffix(v, "%") {
+				v += "px"
+			}
+
 			s.Declarations[a.Key] = css.Declaration{
 				Property: a.Key,
-				Value: a.Val+"px",
+				Value: v,
 			}
 		} else if a.Key == "bgcolor" {
 			s.Declarations["background-color"] = css.Declaration{
@@ -332,21 +342,21 @@ func (cs Map) preferedFontName(preferences []string) string {
 func (cs Map) FontSize() float64 {
 	fs, ok := cs.Declarations["font-size"]
 	if !ok || fs.Value == "" {
-		return 14
+		return FontBaseSize
 	}
 
 	if len(fs.Value) <= 2 {
 		log.Printf("error parsing font size %v", fs.Value)
-		return 14.0
+		return FontBaseSize
 	}
 	numStr := fs.Value[0 : len(fs.Value)-2]
 	f, err := strconv.ParseFloat(numStr, 64)
 	if err != nil {
 		log.Printf("error parsing font size %v", fs.Value)
-		return 14.0
+		return FontBaseSize
 	}
 	if strings.HasSuffix(fs.Value, "em") {
-		f *= 14.0
+		f *= FontBaseSize
 	}
 	return f
 }
@@ -512,9 +522,11 @@ func (cs Map) IsFlexDirectionRow() bool {
 
 func length(l string) (f float64, unit string, err error) {
 	var s string
-	if s == "auto" {
+
+	if l == "auto" {
 		return 0, "px", nil
 	}
+
 	for _, suffix := range []string{"px", "%", "rem", "em"} {
 		if strings.HasSuffix(l, suffix) {
 			s = strings.TrimSuffix(l, suffix)
@@ -522,12 +534,18 @@ func length(l string) (f float64, unit string, err error) {
 			break
 		}
 	}
-	if unit == "" {
+
+	switch unit {
+	case "":
 		return f, unit, fmt.Errorf("unknown suffix: %v", l)
-	}
-	if unit == "px" {
+	case "px", "em":
 		f, err = strconv.ParseFloat(s, 64)
 	}
+
+	if unit == "em" {
+		f *= FontBaseSize
+	}
+
 	return
 }
 
@@ -553,4 +571,12 @@ func (cs Map) Width() int {
 		return int(f)
 	}
 	return 0
+}
+
+func (cs Map) Css(propName string) string {
+	d, ok := cs.Declarations[propName]
+	if !ok {
+		return ""
+	}
+	return d.Value
 }

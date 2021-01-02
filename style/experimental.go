@@ -94,25 +94,26 @@ func (cs Map) backgroundImage() (i *draw.Image) {
 	if !ok {
 		decl, ok = cs.Declarations["background"]
 	}
-	log.Printf("decl=%+v\n", decl)
+
 	if ok {
 		imgUrl, ok := backgroundImageUrl(decl)
 		if !ok {
 			log.Printf("bg img not ok")
 			return
 		}
+
 		w := cs.Width()
 		h := cs.Height()
-		log.Printf("bg img ok")
+
 		r, err := img.Load(fetcher, imgUrl, w, h)
 		if err != nil {
 			log.Errorf("bg img load %v: %v", imgUrl, err)
 			return nil
 		}
-		log.Printf("Read %v...", imgUrl)
+
 		i, err = duit.ReadImage(dui.Display, r)
 		if err != nil {
-			log.Errorf("bg read image: %v", err)
+			log.Errorf("bg read image %v: %v", imgUrl, err)
 			return
 		}
 		return i

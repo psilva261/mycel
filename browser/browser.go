@@ -48,7 +48,6 @@ var cache = make(map[string]struct {
 	opossum.ContentType
 	buf []byte
 })
-var numElements int64
 var log *logger.Logger
 var scroller *duit.Scroll
 var display *draw.Display
@@ -525,16 +524,15 @@ func Arrange(n *nodes.Node, elements ...*Element) *Element {
 		} else if len(rows[0]) == 1 {
 			return rows[0][0]
 		}
-		numElements++
+
 		return NewElement(horizontalSeq(true, rows[0]), n)
 	} else {
 		seqs := make([]*Element, 0, len(rows))
 		for _, row := range rows {
 			seq := horizontalSeq(true, row)
-			numElements++
 			seqs = append(seqs, NewElement(seq, n))
 		}
-		numElements++
+
 		return NewElement(verticalSeq(seqs), n)
 	}
 }
@@ -560,12 +558,11 @@ func horizontalSeq(wrap bool, es []*Element) duit.UI {
 	}
 
 	if wrap {
-		log.Printf("wrap")
 		finalUis := make([]duit.UI, 0, len(uis))
 		for _, ui := range uis {
-			log.Printf("wrap, tree:")
 			PrintTree(ui)
 			el, ok := ui.(*Element)
+
 			if ok {
 				label, isLabel := el.UI.(*duit.Label)
 				if isLabel {
@@ -583,6 +580,7 @@ func horizontalSeq(wrap bool, es []*Element) duit.UI {
 				finalUis = append(finalUis, ui)
 			}
 		}
+
 		return &duit.Box{
 			Padding: duit.SpaceXY(6, 4),
 			Margin:  image.Pt(6, 4),
@@ -696,13 +694,13 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 
 	if useOneGrid {
 		uis := make([]duit.UI, 0, numRows*numCols)
+
 		for _, row := range t.rows {
 			for _, td := range row.columns {
 				uis = append(uis, NodeToBox(r+1, b, td))
 			}
 		}
 
-		log.Printf("use on grid")
 		halign := make([]duit.Halign, 0, len(uis))
 		valign := make([]duit.Valign, 0, len(uis))
 
@@ -722,9 +720,8 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 			n,
 		)
 	} else {
-		log.Printf("combine")
-
 		seqs := make([]*Element, 0, len(t.rows))
+
 		for _, row := range t.rows {
 			rowEls := make([]*Element, 0, len(row.columns))
 			for _, col := range row.columns {
@@ -735,14 +732,12 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 				}
 			}
 
-			log.Printf("len rowsEls=%v", len(rowEls))
 			if len(rowEls) > 0 {
 				seq := horizontalSeq(false, rowEls)
-				numElements++
 				seqs = append(seqs, NewElement(seq, row.n))
 			}
 		}
-		numElements++
+
 		return NewElement(verticalSeq(seqs), n)
 	}
 }
@@ -800,6 +795,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 	if attr(*n.DomSubtree, "aria-hidden") == "true" || hasAttr(*n.DomSubtree, "hidden") {
 		return nil
 	}
+
 	if n.IsDisplayNone() {
 		return nil
 	}
@@ -809,7 +805,6 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 		case "style", "script", "template":
 			return nil
 		case "input":
-			numElements++
 			t := attr(*n.DomSubtree, "type")
 			if isPw := t == "password"; t == "text" || t == "" || t == "search" || isPw {
 				return NewInputField(n)
@@ -819,7 +814,6 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				return nil
 			}
 		case "button":
-			numElements++
 			if t := attr(*n.DomSubtree, "type"); t == "" || t == "submit" {
 				return NewSubmitButton(b, n)
 			} else {
@@ -833,7 +827,6 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				)
 			}
 		case "table":
-			numElements++
 			return NewTable(n).Element(r+1, b, n)
 		case "noscript":
 			if *ExperimentalJsInsecure || !*EnableNoScriptTag {
@@ -855,19 +848,16 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				innerContent = InnerNodesToBox(r+1, b, n)
 			}
 
-			numElements++
 			return NewBoxElement(
 				innerContent,
 				n,
 			)
 		case "img", "svg":
-			numElements++
 			return NewElement(
 				NewImage(n),
 				n,
 			)
 		case "pre":
-			numElements++
 			return NewElement(
 				NewCodeView(nodes.ContentFrom(*n), n.Map),
 				n,
@@ -878,7 +868,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				t := nodes.ContentFrom(*n)
 
 				if ul := n.Ancestor("ul"); ul != nil {
-					if s, ok := ul.Map.Declarations["list-style"]; !ok || s.Value != "none" {
+					if ul.Css("list-style") != "none" && n.Css("list-style-type") != "none" {
 						t = "• " + t
 					}
 				}
@@ -893,7 +883,6 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				innerContent = InnerNodesToBox(r+1, b, n)
 			}
 
-			numElements++
 			return NewElement(
 				innerContent,
 				n,
@@ -913,16 +902,15 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			} else {
 				innerContent = InnerNodesToBox(r+1, b, n)
 			}
-			numElements++
+
 			if innerContent == nil {
 				return nil
 			}
+
 			el := NewElement(
 				innerContent,
 				n,
 			)
-			//      also a way to bubble up
-			// will be needed eventually
 			el.makeLink(href)
 			return el
 		default:
@@ -937,17 +925,19 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			text = strings.ReplaceAll(text, "\t", "")
 			l := strings.Split(text, " ")
 			nn := make([]string, 0, len(l))
+
 			for _, w := range l {
 				if w != "" {
 					nn = append(nn, w)
 				}
 			}
+
 			text = strings.Join(nn, " ")
 			ui := &duit.Label{
 				Text: text,
 				Font: n.Font(),
 			}
-			numElements++
+
 			return NewElement(
 				ui,
 				n,
@@ -961,23 +951,21 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 }
 
 func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
-	childrenAsEls := make([]*Element, 0, len(n.Children))
+	els := make([]*Element, 0, len(n.Children))
 
 	for _, c := range n.Children {
-		el := NodeToBox(r+1, b, c)
-		if el != nil && !c.IsDisplayNone() {
-			numElements++
-			childrenAsEls = append(childrenAsEls, el)
+		if el := NodeToBox(r+1, b, c); el != nil && !c.IsDisplayNone() {
+			els = append(els, el)
 		}
 	}
 
-	if len(childrenAsEls) == 0 {
+	if len(els) == 0 {
 		return nil
-	} else if len(childrenAsEls) == 1 {
-		return childrenAsEls[0]
+	} else if len(els) == 1 {
+		return els[0]
 	}
 
-	return Arrange(n, childrenAsEls...)
+	return Arrange(n, els...)
 }
 
 func TraverseTree(ui duit.UI, f func(ui duit.UI)) {
@@ -1077,7 +1065,7 @@ func printTree(r int, ui duit.UI) {
 		}
 		fmt.Printf("ColoredLabel %v\n", t)
 	default:
-		fmt.Printf("default :-) %+v\n", v)
+		fmt.Printf("%+v\n", v)
 	}
 }
 
@@ -1300,7 +1288,9 @@ func (b *Browser) render(buf []byte) {
 	dui.MarkLayout(dui.Top.UI)
 	dui.MarkDraw(dui.Top.UI)
 	TraverseTree(b.Website.UI, func(ui duit.UI) {
-		// just checking
+		// just checking for nil elements. That would be a bug anyway and it's better
+		// to notice it before it gets rendered
+
 		if ui == nil {
 			panic("nil")
 		}
@@ -1321,6 +1311,7 @@ func (b *Browser) Get(uri *url.URL) (buf []byte, contentType opossum.ContentType
 			cache[uri.String()] = c
 		}
 	}
+
 	return c.buf, c.ContentType, err
 }
 

@@ -127,15 +127,12 @@ func Main() (err error) {
 	}
 
 	style.Init(dui, log)
-
-	w := dui.Display.Windows.Bounds().Dx()
-	log.Printf("w=%v", w)
-	log.Printf("w'=%v", dui.Scale(w))
-	log.Printf("kid=%v", dui.Top.R)
 	browser.SetLogger(log)
+	domino.SetLogger(log)
 	img.SetLogger(log)
 	opossum.SetLogger(log)
 	nodes.SetLogger(log)
+
 	b := browser.NewBrowser(dui, *startPage)
 	b.Download = func(done chan int) chan string {
 		go func() {
@@ -144,14 +141,12 @@ func Main() (err error) {
 		}()
 		return confirm(b, fmt.Sprintf("Download %v", b.URL()), "/download.file")
 	}
-
 	render(b)
 
 	for {
 		select {
 		case e := <-dui.Inputs:
 			dui.Input(e)
-			//log.Printf("e=%+v", e)
 
 		case err, ok := <-dui.Error:
 			if !ok {
@@ -178,11 +173,12 @@ func main() {
 			os.Exit(2)
 		}()
 	}
-	os.Chdir("../..")
+
 	log = logger.Log
 	log.Debug = *dbg
 	style.CssFonts = *cssFonts
 	style.ExperimentalUseBoxBackgrounds = *experimentalUseBoxBackgrounds
+
 	if err := Main(); err != nil {
 		log.Fatalf("Main: %v", err)
 	}

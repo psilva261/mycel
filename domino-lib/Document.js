@@ -368,7 +368,7 @@ Document.prototype = Object.create(ContainerNode.prototype, {
   URL: { get: function URL() { return this._address; } },
   domain: { get: utils.nyi.bind(this, 'domain'), set: utils.nyi.bind(this, 'domain') },
   referrer: { get: utils.nyi.bind(this, 'referrer') },
-  cookie: { get: utils.nyi.bind(this, 'cookie get'), set: utils.nyi.bind(this, 'cookie set') },
+  //cookie: { get: utils.nyi.bind(this, 'cookie get'), set: utils.nyi.bind(this, 'cookie set') },
   lastModified: { get: utils.nyi.bind(this, 'lastModified get') },
   location: {
 	get: function() {
@@ -428,18 +428,18 @@ Document.prototype = Object.create(ContainerNode.prototype, {
     get: function() {
       return namedHTMLChild(this.documentElement, 'body');
     },
-    set: utils.nyi
+    set: utils.nyi.bind(this, 'body set')
   },
   // Return the first <head> child of the document element.
   head: { get: function() {
     return namedHTMLChild(this.documentElement, 'head');
   }},
-  images: { get: utils.nyi },
-  embeds: { get: utils.nyi },
-  plugins: { get: utils.nyi },
-  links: { get: utils.nyi },
-  forms: { get: utils.nyi },
-  scripts: { get: utils.nyi },
+  images: { get: utils.nyi.bind(this, 'images get') },
+  embeds: { get: utils.nyi.bind(this, 'embeds get') },
+  plugins: { get: utils.nyi.bind(this, 'plugins get') },
+  links: { get: utils.nyi.bind(this, 'links get') },
+  forms: { get: utils.nyi.bind(this, 'forms get') },
+  scripts: { get: utils.nyi.bind(this, 'scripts get') },
   applets: { get: function() { return []; } },
   activeElement: { get: function() { return null; } },
   innerHTML: {

@@ -2,6 +2,7 @@ package domino
 
 import (
 	"io/ioutil"
+	"opossum/logger"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,9 @@ const simpleHTML = `
 func init() {
 	t := true
 	DebugDumpJS = &t
+	logger.Quiet = &t
+	logger.Init()
+	log = &logger.Logger{Debug: true}
 }
 
 func TestSimple(t *testing.T) {
