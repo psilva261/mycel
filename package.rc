@@ -24,4 +24,5 @@ mkdir -p /tmp/`{date -n}
 cd /tmp/`{date -n}
 tar xf $tarball
 cd $name
-./$name.bin
+./$name.bin '-quiet=false'
+./$name.bin '-experimentalJsInsecure=true' '-quiet=false'
