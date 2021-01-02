@@ -1,17 +1,27 @@
-rm -rf ./opossum-plan9-amd64
-mkdir ./opossum-plan9-amd64
-chmod +t ./opossum-plan9-amd64
-mkdir ./opossum-plan9-amd64/domino-lib
+name='opossum-plan9-amd64'
+
+rm -rf ./$name
+mkdir ./$name
+chmod +t ./$name
+mkdir ./$name/domino-lib
 
 echo Compiling...
 cd cmd/browse
-go build -o opossum-plan9-amd64.bin
+go build -o $name.bin
 cd ../..
-mv cmd/browse/opossum-plan9-amd64.bin .
-mv opossum-plan9-amd64.bin ./opossum-plan9-amd64/
-cp README.md ./opossum-plan9-amd64/
-cp normalize.css ./opossum-plan9-amd64/
-dircp domino-lib ./opossum-plan9-amd64/domino-lib
-tar czf opossum-plan9-amd64.tgz opossum-plan9-amd64
-chmod +t opossum-plan9-amd64.tgz
-echo Created opossum-plan9-amd64.tgz
+mv cmd/browse/$name.bin .
+mv $name.bin ./$name/
+cp README.md ./$name/
+cp normalize.css ./$name/
+dircp domino-lib ./$name/domino-lib
+tar czf $name.tgz $name
+chmod +t $name.tgz
+echo Created $name.tgz
+tarball=`{pwd} ^ '/' ^ $name ^ '.tgz'
+
+echo Verifying $tarball ...
+mkdir -p /tmp/`{date -n}
+cd /tmp/`{date -n}
+tar xf $tarball
+cd $name
+./$name.bin

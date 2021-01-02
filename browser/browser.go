@@ -626,26 +626,6 @@ func check(err error, msg string) {
 	}
 }
 
-func RichInnerContentFrom(r int, b *Browser, n *nodes.Node) *Element {
-	childrenAsEls := make([]*Element, 0, 1)
-
-	for _, c := range n.Children {
-		tmp := NodeToBox(r+1, b, c)
-		if tmp != nil {
-			numElements++
-			el := NewElement(tmp, c)
-			childrenAsEls = append(childrenAsEls, el)
-		}
-	}
-	if len(childrenAsEls) == 0 {
-		return nil
-	} else if len(childrenAsEls) == 1 {
-		return childrenAsEls[0]
-	}
-	res := Arrange(n, childrenAsEls...)
-	return res
-}
-
 type Table struct {
 	rows []*TableRow
 }
@@ -872,7 +852,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 					n: n,
 				}
 			} else {
-				innerContent = RichInnerContentFrom(r+1, b, n)
+				innerContent = InnerNodesToBox(r+1, b, n)
 			}
 
 			numElements++
@@ -910,7 +890,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 					n: n,
 				}
 			} else {
-				innerContent = RichInnerContentFrom(r+1, b, n)
+				innerContent = InnerNodesToBox(r+1, b, n)
 			}
 
 			numElements++
@@ -919,13 +899,9 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				n,
 			)
 		case "a":
-			var href string
-			for _, a := range n.Attrs {
-				if a.Key == "href" {
-					href = a.Val
-				}
-			}
+			var href = n.Attr("href")
 			var innerContent duit.UI
+
 			if nodes.IsPureTextContent(*n) {
 				innerContent = &ColoredLabel{
 					Label: &duit.Label{
@@ -935,9 +911,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 					n: n,
 				}
 			} else {
-				// TODO: make blue borders and different
-				//       mouse cursor and actually clickable
-				innerContent = RichInnerContentFrom(r+1, b, n)
+				innerContent = InnerNodesToBox(r+1, b, n)
 			}
 			numElements++
 			if innerContent == nil {
@@ -953,24 +927,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			return el
 		default:
 			// Internal node object
-			els := make([]*Element, 0, 10)
-			for _, c := range n.Children {
-				el := NodeToBox(r+1, b, c)
-				if el != nil && !c.IsDisplayNone() {
-					els = append(els, el)
-				}
-			}
-
-			if len(els) == 0 {
-				return nil
-			} else if len(els) == 1 {
-				return els[0]
-			} else {
-				for _, e := range els {
-					_ = e
-				}
-				return Arrange(n, els...)
-			}
+			return InnerNodesToBox(r+1, b, n)
 		}
 	} else if n.Type() == html.TextNode {
 		// Leaf text object
@@ -1001,6 +958,26 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 	} else {
 		return nil
 	}
+}
+
+func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
+	childrenAsEls := make([]*Element, 0, len(n.Children))
+
+	for _, c := range n.Children {
+		el := NodeToBox(r+1, b, c)
+		if el != nil && !c.IsDisplayNone() {
+			numElements++
+			childrenAsEls = append(childrenAsEls, el)
+		}
+	}
+
+	if len(childrenAsEls) == 0 {
+		return nil
+	} else if len(childrenAsEls) == 1 {
+		return childrenAsEls[0]
+	}
+
+	return Arrange(n, childrenAsEls...)
 }
 
 func TraverseTree(ui duit.UI, f func(ui duit.UI)) {
