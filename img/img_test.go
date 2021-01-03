@@ -1,7 +1,7 @@
 package img
 
 import (
-	"opossum/logger"
+	"github.com/psilva261/opossum/logger"
 	"testing"
 )
 

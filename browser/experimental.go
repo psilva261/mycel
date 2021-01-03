@@ -3,8 +3,8 @@ package browser
 import (
 	"fmt"
 	"image"
-	"opossum/domino"
-	"opossum/nodes"
+	"github.com/psilva261/opossum/domino"
+	"github.com/psilva261/opossum/nodes"
 	"time"
 
 	"9fans.net/go/draw"

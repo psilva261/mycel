@@ -10,8 +10,8 @@ import (
 	"image"
 	"image/jpeg"
 	"io"
-	"opossum"
-	"opossum/logger"
+	"github.com/psilva261/opossum"
+	"github.com/psilva261/opossum/logger"
 	"strings"
 	"net/url"
 

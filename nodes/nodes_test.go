@@ -2,7 +2,7 @@ package nodes
 
 import (
 	"golang.org/x/net/html"
-	"opossum/style"
+	"github.com/psilva261/opossum/style"
 	"strings"
 	"testing"
 )

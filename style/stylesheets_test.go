@@ -3,7 +3,7 @@ package style
 import (
 	"github.com/chris-ramon/douceur/css"
 	"golang.org/x/net/html"
-	"opossum/logger"
+	"github.com/psilva261/opossum/logger"
 	"strings"
 	"testing"
 )

@@ -5,7 +5,7 @@ import (
 	"golang.org/x/text/encoding/charmap"
 	"io/ioutil"
 	"mime"
-	"opossum/logger"
+	"github.com/psilva261/opossum/logger"
 	"net/url"
 	"strings"
 )

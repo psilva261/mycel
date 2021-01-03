@@ -11,7 +11,7 @@ import (
 	"golang.org/x/image/colornames"
 	"golang.org/x/net/html"
 	"io/ioutil"
-	"opossum/logger"
+	"github.com/psilva261/opossum/logger"
 	"os/exec"
 	"regexp"
 	"strconv"

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/mjl-/duit"
 	"image"
-	"opossum"
-	"opossum/img"
+	"github.com/psilva261/opossum"
+	"github.com/psilva261/opossum/img"
 	"strings"
 )
 

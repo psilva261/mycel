@@ -1,4 +1,4 @@
-module opossum
+module github.com/psilva261/opossum
 
 go 1.15
 

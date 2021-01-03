@@ -3,8 +3,8 @@ package nodes
 import (
 	"bytes"
 	"golang.org/x/net/html"
-	"opossum/logger"
-	"opossum/style"
+	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/opossum/style"
 	"strings"
 )
 

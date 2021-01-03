@@ -5,10 +5,10 @@ import (
 	"golang.org/x/net/html"
 	"io/ioutil"
 	"net/url"
-	"opossum"
-	"opossum/domino"
-	"opossum/nodes"
-	"opossum/style"
+	"github.com/psilva261/opossum"
+	"github.com/psilva261/opossum/domino"
+	"github.com/psilva261/opossum/nodes"
+	"github.com/psilva261/opossum/style"
 	"strings"
 )
 

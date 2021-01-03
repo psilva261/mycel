@@ -5,9 +5,9 @@ import (
 	"golang.org/x/net/html"
 	"net/http"
 	"net/url"
-	"opossum/logger"
-	"opossum/nodes"
-	"opossum/style"
+	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/opossum/nodes"
+	"github.com/psilva261/opossum/style"
 	"strings"
 	"testing"
 )

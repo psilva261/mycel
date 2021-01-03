@@ -2,7 +2,7 @@ package domino
 
 import (
 	"io/ioutil"
-	"opossum/logger"
+	"github.com/psilva261/opossum/logger"
 	"strings"
 	"testing"
 	"time"
