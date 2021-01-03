@@ -31,6 +31,8 @@ const debugPrintHtml = false
 const stashElements = true
 const experimentalUseSlicedDrawing = false
 
+const EnterKey = 10
+
 var cursor = [2 * 16]uint8{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 90, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}
 
 var DebugDumpCSS *bool
@@ -440,7 +442,12 @@ func (el *Element) makeLink(href string) {
 		return
 	}
 
-	f := browser.SetAndLoadUrl(href)
+	u, err := browser.LinkedUrl(href)
+	if err != nil {
+		log.Errorf("makeLink from %v: %v", href, err)
+		return
+	}
+	f := browser.SetAndLoadUrl(u)
 	TraverseTree(el, func(ui duit.UI) {
 		el, ok := ui.(*Element)
 		if ok && el != nil {
@@ -1015,7 +1022,7 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 }
 
 func PrintTree(ui duit.UI) {
-	if log.Debug {
+	if log.Debug && debugPrintHtml {
 		printTree(0, ui)
 	}
 }
@@ -1128,8 +1135,17 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 		Text:    initUrl,
 		Font:    Style.Font(),
 		Keys:    func(k rune, m draw.Mouse) (e duit.Event) {
-			if k == 10 {
-				return b.LoadUrl()
+			if k == EnterKey {
+				a := b.LocationField.Text
+				if !strings.HasPrefix(strings.ToLower(a), "http") {
+					a = "http://" + a
+				}
+				u, err := url.Parse(a)
+				if err != nil {
+					log.Errorf("parse url: %v", err)
+					return
+				}
+				return b.LoadUrl(u)
 			}
 			return
 		},
@@ -1189,24 +1205,16 @@ func (b *Browser) Back() (e duit.Event) {
 	if len(b.History.urls) > 0 {
 		b.History.Back()
 		b.LocationField.Text = b.History.URL().String()
-		b.LoadUrl()
+		b.LoadUrl(b.History.URL())
 	}
 	e.Consumed = true
 	return
 }
 
-func (b *Browser) SetAndLoadUrl(addr string) func() duit.Event {
-	a := addr
+func (b *Browser) SetAndLoadUrl(u *url.URL) func() duit.Event {
 	return func() duit.Event {
-		log.Printf("SetAndLoadUrl::callback: addr=%v", addr)
-		log.Printf("       b.URL=%v", b.URL())
-		url, err := b.LinkedUrl(addr)
-		if err == nil {
-			b.LocationField.Text = url.String()
-			b.LoadUrl()
-		} else {
-			log.Printf("parse url %v: %v", a, err)
-		}
+		b.LocationField.Text = u.String()
+		b.LoadUrl(u)
 
 		return duit.Event{
 			Consumed: true,
@@ -1224,26 +1232,12 @@ func (b *Browser) showBodyMessage(msg string) {
 	dui.Render()
 }
 
-func (b *Browser) LoadUrl() (e duit.Event) {
-	addr := b.LocationField.Text
-	if !strings.HasPrefix(addr, "http") {
-		addr = "http://" + addr
-	}
-	log.Printf("Getting %v...", addr)
-	url, err := url.Parse(addr)
-	if err != nil {
-		log.Errorf("load url: error parsing %v", addr)
-		return
-	}
+func (b *Browser) LoadUrl(url *url.URL) (e duit.Event) {
 	buf, contentType, err := b.get(url, true)
 	if err != nil {
-		log.Errorf("error loading %v: %v", addr, err)
+		log.Errorf("error loading %v: %v", url, err)
 		if er := errors.Unwrap(err); er != nil {
 			err = er
-		}
-		if strings.Contains(err.Error(), "HTTP response to HTTPS client") {
-			b.LocationField.Text = strings.Replace(url.String(), "https://", "http://", 1)
-			return b.LoadUrl()
 		}
 		b.showBodyMessage(err.Error())
 		return

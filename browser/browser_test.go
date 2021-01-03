@@ -104,4 +104,3 @@ func TestNodeToBoxNoscript(t *testing.T) {
 		t.Fail()
 	}
 }
-
