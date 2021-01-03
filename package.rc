@@ -14,10 +14,10 @@ mv $name.bin ./$name/
 cp README.md ./$name/
 cp normalize.css ./$name/
 dircp domino-lib ./$name/domino-lib
-tar czf $name.tgz $name
-chmod +t $name.tgz
-echo Created $name.tgz
-tarball=`{pwd} ^ '/' ^ $name ^ '.tgz'
+tarball=`{pwd} ^ '/' ^ $name ^ '-v0.0.1-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
+tar czf $tarball $name
+chmod +t $tarball
+echo Created $tarball
 
 echo Verifying $tarball ...
 mkdir -p /tmp/`{date -n}
