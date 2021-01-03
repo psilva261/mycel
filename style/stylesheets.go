@@ -31,7 +31,7 @@ var log *logger.Logger
 var rMinWidth = regexp.MustCompile(`min-width: (\d+)px`)
 var rMaxWidth = regexp.MustCompile(`max-width: (\d+)px`)
 
-const FontBaseSize = 14.0
+const FontBaseSize = 11.0
 
 const AddOnCSS = `
 a, span, i, tt, b {
@@ -545,6 +545,8 @@ func length(l string) (f float64, unit string, err error) {
 	if unit == "em" {
 		f *= FontBaseSize
 	}
+
+	f = float64(dui.Scale(int(f)))
 
 	return
 }

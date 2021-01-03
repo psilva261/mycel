@@ -87,7 +87,9 @@ type CodeView struct {
 func NewCodeView(s string, n style.Map) (cv *CodeView) {
 	log.Printf("NewCodeView(%+v)", s)
 	cv = &CodeView{}
-	edit := &duit.Edit{}
+	edit := &duit.Edit{
+		Font: Style.Font(),
+	}
 	/*edit.Keys = func(k rune, m draw.Mouse) (e duit.Event) {
 		//log.Printf("k=%v (c %v    p %v)", k, unicode.IsControl(k), unicode.IsPrint(k))
 		if unicode.IsPrint(k) {
