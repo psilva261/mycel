@@ -240,14 +240,16 @@ func NewBoxElement(ui duit.UI, n *nodes.Node) *Element {
 	}
 
 	var i *draw.Image
-	var err error
 	w := n.Width()
 	h := n.Height()
 
 	if w == 0 && h == 0 {
 		return NewElement(ui, n)
 	}
-	if i, err = n.BoxBackground(); err != nil {
+	if bg, err := n.BoxBackground(); err == nil {
+		_=bg
+		//i = bg
+	} else {
 		log.Printf("box background: %f", err)
 	}
 	box := &duit.Box{

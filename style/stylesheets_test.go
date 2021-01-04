@@ -30,8 +30,16 @@ func TestColorHex(t *testing.T) {
 	tr := d("red")
 	hr := d("#ff0000")
 
-	tri := tr.colorHex("color")
-	hri := hr.colorHex("color")
+	tri, ok := tr.colorHex("color")
+	if !ok {
+		t.Fail()
+	}
+
+	hri, ok := hr.colorHex("color")
+	if !ok {
+		t.Fail()
+	}
+
 	if tri != hri {
 		t.Fatalf("tri=%x hri=%x", tri, hri)
 	}

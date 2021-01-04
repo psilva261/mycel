@@ -362,15 +362,18 @@ func (cs Map) FontSize() float64 {
 }
 
 func (cs Map) Color() draw.Color {
-	h := cs.colorHex("color")
+	h, ok := cs.colorHex("color")
+	if !ok {
+		return draw.Black
+	}
 	c := draw.Color(h)
 	return c
 }
 
-func (cs Map) colorHex(cssPropName string) uint32 {
+func (cs Map) colorHex(cssPropName string) (c draw.Color, ok bool) {
 	propVal, ok := cs.Declarations[cssPropName]
 	if ok {
-		var r, g, b, a uint32
+		var r, g, b uint32
 		if strings.HasPrefix(propVal.Value, "rgb") {
 			val := propVal.Value[3:]
 			val = strings.TrimPrefix(val, "(")
@@ -393,7 +396,7 @@ func (cs Map) colorHex(cssPropName string) uint32 {
 			b = uint32(bb) * 256
 		} else if strings.HasPrefix(propVal.Value, "#") {
 			hexColor := propVal.Value[1:]
-			a = 256 * 256
+
 			if len(hexColor) == 3 {
 				rr, err := strconv.ParseInt(hexColor[0:1], 16, 32)
 				if err != nil {
@@ -437,30 +440,21 @@ func (cs Map) colorHex(cssPropName string) uint32 {
 			if !ok {
 				goto default_value
 			}
-			r, g, b, a = colorRGBA.RGBA()
+			r, g, b, _ = colorRGBA.RGBA()
 		}
-		m := uint32(16)
-		downSample := func(a uint32) uint32 {
-			return a
-			return a - (a % m)
-		}
-		x := (downSample(r / 256)) << 24
-		x = x | (downSample((g / 256)) << 16)
-		x = x | (downSample((b / 256)) << 8)
-		//x = x | (a / 256)
-		_ = a
+
+		x := (r / 256) << 24
+		x = x | ((g / 256) << 16)
+		x = x | ((b / 256) << 8)
 		x = x | 0x000000ff
-		if x == 0xffffffff {
-			// TODO: white on white background...
-			return uint32(draw.Black)
-		}
-		return uint32(x)
+
+		return draw.Color(uint32(x)), true
 	} else {
-		return uint32(draw.Black)
+		return 0, false
 	}
 default_value:
 	log.Printf("could not interpret %v", propVal)
-	return uint32(draw.Black)
+	return 0, false
 }
 
 func (cs Map) IsInline() bool {

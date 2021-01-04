@@ -56,13 +56,21 @@ func (cs Map) BoxBackground() (i *draw.Image, err error) {
 func (cs Map) backgroundColor() draw.Color {
 	_, ok := cs.Declarations["background-color"]
 	if ok {
-		return draw.Color(cs.colorHex("background-color"))
+		c, ok := cs.colorHex("background-color")
+		if !ok {
+			return draw.White
+		}
+		return c
 	}
 	_, ok = cs.Declarations["background"]
 	if ok {
-		return draw.Color(cs.colorHex("background"))
+		c, ok := cs.colorHex("background")
+		if !ok {
+			return draw.White
+		}
+		return c
 	}
-	return draw.Color(uint32(draw.White))
+	return draw.White
 }
 
 func backgroundImageUrl(decl css.Declaration) (url string, ok bool) {

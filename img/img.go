@@ -8,7 +8,7 @@ import (
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
 	"image"
-	"image/jpeg"
+	"image/png"
 	"io"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
@@ -82,7 +82,7 @@ func Svg(data string, w, h int) (bs []byte, err error) {
 	icon.Draw(rasterx.NewDasher(w, h, rasterx.NewScannerGV(w, h, rgba, rgba.Bounds())), 1)
 
 	buf := bytes.NewBufferString("")
-	if err = jpeg.Encode(buf, rgba, nil); err != nil {
+	if err = png.Encode(buf, rgba); err != nil {
 		return nil, fmt.Errorf("encode: %w", err)
 	}
 
@@ -124,10 +124,11 @@ func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
 
 		// Encode uses a Writer, use a Buffer if you need the raw []byte
 		buf := bytes.NewBufferString("")
-		if err = jpeg.Encode(buf, newImage, nil); err != nil {
+		if err = png.Encode(buf, newImage); err != nil {
 			return nil, fmt.Errorf("encode: %w", err)
 		}
 		data = buf.Bytes()
 	}
+
 	return bytes.NewReader(data), nil
 }
