@@ -1157,7 +1157,7 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	}
 	b.History.Push(u)
 
-	buf, _, err := b.Get(u)
+	buf, _, err := b.get(u, true)
 	if err != nil {
 		log.Fatalf("get: %v", err)
 	}
