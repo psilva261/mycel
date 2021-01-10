@@ -1181,17 +1181,13 @@ func (b *Browser) LinkedUrl(addr string) (a *url.URL, err error) {
 		addr = b.URL().Scheme + "://" + b.URL().Host + addr
 	} else if !strings.HasPrefix(addr, "http") {
 		if strings.HasSuffix(b.URL().Path, "/") {
-			log.Printf("A")
 			addr = "/" + b.URL().Path + "/" + addr
 		} else {
-			log.Printf("B")
 			m := strings.LastIndex(b.URL().Path, "/")
 			if m > 0 {
-				log.Printf("B.>")
 				folder := b.URL().Path[0:m]
 				addr = "/" + folder + "/" + addr
 			} else {
-				log.Printf("B.<=")
 				addr = "/" + addr
 			}
 		}
