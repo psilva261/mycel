@@ -169,17 +169,17 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 	log.Flush()
 }
 
-func formData(n, submitBtn *nodes.Node) (data url.Values) {
+func formData(n, submitBtn *html.Node) (data url.Values) {
 	data = make(url.Values)
-	if n.Data() == "input" {
-		if n.Attr("type") == "submit" && (submitBtn == nil || n.DomSubtree != submitBtn.DomSubtree) {
+	if n.Data == "input" {
+		if attr(*n, "type") == "submit" && n != submitBtn {
 			return
 		}
-		if k := n.Attr("name"); k != "" {
-			data.Set(k, n.Attr("value"))
+		if k := attr(*n, "name"); k != "" {
+			data.Set(k, attr(*n, "value"))
 		}
 	}
-	for _, c := range n.Children {
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		for k, vs := range formData(c, submitBtn) {
 			data.Set(k, vs[0]) // TODO: what aboot the rest?
 		}
@@ -187,25 +187,23 @@ func formData(n, submitBtn *nodes.Node) (data url.Values) {
 	return
 }
 
-func (b *Browser) submit(form, submitBtn *nodes.Node) {
+func (b *Browser) submit(form *html.Node, submitBtn *html.Node) {
 	var err error
 	var buf []byte
 	var contentType opossum.ContentType
 
 	method := "GET" // TODO
-	if m := form.Attr("method"); m != "" {
+	if m := attr(*form, "method"); m != "" {
 		method = strings.ToUpper(m)
 	}
-
 	uri := b.URL()
-	if action := form.Attr("action"); action != "" {
+	if action := attr(*form, "action"); action != "" {
 		uri, err = b.LinkedUrl(action)
 		if err != nil {
 			log.Printf("error parsing %v", action)
 			return
 		}
 	}
-
 
 	if method == "GET" {
 		q := uri.Query()

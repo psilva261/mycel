@@ -319,6 +319,9 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 		t = "Submit"
 	}
 
+	// TODO: would be better to deal with *nodes.Node but keeping the correct
+	// references in the closure is tricky. Probably better to write a separate
+	// type Button to avoid this problem completely.
 	click := func() (r duit.Event) {
 		f := n.Ancestor("form")
 
@@ -326,7 +329,7 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 			return
 		}
 
-		b.submit(f, n)
+		b.submit(f.DomSubtree, n.DomSubtree)
 
 		return duit.Event{
 			Consumed:   true,
@@ -359,7 +362,7 @@ func NewInputField(n *nodes.Node) *Element {
 				},
 				Keys: func(k rune, m draw.Mouse) (e duit.Event) {
 					if k == 10 {
-						browser.submit(n.Ancestor("form"), nil)
+						browser.submit(n.Ancestor("form").DomSubtree, nil)
 						return duit.Event{
 							Consumed:   true,
 							NeedLayout: true,
@@ -387,7 +390,6 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 			}
 		}
 	}
-
 	x := m.Point.X
 	y := m.Point.Y
 	maxX := self.R.Dx()
@@ -396,7 +398,6 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 		dui.Display.SetCursor(&draw.Cursor{
 			Set: cursor,
 		})
-
 		if m.Buttons == 0 {
 			r.Consumed = true
 			return r
@@ -535,7 +536,6 @@ func Arrange(n *nodes.Node, elements ...*Element) *Element {
 		} else if len(rows[0]) == 1 {
 			return rows[0][0]
 		}
-
 		return NewElement(horizontalSeq(true, rows[0]), n)
 	} else {
 		seqs := make([]*Element, 0, len(rows))
@@ -543,7 +543,6 @@ func Arrange(n *nodes.Node, elements ...*Element) *Element {
 			seq := horizontalSeq(true, row)
 			seqs = append(seqs, NewElement(seq, n))
 		}
-
 		return NewElement(verticalSeq(seqs), n)
 	}
 }
@@ -748,7 +747,6 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 				seqs = append(seqs, NewElement(seq, row.n))
 			}
 		}
-
 		return NewElement(verticalSeq(seqs), n)
 	}
 }
