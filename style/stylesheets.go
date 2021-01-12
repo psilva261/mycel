@@ -120,12 +120,19 @@ func FetchNodeMap(doc *html.Node, cssText string, windowWidth int) (m map[*html.
 		ds := make(map[string]css.Declaration)
 		for _, r := range rs {
 			for _, d := range r.Declarations {
+				if exist, ok := ds[d.Property]; ok && smaller(*d, exist) {
+					continue
+				}
 				ds[d.Property] = *d
 			}
 		}
 		m[n] = Map{ds}
 	}
 	return
+}
+
+func smaller(d, dd css.Declaration) bool {
+	return dd.Important
 }
 
 func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*html.Node][]*css.Rule, err error) {

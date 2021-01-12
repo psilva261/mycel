@@ -248,8 +248,7 @@ func NewBoxElement(ui duit.UI, n *nodes.Node) *Element {
 		return NewElement(ui, n)
 	}
 	if bg, err := n.BoxBackground(); err == nil {
-		_=bg
-		//i = bg
+		i = bg
 	} else {
 		log.Printf("box background: %f", err)
 	}
