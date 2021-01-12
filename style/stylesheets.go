@@ -165,6 +165,9 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 		}
 
 		// for media queries
+		if strings.Contains(r.Prelude, "print") {
+			continue
+		}
 		if rMaxWidth.MatchString(r.Prelude) {
 			maxWidth, err := strconv.Atoi(rMaxWidth.FindStringSubmatch(r.Prelude)[1])
 			if err != nil {
