@@ -2,7 +2,6 @@ github.com/PuerkitoBio/goquery v1.6.0 h1:j7taAbelrdcsOlGeMenZxc2AWXD5fieT1/znArd
 github.com/PuerkitoBio/goquery v1.6.0/go.mod h1:GsLWisAFVj4WgDibEWF4pvYnkVQBpKBKeU+7zCJoLcc=
 github.com/andybalholm/cascadia v1.1.0 h1:BuuO6sSfQNFRu1LppgbD25Hr2vLYW25JvxHs5zzsLTo=
 github.com/andybalholm/cascadia v1.1.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9PqHO0sqidkEA4Y=
-github.com/chris-ramon/douceur v0.2.0 h1:IDMEdxlEUUBYBKE4z/mJnFyVXox+MjuEVDJNN27glkU=
 github.com/chris-ramon/douceur v0.2.1-0.20160603235419-f3463056cd52 h1:xJWyi77j4VQwdeo6bO3wQSQ7o7yVwEM0ZvwXpyKHZZ8=
 github.com/chris-ramon/douceur v0.2.1-0.20160603235419-f3463056cd52/go.mod h1:wDW5xjJdeoMm1mRt4sD4c/LbF/mWdEpRXQKjTR8nIBE=
 github.com/dlclark/regexp2 v1.2.0 h1:8sAhBGEM0dRWogWqWyQeIJnxjWO6oIjl8FKqREDsGfk=
@@ -27,8 +26,6 @@ github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/mjl-/duit v0.0.0-20200330125617-580cb0b2843f h1:eGFou1VfXmiti7EMQED6BIzfALMYi6/fBMIRL4usKfw=
 github.com/mjl-/duit v0.0.0-20200330125617-580cb0b2843f/go.mod h1:OlRagobzQ97GoM+WaQ5kyzdyts952BFYsuY5bMyv9tw=
-github.com/mjl-/go v0.0.0-20180429123528-fafada5f286e h1:M6KcUwCT34dkXLeYORteGPNguMsAaYkE/IBGKRGXFUI=
-github.com/mjl-/go v0.0.0-20180429123528-fafada5f286e/go.mod h1:G+1evjukGD/lUyIfAq/sr0YX5EcukfBUeA+tFPF5JUA=
 github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 h1:zYyBkD/k9seD2A7fsi6Oo2LfFZAehjjQMERAvZLEDnQ=
 github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646/go.mod h1:jpp1/29i3P1S/RLdc7JQKbRpFeM1dOBd8T9ki5s+AY8=
 github.com/psilva261/css v0.1.0 h1:lzQtXIUKSdH7s6Vi4SeOt1YnTWFY2O/H//rujTGcu10=

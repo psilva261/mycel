@@ -33,3 +33,17 @@ func TestQueryRef(t *testing.T) {
 	a := p.Children[5]
 	if q := a.QueryRef(); q != "p a" { t.Fatalf("%v", q) }
 }
+
+func TestSetText(t *testing.T) {
+	buf := strings.NewReader("<textarea>initial</textarea>")
+	doc, err := html.Parse(buf)
+	if err != nil { t.Fatalf(err.Error()) }
+	n := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
+	if s := ContentFrom(*n); s != "initial" {
+		t.Fatalf(s)
+	}
+	n.SetText("123")
+	if s := ContentFrom(*n); s != "123" {
+		t.Fatalf(s)
+	}
+}

@@ -202,6 +202,7 @@ type Element struct {
 	n       *nodes.Node
 	IsLink bool
 	Click  func() duit.Event
+	Changed func(*Element)
 }
 
 func NewElement(ui duit.UI, n *nodes.Node) *Element {
@@ -376,6 +377,54 @@ func NewInputField(n *nodes.Node) *Element {
 		},
 		n,
 	)
+}
+
+func NewTextArea(n *nodes.Node) *Element {
+	t := strings.TrimSpace(nodes.ContentFrom(*n))
+	formatted := ""
+	lines := strings.Split(t, "\n")
+	for _, line := range lines {
+		formatted += line + "\n"
+	}
+	edit := &duit.Edit{
+		Font: Style.Font(),
+		Keys: func(k rune, m draw.Mouse) (e duit.Event) {
+			// e.Consumed = true
+			return
+		},
+	}
+	edit.Append([]byte(formatted))
+
+	el := NewElement(
+		&duit.Box{
+			Kids:   duit.NewKids(edit),
+			Height: (int(n.FontSize()) + 4) * (len(lines)+2),
+		},
+		n,
+	)
+	el.Changed = func(e *Element) {
+		ed := e.UI.(*duit.Box).Kids[0].UI.(*duit.Edit)
+
+		tt, err := ed.Text()
+		if err != nil {
+			log.Errorf("edit changed: %v", err)
+			return
+		}
+
+		e.n.SetText(string(tt))
+	}
+
+	return el
+}
+
+func (el *Element) Key(dui *duit.DUI, self *duit.Kid, k rune, m draw.Mouse, orig image.Point) (r duit.Result) {
+	r = el.UI.Key(dui, self, k, m, orig)
+
+	if el.Changed != nil {
+		el.Changed(el)
+	}
+
+	return
 }
 
 func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (r duit.Result) {
@@ -781,23 +830,23 @@ func NewTableRow(n *nodes.Node) (tr *TableRow) {
 	return tr
 }
 
-func grepBody(n *html.Node) *html.Node {
-	var body *html.Node
+func grep(n *html.Node, tag string) *html.Node {
+	var t *html.Node
 
 	if n.Type == html.ElementNode {
-		if n.Data == "body" {
+		if n.Data == tag {
 			return n
 		}
 	}
 
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		res := grepBody(c)
+		res := grep(c, tag)
 		if res != nil {
-			body = res
+			t = res
 		}
 	}
 
-	return body
+	return t
 }
 
 func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
@@ -822,6 +871,8 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			} else {
 				return nil
 			}
+		case "textarea":
+			return NewTextArea(n)
 		case "button":
 			if t := attr(*n.DomSubtree, "type"); t == "" || t == "submit" {
 				return NewSubmitButton(b, n)
@@ -1011,10 +1062,11 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 	case *duit.Label:
 	case *ColoredLabel:
 		traverseTree(r+1, v.Label, f)
-	case *duit.Button:
 	case *Image:
 		traverseTree(r+1, v.Image, f)
 	case *duit.Field:
+	case *duit.Edit:
+	case *duit.Button:
 	case *CodeView:
 	default:
 		panic(fmt.Sprintf("unknown: %+v", v))

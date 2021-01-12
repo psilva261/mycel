@@ -147,7 +147,7 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 	}
 	log.Printf("%v html nodes found...", countHtmlNodes(doc))
 
-	body := grepBody(doc)
+	body := grep(doc, "body")
 
 	log.Printf("Layout website...")
 	scroller = duit.NewScroll(
@@ -171,19 +171,30 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 
 func formData(n, submitBtn *html.Node) (data url.Values) {
 	data = make(url.Values)
-	if n.Data == "input" {
+	nm := attr(*n, "name")
+
+	switch n.Data {
+	case "input":
 		if attr(*n, "type") == "submit" && n != submitBtn {
 			return
 		}
-		if k := attr(*n, "name"); k != "" {
-			data.Set(k, attr(*n, "value"))
+		if nm != "" {
+			data.Set(nm, attr(*n, "value"))
+		}
+	case "textarea":
+		nn := nodes.NewNodeTree(n, style.Map{}, make(map[*html.Node]style.Map), nil)
+
+		if nm != "" {
+			data.Set(nm, nodes.ContentFrom(*nn))
 		}
 	}
+
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		for k, vs := range formData(c, submitBtn) {
 			data.Set(k, vs[0]) // TODO: what aboot the rest?
 		}
 	}
+
 	return
 }
 

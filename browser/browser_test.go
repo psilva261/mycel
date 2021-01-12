@@ -83,7 +83,7 @@ func TestNodeToBoxNoscript(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	nodeMap := make(map[*html.Node]style.Map)
-	body := grepBody(doc)
+	body := grep(doc, "body")
 	b := &Browser{}
 	b.client = &http.Client{}
 	browser = b

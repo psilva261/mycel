@@ -210,3 +210,32 @@ func (n *Node) Serialized() (string, error) {
 	return b.String(), err
 }
 
+// SetText by replacing child nodes with a TextNode containing t.
+func (n *Node) SetText(t string) {
+	d := n.DomSubtree
+
+	if len(n.Children) != 1 || n.Type() != html.TextNode {
+		for d.FirstChild != nil {
+			d.RemoveChild(d.FirstChild)
+		}
+
+		c := &html.Node{
+			Parent: d,
+			Type: html.TextNode,
+		}
+		d.FirstChild = c
+
+		n.Children = []*Node{
+			&Node{
+				DomSubtree: c,
+				Wrappable: true,
+				Parent: n,
+			},
+		}
+	}
+	
+	n.Children[0].Text = t
+	n.Children[0].DomSubtree.Data = t
+	
+	return
+}
