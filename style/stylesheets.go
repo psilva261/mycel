@@ -74,6 +74,7 @@ func Hrefs(doc *html.Node) (hrefs []string) {
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "link" {
 			isStylesheet := false
+			isPrint := false
 			href := ""
 
 			for _, a := range n.Attr {
@@ -84,10 +85,12 @@ func Hrefs(doc *html.Node) (hrefs []string) {
 					}
 				case "href":
 					href = a.Val
+				case "media":
+					isPrint = a.Val == "print"
 				}
 			}
 
-			if isStylesheet {
+			if isStylesheet && !isPrint {
 				hrefs = append(hrefs, href)
 			}
 		}
