@@ -11,20 +11,6 @@ import (
 	"github.com/mjl-/duit"
 )
 
-func (el *Element) slicedDraw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) bool {
-	//fmt.Printf("m.Point.y=%v\n", m.Point.Y)
-	if experimentalUseSlicedDrawing {
-		//offset := scroller.GetOffset()
-		offset := -1
-		panic("not implemented")
-		fmt.Printf("orig=%v    m.Point.y=%v   offset=%v\n", orig.Y,m.Point.Y,offset)
-		if (m.Point.Y-offset < -10 || m.Point.Y-offset > 1200) && isLeaf(el.UI) {
-			return true
-		}
-	}
-	return false
-}
-
 type AtomBox struct {
 	Left, Right, Bottom, Top int
 }

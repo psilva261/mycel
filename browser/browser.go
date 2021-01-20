@@ -266,9 +266,6 @@ func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig ima
 	if el == nil {
 		return
 	}
-	if el.slicedDraw(dui, self, img, orig, m, force) {
-		return
-	}
 	box, ok := el.UI.(*duit.Box)
 	if ok && box.Width > 0 && box.Height > 0 {
 		uiSize := image.Point{X: box.Width, Y: box.Height}
@@ -1034,7 +1031,6 @@ func TraverseTree(ui duit.UI, f func(ui duit.UI)) {
 func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 	if ui == nil {
 		panic("null")
-		return
 	}
 	f(ui)
 	switch v := ui.(type) {
