@@ -32,6 +32,8 @@ var rMinWidth = regexp.MustCompile(`min-width: (\d+)px`)
 var rMaxWidth = regexp.MustCompile(`max-width: (\d+)px`)
 
 const FontBaseSize = 11.0
+var WindowWidth = 1280
+var WindowHeight = 1080
 
 const AddOnCSS = `
 a, span, i, tt, b {
@@ -530,27 +532,32 @@ func (cs Map) IsFlexDirectionRow() bool {
 func length(l string) (f float64, unit string, err error) {
 	var s string
 
-	if l == "auto" {
+	if l == "auto" || l == "inherit" {
 		return 0, "px", nil
 	}
 
-	for _, suffix := range []string{"px", "%", "rem", "em"} {
+	for _, suffix := range []string{"px", "%", "rem", "em", "vw", "vh"} {
 		if strings.HasSuffix(l, suffix) {
-			s = strings.TrimSuffix(l, suffix)
+			if s = strings.TrimSuffix(l, suffix); s != "" {
+				f, err = strconv.ParseFloat(s, 64)
+			}
 			unit = suffix
 			break
 		}
 	}
 
 	switch unit {
-	case "":
-		return f, unit, fmt.Errorf("unknown suffix: %v", l)
-	case "px", "em":
-		f, err = strconv.ParseFloat(s, 64)
-	}
-
-	if unit == "em" {
+	case "px":
+	case "em":
 		f *= FontBaseSize
+	case "vw":
+		f *= float64(WindowWidth) / 100.0
+	case "vh":
+		f *= float64(WindowHeight) / 100.0
+	case "%", "rem":
+		f = 0
+	default:
+		return f, unit, fmt.Errorf("unknown suffix: %v", l)
 	}
 
 	f = float64(dui.Scale(int(f)))
