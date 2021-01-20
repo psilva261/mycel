@@ -4,13 +4,11 @@ import (
 	"9fans.net/go/draw"
 	"fmt"
 	"github.com/chris-ramon/douceur/css"
-	"github.com/chris-ramon/douceur/inliner"
 	"github.com/chris-ramon/douceur/parser"
 	cssSel "github.com/psilva261/css"
 	"github.com/mjl-/duit"
 	"golang.org/x/image/colornames"
 	"golang.org/x/net/html"
-	"io/ioutil"
 	"github.com/psilva261/opossum/logger"
 	"os/exec"
 	"regexp"
@@ -198,36 +196,6 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 		}
 	}
 	return
-}
-
-func Inline(html string, csss ...string) (string, error) {
-	revertCSS, err := ioutil.ReadFile("normalize.css")
-	if err != nil {
-		return "", fmt.Errorf("revert ffox css: %w", err)
-	}
-	csss = append([]string{string(revertCSS), AddOnCSS}, csss...)
-	style := "<style>" + strings.Join(csss, "\n\n") + "</style>"
-
-	var replaced string
-	if strings.Contains(html, "</head>") {
-		replaced = strings.Replace(html, "</head>", style+"\n</head>", 1)
-	} else if strings.Contains(html, "<body") {
-		replaced = strings.Replace(html, "<body", style+"\n<body", 1)
-	} else {
-		replaced = style + html
-	}
-
-	if replaced == html {
-		panic("woot")
-	}
-
-	inlined, err := inliner.Inline(replaced)
-	if err == nil {
-		html = inlined
-	} else {
-		err = fmt.Errorf("inling failed: %w", err)
-	}
-	return html, err
 }
 
 type Map struct {
