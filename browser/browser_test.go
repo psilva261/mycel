@@ -5,6 +5,7 @@ import (
 	"golang.org/x/net/html"
 	"net/http"
 	"net/url"
+	"github.com/chris-ramon/douceur/css"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
@@ -25,6 +26,63 @@ type item struct {
 	orig   string
 	href   string
 	expect string
+}
+
+func TestArrange(t *testing.T) {
+	htm := `
+		<div>
+			<h1>title 1</h1>
+			<h2>title 2</h2>
+			<h3>title 3</h3>
+		</div>
+	`
+	for _, d := range []string{"inline", "block"} {
+		doc, err := html.ParseWithOptions(
+			strings.NewReader(string(htm)),
+			html.ParseOptionEnableScripting(false),
+		)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		nodeMap := make(map[*html.Node]style.Map)
+		nt := nodes.NewNodeTree(doc, style.Map{}, nodeMap, nil)
+		h1 := nt.Find("h1")
+		h2 := nt.Find("h2")
+		h3 := nt.Find("h3")
+
+		m := style.Map{
+			Declarations: make(map[string]css.Declaration),
+		}
+		m.Declarations["display"] = css.Declaration{
+			Property: "display",
+			Value:    d,
+		}
+		h1.Map = m
+		h2.Map = m
+		h3.Map = m
+
+		es := []*Element{
+			&Element{n: h1},
+			&Element{n: h2},
+			&Element{n: h3},
+		}
+		v := Arrange(nt, es...)
+		for _, e := range es {
+			if e.n.IsInline() != (d == "inline") {
+				t.Fatalf("%+v", e)
+			}
+		}
+		if d == "inline" {
+			b := v.UI.(*duit.Box)
+			if len(b.Kids) != 3 {
+				t.Fatalf("%+v", b)
+			}
+		} else {
+			if g := v.UI.(*duit.Grid); g.Columns != 1 || len(g.Kids) != 3 {
+				t.Fatalf("%+v", g)
+			}
+		}
+	}
 }
 
 func TestLinkedUrl(t *testing.T) {

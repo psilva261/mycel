@@ -42,7 +42,7 @@ button, textarea, input, select {
   display: inline-block;
 }
 
-h1, h2, h3, h4. h5, h6, div, center, frame, frameset, p, ul, menu, pre, dir {
+h1, h2, h3, h4. h5, h6, div, center, frame, frameset, p, ul, menu, pre, dir, dl, dd, dt {
 	display: block;
 }
 

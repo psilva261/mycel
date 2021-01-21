@@ -2,6 +2,7 @@ name='opossum-plan9-amd64'
 
 rm -rf ./$name
 mkdir ./$name
+mkdir -p ./packages
 chmod +t ./$name
 mkdir ./$name/domino-lib
 
@@ -18,7 +19,7 @@ mv $name.bin ./$name/
 cp README.md ./$name/
 cp normalize.css ./$name/
 dircp domino-lib ./$name/domino-lib
-tarball=`{pwd} ^ '/' ^ $name ^ '-v0.0.1-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
+tarball=`{pwd} ^ '/packages/' ^ $name ^ '-v0.0.1-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
 tar czf $tarball $name
 chmod +t $tarball
 echo Created $tarball
