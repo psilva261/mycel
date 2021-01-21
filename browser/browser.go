@@ -884,30 +884,6 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			}
 		case "table":
 			return NewTable(n).Element(r+1, b, n)
-		case "noscript":
-			if *ExperimentalJsInsecure || !*EnableNoScriptTag {
-				return nil
-			}
-			fallthrough
-		case "body", "p", "h1", "center", "nav", "article", "header", "div", "td":
-			var innerContent duit.UI
-			if nodes.IsPureTextContent(*n) {
-				t := strings.TrimSpace(nodes.ContentFrom(*n))
-				innerContent = &ColoredLabel{
-					Label: &duit.Label{
-						Text: t,
-						Font: n.Font(),
-					},
-					n: n,
-				}
-			} else {
-				innerContent = InnerNodesToBox(r+1, b, n)
-			}
-
-			return NewBoxElement(
-				innerContent,
-				n,
-			)
 		case "img", "svg":
 			return NewElement(
 				NewImage(n),
@@ -969,9 +945,31 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			)
 			el.makeLink(href)
 			return el
+		case "noscript":
+			if *ExperimentalJsInsecure || !*EnableNoScriptTag {
+				return nil
+			}
+			fallthrough
 		default:
 			// Internal node object
-			return InnerNodesToBox(r+1, b, n)
+			var innerContent duit.UI
+			if nodes.IsPureTextContent(*n) {
+				t := strings.TrimSpace(nodes.ContentFrom(*n))
+				innerContent = &ColoredLabel{
+					Label: &duit.Label{
+						Text: t,
+						Font: n.Font(),
+					},
+					n: n,
+				}
+			} else {
+				innerContent = InnerNodesToBox(r+1, b, n)
+			}
+
+			return NewBoxElement(
+				innerContent,
+				n,
+			)
 		}
 	} else if n.Type() == html.TextNode {
 		// Leaf text object
