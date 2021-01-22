@@ -3,6 +3,7 @@ package nodes
 import (
 	"bytes"
 	"golang.org/x/net/html"
+	"github.com/chris-ramon/douceur/css"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/style"
 	"strings"
@@ -27,13 +28,23 @@ type Node struct {
 
 // NewNodeTree propagates the cascading styles to the leaves
 //
-// First applies the global style and at the end the local style attribute's style is attached.
-func NewNodeTree(doc *html.Node, cs style.Map, nodeMap map[*html.Node]style.Map, parent *Node) (n *Node) {
-	ncs := cs
-	if m, ok := nodeMap[doc]; ok {
-		ncs = ncs.ApplyChildStyle(m)
+// First applies the parent style and at the end the local style attribute's style is attached.
+func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map, parent *Node) (n *Node) {
+	ncs := style.Map{
+		Declarations: make(map[string]css.Declaration),
 	}
-	ncs = ncs.ApplyChildStyle(style.NewMap(doc))
+	ncs = ps.ApplyChildStyle(ncs, false)
+	// add from matching selectors
+	// (keep only inheriting properties from parent node)
+	if m, ok := nodeMap[doc]; ok {
+		ncs = ncs.ApplyChildStyle(m, false)
+	}
+
+	// add style attribute
+	// (keep all properties that already match)
+	styleAttr := style.NewMap(doc)
+	ncs = ncs.ApplyChildStyle(styleAttr, true)
+
 	data := doc.Data
 	if doc.Type == html.ElementNode {
 		data = strings.ToLower(data)
@@ -51,6 +62,13 @@ func NewNodeTree(doc *html.Node, cs style.Map, nodeMap map[*html.Node]style.Map,
 	if doc.Type == html.TextNode {
 
 		n.Text = filterText(doc.Data)
+		n.Map = style.Map{
+			Declarations: make(map[string]css.Declaration),
+		}
+		n.Map.Declarations["display"] = css.Declaration{
+			Property: "display",
+			Value: "inline",
+		}
 	}
 	i := 0
 	for c := doc.FirstChild; c != nil; c = c.NextSibling {
@@ -233,9 +251,9 @@ func (n *Node) SetText(t string) {
 			},
 		}
 	}
-	
+
 	n.Children[0].Text = t
 	n.Children[0].DomSubtree.Data = t
-	
+
 	return
 }

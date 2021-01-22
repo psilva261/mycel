@@ -160,7 +160,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 			if err != nil {
 				return nil, fmt.Errorf("read image %v: %v", xml, err)
 			}
-			
+
 			goto img_elem
 		} else {
 			return nil, fmt.Errorf("img svg %v: %v", xml, err)
@@ -219,7 +219,7 @@ func NewElement(ui duit.UI, n *nodes.Node) *Element {
 
 	if stashElements {
 		existingEl, ok := ui.(*Element)
-		if ok && existingEl != nil {
+		if ok && existingEl != nil && n == existingEl.n {
 			return &Element{
 				UI: existingEl.UI,
 				n: existingEl.n,
@@ -424,6 +424,14 @@ func (el *Element) Key(dui *duit.DUI, self *duit.Kid, k rune, m draw.Mouse, orig
 }
 
 func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (r duit.Result) {
+	if m.Buttons == 2 {
+		if el == nil {
+			log.Infof("inspect nil element")
+		} else {
+			log.Infof("inspect el %+v %+v %+v", el, el.n, el.UI)
+		}
+	}
+
 	if el == nil {
 		return
 	}
@@ -572,7 +580,6 @@ func Arrange(n *nodes.Node, elements ...*Element) *Element {
 		}
 	}
 	flushCurrentRow()
-
 	if len(rows) == 0 {
 		return nil
 	} else if len(rows) == 1 {

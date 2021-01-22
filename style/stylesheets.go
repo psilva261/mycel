@@ -42,7 +42,7 @@ button, textarea, input, select {
   display: inline-block;
 }
 
-h1, h2, h3, h4. h5, h6, div, center, frame, frameset, p, ul, menu, pre, dir, dl, dd, dt {
+h1, h2, h3, h4, h5, h6, div, center, frame, frameset, p, ul, menu, pre, dir, dl, dd, dt {
 	display: block;
 }
 
@@ -109,7 +109,7 @@ func MergeNodeMaps(m, addOn map[*html.Node]Map) {
 		// "zero" valued Map if it doesn't exist yet
 		initial := m[n]
 
-		m[n] = initial.ApplyChildStyle(mp)
+		m[n] = initial.ApplyChildStyle(mp, true)
 	}
 }
 
@@ -241,39 +241,23 @@ func NewMap(n *html.Node) Map {
 	return s
 }
 
-func (cs Map) ApplyChildStyle(ccs Map) (res Map) {
+func (cs Map) ApplyChildStyle(ccs Map, copyAll bool) (res Map) {
 	res.Declarations = make(map[string]css.Declaration)
 
 	for k, v := range cs.Declarations {
+		switch k {
+		// https://www.w3.org/TR/CSS21/propidx.html
+		case "azimuth", "border-collapse", "border-spacing", "caption-side", "color", "cursor", "direction", "elevation", "empty-cells", "font-family", "font-size", "font-style", "font-variant", "font-weight", "font", "letter-spacing", "line-height", "list-style-image", "list-style-position", "list-style-type", "list-style", "orphans", "pitch-range", "pitch", "quotes", "richness", "speak-header", "speak-numeral", "speak-punctuation", "speak", "speech-rate", "stress", "text-align", "text-indent", "text-transform", "visibility", "voice-family", "volume", "white-space", "widows", "word-spacing":
+		default:
+			if !copyAll {
+				continue
+			}
+		}
 		res.Declarations[k] = v
 	}
 	// overwrite with higher prio child props
 	for k, v := range ccs.Declarations {
-		switch k {
-		/*case "height", "width":
-			parentL, ok := res.Declarations[k]
-			if ok && strings.HasSuffix(v.Value, "%") && strings.HasSuffix(parentL.Value, "px") {
-				parentLNum, err := strconv.Atoi(strings.TrimSuffix(parentL.Value, "px"))
-				if err != nil {
-					log.Errorf("atoi: %v", err)
-					continue
-				}
-				percentNum, err := strconv.ParseFloat(strings.TrimSuffix(v.Value, "%"), 64)
-				if err != nil {
-					log.Errorf("atoi: %v", err)
-					continue
-				}
-				prod := int(percentNum * float64(parentLNum) / 100.0)
-				res.Declarations[k] = css.Declaration{
-					Property: k,
-					Value: fmt.Sprintf("%vpx", prod),
-				}
-				continue
-			}
-			fallthrough*/
-		default:
-			res.Declarations[k] = v
-		}
+		res.Declarations[k] = v
 	}
 
 	return
@@ -528,7 +512,9 @@ func length(l string) (f float64, unit string, err error) {
 		return f, unit, fmt.Errorf("unknown suffix: %v", l)
 	}
 
-	f = float64(dui.Scale(int(f)))
+	if dui != nil {
+		f = float64(dui.Scale(int(f)))
+	}
 
 	return
 }

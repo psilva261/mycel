@@ -20,6 +20,7 @@ func init() {
 	ExperimentalJsInsecure = &js
 	logger.Init()
 	SetLogger(&logger.Logger{})
+	style.Init(nil, &logger.Logger{})
 }
 
 type item struct {
@@ -160,5 +161,63 @@ func TestNodeToBoxNoscript(t *testing.T) {
 	})
 	if numInputs != 1 {
 		t.Fail()
+	}
+}
+
+func TestInlining(t *testing.T) {
+	htm := `
+		<body>
+			<span id="outer">(<a href="http://example.com"><span>example.com</span></a></span>
+		</body>
+	`
+	doc, err := html.ParseWithOptions(
+		strings.NewReader(string(htm)),
+		html.ParseOptionEnableScripting(false),
+	)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	body := grep(doc, "body")
+	b := &Browser{}
+	b.client = &http.Client{}
+	browser = b
+	u, err := url.Parse("https://example.com")
+	if err != nil {
+		log.Fatalf("parse: %v", err)
+	}
+	b.History.Push(u)
+	nm, err := style.FetchNodeMap(doc, style.AddOnCSS, 1280)
+	if err != nil {
+		log.Fatalf("FetchNodeMap: %v", err)
+	}
+	nt := nodes.NewNodeTree(body, style.Map{}, nm, nil)
+	boxed := NodeToBox(0, b, nt)
+
+	// 1. nodes are row-like
+	outerSpan := nt.Find("span")
+	if outerSpan.Attr("id") != "outer" || len(outerSpan.Children) != 2 || outerSpan.IsFlex() {
+		t.Fatalf(" node")
+	}
+	bracket := outerSpan.Children[0]
+	if bracket.Data() != "(" || !bracket.IsInline() {
+		t.Errorf("bracket, is inline: %v", bracket.IsInline())
+	}
+	a := outerSpan.Children[1]
+	if a.Data() != "a" || !a.IsInline() {
+		t.Errorf("a, is inline: %v, %+v %+v", a.IsInline(), a, nil)
+	}
+
+	// 2. Elements are row-like
+	box := boxed.UI.(*Element).UI.(*duit.Box)
+	if len(box.Kids) != 2 {
+		t.Errorf("box: %+v", box)
+	}
+	bel := box.Kids[0].UI.(*Element)
+	ael := box.Kids[1].UI.(*Element)
+	if bel.n.Data() != "(" {
+		t.Errorf("bel: %+v", bel)
+	}
+	if ael.n.Data() != "a" {
+		t.Errorf("ael: %+v %+v", ael, ael.n)
 	}
 }

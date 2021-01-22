@@ -103,7 +103,7 @@ b {
 		}
 
 		if w == 400 {
-			_ =m[body][0] 
+			_ =m[body][0]
 			if m[body][0].Declarations[0].Value != "lightblue" {
 				t.Fail()
 			}
@@ -133,6 +133,18 @@ func TestFetchNodeMap(t *testing.T) {
 	t.Logf("m=%+v", m)
 }
 
+func TestSmaller(t *testing.T) {
+	d := css.Declaration{
+		Important: false,
+	}
+	dd := css.Declaration{
+		Important: true,
+	}
+	if !smaller(d, dd) {
+		t.Fail()
+	}
+}
+
 func TestApplyChildStyleInherit(t *testing.T) {
 	parent := Map{
 		Declarations: make(map[string]css.Declaration),
@@ -145,30 +157,29 @@ func TestApplyChildStyleInherit(t *testing.T) {
 		Declarations: make(map[string]css.Declaration),
 	}
 
-	res := parent.ApplyChildStyle(child)
+	res := parent.ApplyChildStyle(child, true)
 	if v := res.Declarations["height"].Value; v != "80px" {
 		t.Fatalf(v)
 	}
 }
 
-/*func TestApplyChildStyleMultiply(t *testing.T) {
-	parent := Map{
-		Declarations: make(map[string]css.Declaration),
+func TestLength(t *testing.T) {
+	lpx := map[string]float64{
+		"auto": 0.0,
+		"inherit": 0.0,
+		"17px": 17.0,
+		"10em": 110.0,
+		"10vw": 128.0,
+		"10vh": 108.0,
+		"10%": 0,
 	}
-	parent.Declarations["height"] = css.Declaration{
-		Property: "height",
-		Value:    "80px",
+	for l, px := range lpx {
+		f, _, err := length(l)
+		if err != nil {
+			t.Fatalf("%v: %v", l, err)
+		}
+		if f != px {
+			t.Fatalf("expected %v but got %v", px, f)
+		}
 	}
-	child := Map{
-		Declarations: make(map[string]css.Declaration),
-	}
-	child.Declarations["height"] = css.Declaration{
-		Property: "height",
-		Value:    "50%",
-	}
-
-	res := parent.ApplyChildStyle(child)
-	if v := res.Declarations["height"].Value; v != "40px" {
-		t.Fatalf(v)
-	}
-}*/
+}
