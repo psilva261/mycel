@@ -5,7 +5,6 @@ import (
 	"image"
 	"github.com/psilva261/opossum/domino"
 	"github.com/psilva261/opossum/nodes"
-	"time"
 
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
@@ -132,7 +131,6 @@ func processJS2(d *domino.Domino, doc *nodes.Node, scripts []string) (resHtm str
 		}
 	}
 
-	time.Sleep(time.Second)
 	resHtm, changed, err := d.TrackChanges()
 	if err != nil {
 		return "", fmt.Errorf("track changes: %w", err)

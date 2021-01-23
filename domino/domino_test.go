@@ -5,7 +5,6 @@ import (
 	"github.com/psilva261/opossum/logger"
 	"strings"
 	"testing"
-	"time"
 )
 
 const simpleHTML = `
@@ -93,7 +92,6 @@ func TestJQuery(t *testing.T) {
 	if res != "2" {
 		t.Fatal()
 	}
-	time.Sleep(2 * time.Second)
 	d.Stop()
 }
 
@@ -118,7 +116,6 @@ func TestGodoc(t *testing.T) {
 			t.Fatalf("%v", err)
 		}
 	}
-	time.Sleep(2 * time.Second)
 	d.Stop()
 }
 
@@ -143,7 +140,6 @@ func TestJqueryUI(t *testing.T) {
 			t.Fatalf("%v", err)
 		}
 	}
-	time.Sleep(2 * time.Second)
 	d.Stop()
 }
 
@@ -181,7 +177,6 @@ func TestRun(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	time.Sleep(2 * time.Second)
 	res, err := d.Exec("$('h1').html()", false)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -218,7 +213,6 @@ func TestTriggerClick(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	//time.Sleep(2 * time.Second)
 	res, err := d.Exec("$('h1').html()", false)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -281,7 +275,6 @@ func TestDomChanged(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	time.Sleep(2 * time.Second)
 	res, err := d.Exec("$('h1').html()", false)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -295,7 +288,6 @@ func TestDomChanged(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	t.Logf("new res=%v", res)
-	<-time.After(2*time.Second)
 	d.Stop()
 }
 
