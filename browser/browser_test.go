@@ -29,6 +29,19 @@ type item struct {
 	expect string
 }
 
+func TestElementClick(t *testing.T) {
+	el := Element{}
+	for _, b := range []bool{true, false} {
+		el.Click = func() (e duit.Event) {
+			e.Consumed = b
+			return
+		}
+		if el.click() != b {
+			t.Fail()
+		}
+	}
+}
+
 func TestArrange(t *testing.T) {
 	htm := `
 		<div>

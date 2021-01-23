@@ -464,8 +464,8 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 
 func (el *Element) click() (consumed bool) {
 	if el.Click != nil {
-		el.Click()
-		return
+		e := el.Click()
+		return e.Consumed
 	}
 
 	if !*ExperimentalJsInsecure {
