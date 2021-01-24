@@ -112,7 +112,7 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 		var domino = require('domino-lib/index');
 		var Element = domino.impl.Element; // etc
 
-		Object.assign(this, domino.createWindow(s.html, 'http://example.com'));
+		Object.assign(this, domino.createWindow(opossum.html, 'http://example.com'));
 		window = this;
 		window.parent = window;
 		window.top = window;
@@ -168,12 +168,14 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 				type S struct {
 					Buf  string `json:"buf"`
 					HTML string `json:"html"`
+					Referrer func() string `json:"referrer"`
 				}
 
 				vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
-				vm.Set("s", S{
+				vm.Set("opossum", S{
 					HTML: d.html,
 					Buf:  "yolo",
+					Referrer: func() string { return "https://example.com" },
 				})
 			}
 

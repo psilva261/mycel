@@ -367,7 +367,7 @@ Document.prototype = Object.create(ContainerNode.prototype, {
   contentType: { get: function contentType() { return this._contentType; } },
   URL: { get: function URL() { return this._address; } },
   domain: { get: utils.nyi.bind(this, 'domain'), set: utils.nyi.bind(this, 'domain') },
-  referrer: { get: utils.nyi.bind(this, 'referrer') },
+  referrer: { get: opossum.referrer },
   //cookie: { get: utils.nyi.bind(this, 'cookie get'), set: utils.nyi.bind(this, 'cookie set') },
   lastModified: { get: utils.nyi.bind(this, 'lastModified get') },
   location: {

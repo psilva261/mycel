@@ -456,3 +456,20 @@ func TestWindowParent(t *testing.T) {
 	}
 	d.Stop()
 }
+
+func TestReferrer(t *testing.T) {
+	d := NewDomino(simpleHTML)
+	d.Start()
+	script := `
+	document.referrer;
+	`
+	res, err := d.Exec(script, true)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	t.Logf("res=%v", res)
+	if res != "https://example.com" {
+		t.Fatal()
+	}
+	d.Stop()
+}
