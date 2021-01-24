@@ -116,6 +116,57 @@ b {
 	}
 }
 
+func TestFetchNodeRules2(t *testing.T) {
+	data := `<h2 id="outer">
+				<h2 id="sp1">[</h2>
+				<h2 id="sp2">]</h2>
+			</h2>`
+	doc, err := html.Parse(strings.NewReader(data))
+	if err != nil {
+		t.Fail()
+	}
+	m, err := FetchNodeRules(doc, AddOnCSS, 1024)
+	if err != nil {
+		t.Fail()
+	}
+	t.Logf("m=%+v", m)
+
+	var outer *html.Node
+	var sp1 *html.Node
+	var sp2 *html.Node
+
+	var f func(n *html.Node)
+	f = func(n *html.Node) {
+		if len(n.Attr) == 1 {
+			switch n.Attr[0].Val {
+			case "outer":
+				outer = n
+			case "sp1":
+				sp1 = n
+			case "sp2":
+				sp2 = n
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(doc)
+
+	/*t.Logf("outer=%+v", outer)
+	t.Logf("sp1=%+v", sp1)
+	t.Logf("sp2=%+v", sp2)*/
+
+	for _, n := range []*html.Node{outer, sp1, sp2} {
+		_, ok := m[n]
+		if !ok {
+			t.Errorf("not found: %+v", n)
+		} else {
+			t.Logf("success: %+v", n)
+		}
+	}
+}
+
 func TestFetchNodeMap(t *testing.T) {
 	data := `<p>
       		<h2 id="foo">a header</h2>

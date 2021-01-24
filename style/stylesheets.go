@@ -3,9 +3,9 @@ package style
 import (
 	"9fans.net/go/draw"
 	"fmt"
+	"github.com/andybalholm/cascadia"
 	"github.com/chris-ramon/douceur/css"
 	"github.com/chris-ramon/douceur/parser"
-	cssSel "github.com/psilva261/css"
 	"github.com/mjl-/duit"
 	"golang.org/x/image/colornames"
 	"golang.org/x/net/html"
@@ -34,7 +34,13 @@ var WindowWidth = 1280
 var WindowHeight = 1080
 
 const AddOnCSS = `
-a, span, i, tt, b {
+/* https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements */
+a, abbr, acronym, audio, b, bdi, bdo, big, br, button, canvas, cite, code, data, datalist, del, dfn, em, embed, i, iframe, img, input, ins, kbd, label, map, mark, meter, noscript, object, output, picture, progress, q, ruby, s, samp, script, select, slot, small, span, strong, sub, sup, svg, template, textarea, time, u, tt, var, video, wbr {
+  display: inline;
+}
+
+/* non-HTML5 elements: https://www.w3schools.com/tags/ref_byfunc.asp */
+font, strike, tt {
   display: inline;
 }
 
@@ -42,8 +48,9 @@ button, textarea, input, select {
   display: inline-block;
 }
 
-h1, h2, h3, h4, h5, h6, div, center, frame, frameset, p, ul, menu, pre, dir, dl, dd, dt {
-	display: block;
+/* https://developer.mozilla.org/en-US/docs/Web/HTML/Block-level_elements */
+address, article, aside, blockquote, details, dialog, dd, div, dl, dt, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, hgroup, hr, li, main, nav, ol, p, pre, section, table, ul {
+  display: block;
 }
 
 a {
@@ -118,6 +125,7 @@ func FetchNodeMap(doc *html.Node, cssText string, windowWidth int) (m map[*html.
 	if err != nil {
 		return nil, fmt.Errorf("fetch rules: %w", err)
 	}
+	//fmt.Printf("mr=%+v", mr)
 	m = make(map[*html.Node]Map)
 	for n, rs := range mr {
 		ds := make(map[string]css.Declaration)
@@ -146,12 +154,14 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 	}
 	processRule := func(m map[*html.Node][]*css.Rule, r *css.Rule) (err error) {
 		for _, sel := range r.Selectors {
-			cs, err := cssSel.Compile(sel.Value)
+			cs, err := cascadia.Compile(sel.Value)
 			if err != nil {
 				log.Printf("cssSel compile %v: %v", sel.Value, err)
 				continue
 			}
-			for _, el := range cs.Select(doc) {
+			//fmt.Printf("cs=%+v\n", cs)
+			for _, el := range cascadia.QueryAll(doc, cs) {
+				//fmt.Printf("el==%+v\n", el)
 				existing, ok := m[el]
 				if !ok {
 					existing = make([]*css.Rule, 0, 3)
@@ -222,7 +232,7 @@ func NewMap(n *html.Node) Map {
 		} else if a.Key == "height" || a.Key == "width" {
 			v := a.Val
 
-			if !strings.HasSuffix(v, "%") {
+			if !strings.HasSuffix(v, "%") && !strings.HasSuffix(v, "px") {
 				v += "px"
 			}
 
@@ -492,6 +502,9 @@ func length(l string) (f float64, unit string, err error) {
 		if strings.HasSuffix(l, suffix) {
 			if s = strings.TrimSuffix(l, suffix); s != "" {
 				f, err = strconv.ParseFloat(s, 64)
+				if err != nil {
+					return 0, "", fmt.Errorf("error parsing '%v': %w", l, err)
+				}
 			}
 			unit = suffix
 			break

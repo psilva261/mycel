@@ -1,6 +1,7 @@
 package browser
 
 import (
+	"fmt"
 	"github.com/mjl-/duit"
 	"golang.org/x/net/html"
 	"net/http"
@@ -177,18 +178,13 @@ func TestNodeToBoxNoscript(t *testing.T) {
 	}
 }
 
-func TestInlining(t *testing.T) {
-	htm := `
-		<body>
-			<span id="outer">(<a href="http://example.com"><span>example.com</span></a></span>
-		</body>
-	`
+func digestHtm(htm string) (nt *nodes.Node, boxed *Element, err error) {
 	doc, err := html.ParseWithOptions(
 		strings.NewReader(string(htm)),
 		html.ParseOptionEnableScripting(false),
 	)
 	if err != nil {
-		t.Fatalf(err.Error())
+		return nil, nil, fmt.Errorf("parse html: %w", err)
 	}
 	body := grep(doc, "body")
 	b := &Browser{}
@@ -196,15 +192,43 @@ func TestInlining(t *testing.T) {
 	browser = b
 	u, err := url.Parse("https://example.com")
 	if err != nil {
-		log.Fatalf("parse: %v", err)
+		return nil, nil, fmt.Errorf("parse url: %w", err)
 	}
 	b.History.Push(u)
 	nm, err := style.FetchNodeMap(doc, style.AddOnCSS, 1280)
 	if err != nil {
-		log.Fatalf("FetchNodeMap: %v", err)
+		return nil, nil, fmt.Errorf("FetchNodeMap: %w", err)
 	}
-	nt := nodes.NewNodeTree(body, style.Map{}, nm, nil)
-	boxed := NodeToBox(0, b, nt)
+
+	nt = nodes.NewNodeTree(body, style.Map{}, nm, nil)
+	boxed = NodeToBox(0, b, nt)
+
+	return
+}
+
+func explodeRow(e *Element) (cols []*duit.Kid, ok bool) {
+	for {
+		el, ok := e.UI.(*Element)
+		if ok {
+			e = el
+		} else {
+			break
+		}
+	}
+	el := e.UI.(*duit.Box)
+	return el.Kids, true
+}
+
+func TestInlining(t *testing.T) {
+	htm := `
+		<body>
+			<span id="outer">(<a href="http://example.com"><span>example.com</span></a></span>
+		</body>
+	`
+	nt, boxed, err := digestHtm(htm)
+	if err != nil {
+		t.Fatalf("digest: %v", err)
+	}
 
 	// 1. nodes are row-like
 	outerSpan := nt.Find("span")
@@ -221,14 +245,58 @@ func TestInlining(t *testing.T) {
 	}
 
 	// 2. Elements are row-like
-	box := boxed.UI.(*Element).UI.(*duit.Box)
-	if len(box.Kids) != 2 {
-		t.Errorf("box: %+v", box)
+	kids, ok := explodeRow(boxed)
+	if !ok || len(kids) != 2 {
+		t.Errorf("boxed: %+v", boxed)
 	}
-	bel := box.Kids[0].UI.(*Element)
-	ael := box.Kids[1].UI.(*Element)
+	bel := kids[0].UI.(*Element)
+	ael := kids[1].UI.(*Element)
 	if bel.n.Data() != "(" {
 		t.Errorf("bel: %+v", bel)
+	}
+	if ael.n.Data() != "a" {
+		t.Errorf("ael: %+v %+v", ael, ael.n)
+	}
+}
+
+func TestInlining2(t *testing.T) {
+	htm := `
+		<body>
+			<span id="outer">
+				<span id="sp1">[</span>
+				<a href="http://example.com">edit</a>
+				<span id="sp2">]</span>
+			</span>
+		</body>
+	`
+	nt, boxed, err := digestHtm(htm)
+	if err != nil {
+		t.Fatalf("digest: %v", err)
+	}
+
+	// 1. nodes are row-like
+	outerSpan := nt.Find("span")
+	if outerSpan.Attr("id") != "outer" || len(outerSpan.Children) != 7 || outerSpan.IsFlex() {
+		t.Errorf("node: %+v", outerSpan)
+	}
+	bracket := outerSpan.Children[0]
+	if /*bracket.Data() != "(" || */!bracket.IsInline() {
+		t.Errorf("bracket, is inline: %v %+v %+v", bracket.IsInline(), bracket, bracket.Data())
+	}
+	sp1 := outerSpan.Children[1]
+	if sp1.Data() != "span" || !sp1.IsInline() {
+		t.Errorf("sp1, is inline: %v, %+v %+v", sp1.IsInline(), sp1, sp1.Data())
+	}
+
+	// 2. Elements are row-like
+	kids, ok := explodeRow(boxed)
+	if !ok || len(kids) != 3 {
+		t.Errorf("boxed: %+v, kids: %+v", boxed, kids)
+	}
+	sel := kids[0].UI.(*Element)
+	ael := kids[1].UI.(*Element)
+	if sel.n.Data() != "span" {
+		t.Errorf("sel: %+v", sel)
 	}
 	if ael.n.Data() != "a" {
 		t.Errorf("ael: %+v %+v", ael, ael.n)

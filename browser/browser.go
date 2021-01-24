@@ -28,7 +28,6 @@ import (
 )
 
 const debugPrintHtml = false
-const stashElements = true
 const experimentalUseSlicedDrawing = false
 
 const EnterKey = 10
@@ -217,15 +216,6 @@ func NewElement(ui duit.UI, n *nodes.Node) *Element {
 		return nil
 	}
 
-	if stashElements {
-		existingEl, ok := ui.(*Element)
-		if ok && existingEl != nil && n == existingEl.n {
-			return &Element{
-				UI: existingEl.UI,
-				n: existingEl.n,
-			}
-		}
-	}
 	return &Element{
 		UI: ui,
 		n: n,

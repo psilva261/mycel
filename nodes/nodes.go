@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"bytes"
+	//"fmt"
 	"golang.org/x/net/html"
 	"github.com/chris-ramon/douceur/css"
 	"github.com/psilva261/opossum/logger"
@@ -30,20 +31,30 @@ type Node struct {
 //
 // First applies the parent style and at the end the local style attribute's style is attached.
 func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map, parent *Node) (n *Node) {
+	//fmt.Printf("<%v %v>\n", doc.Data, doc.Attr)
+	//fmt.Printf("       nodeMap=%+v\n", nodeMap)
 	ncs := style.Map{
 		Declarations: make(map[string]css.Declaration),
 	}
+	//fmt.Printf("     ps=%+v\n", ps)
 	ncs = ps.ApplyChildStyle(ncs, false)
+	//fmt.Printf("     ncs=%+v\n", ncs)
+
 	// add from matching selectors
 	// (keep only inheriting properties from parent node)
 	if m, ok := nodeMap[doc]; ok {
+		//fmt.Printf("     m=%+v\n", m)
 		ncs = ncs.ApplyChildStyle(m, false)
+	} else {
+		//fmt.Printf("     no nodeMap entry\n")
 	}
+	//fmt.Printf("     ncs=%+v\n", ncs)
 
 	// add style attribute
 	// (keep all properties that already match)
 	styleAttr := style.NewMap(doc)
 	ncs = ncs.ApplyChildStyle(styleAttr, true)
+	//fmt.Printf("     ncs=%+v\n", ncs)
 
 	data := doc.Data
 	if doc.Type == html.ElementNode {
