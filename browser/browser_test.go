@@ -302,3 +302,7 @@ func TestInlining2(t *testing.T) {
 		t.Errorf("ael: %+v %+v", ael, ael.n)
 	}
 }
+
+func TestAlwaysOneElement(t *testing.T) {
+}
+

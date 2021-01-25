@@ -216,40 +216,48 @@ func NewElement(ui duit.UI, n *nodes.Node) *Element {
 		return nil
 	}
 
+	if box, ok := newBoxElement(ui, n); ok {
+		ui = box
+	}
+
 	return &Element{
 		UI: ui,
 		n: n,
 	}
 }
 
-func NewBoxElement(ui duit.UI, n *nodes.Node) *Element {
+func newBoxElement(ui duit.UI, n *nodes.Node) (box *duit.Box, ok bool) {
 	if ui == nil {
-		return nil
+		return nil, false
 	}
 	if n.IsDisplayNone() {
-		return nil
+		return nil, false
 	}
 
 	var i *draw.Image
 	w := n.Width()
 	h := n.Height()
 
-	if w == 0 && h == 0 {
-		return NewElement(ui, n)
-	}
+	/*if w == 0 && h == 0 {
+		return nil, false
+	}*/
 	if bg, err := n.BoxBackground(); err == nil {
 		i = bg
 	} else {
 		log.Printf("box background: %f", err)
 	}
-	box := &duit.Box{
+
+	if w == 0 && h == 0 && i == nil {
+		return nil, false
+	}
+
+	box = &duit.Box{
 		Kids:       duit.NewKids(ui),
 		Width:      w,
 		Height:     h,
 		Background: i,
 	}
-	el := NewElement(box, n)
-	return el
+	return box, true
 }
 
 func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
@@ -963,7 +971,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				innerContent = InnerNodesToBox(r+1, b, n)
 			}
 
-			return NewBoxElement(
+			return NewElement(
 				innerContent,
 				n,
 			)
@@ -984,9 +992,12 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			}
 
 			text = strings.Join(nn, " ")
-			ui := &duit.Label{
-				Text: text,
-				Font: n.Font(),
+			ui := &ColoredLabel{
+				Label: &duit.Label{
+					Text: text,
+					Font: n.Font(),
+				},
+				n: n,
 			}
 
 			return NewElement(

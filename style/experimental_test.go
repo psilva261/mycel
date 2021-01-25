@@ -39,7 +39,7 @@ func TestBackgroundColor(t *testing.T) {
 				Value:    hex,
 			}
 
-			if b := m.backgroundColor(); b != d {
+			if b, ok := m.backgroundColor(); !ok || b != d {
 				t.Fatalf("%v", b)
 			}
 		}
