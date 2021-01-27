@@ -64,7 +64,6 @@ type ColoredLabel struct {
 }
 
 func (ui *ColoredLabel) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
-	// TODO: hacky function, might lead to crashes and memory leaks
 	c := ui.n.Map.Color()
 	i, ok := colorCache[c]
 	if !ok {
@@ -234,20 +233,27 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *duit.Box, ok bool) {
 		return nil, false
 	}
 
+	var err error
 	var i *draw.Image
+	var m, p duit.Space
+	zs := duit.Space{}
 	w := n.Width()
 	h := n.Height()
 
-	/*if w == 0 && h == 0 {
-		return nil, false
-	}*/
 	if bg, err := n.BoxBackground(); err == nil {
 		i = bg
 	} else {
 		log.Printf("box background: %f", err)
 	}
+	
+	if p, err = n.Tlbr("padding"); err != nil {
+		log.Errorf("padding: %v", err)
+	}
+	if m, err = n.Tlbr("margin"); err != nil {
+		log.Errorf("margin: %v", err)
+	}
 
-	if w == 0 && h == 0 && i == nil {
+	if w == 0 && h == 0 && i == nil && m == zs && p == zs {
 		return nil, false
 	}
 
@@ -256,7 +262,10 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *duit.Box, ok bool) {
 		Width:      w,
 		Height:     h,
 		Background: i,
+		Margin: m.Topleft(),
+		Padding: p,
 	}
+
 	return box, true
 }
 
@@ -264,6 +273,9 @@ func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig ima
 	if el == nil {
 		return
 	}
+	/*if self.Draw == duit.DirtyKid {
+		force = true
+	}*/
 	box, ok := el.UI.(*duit.Box)
 	if ok && box.Width > 0 && box.Height > 0 {
 		uiSize := image.Point{X: box.Width, Y: box.Height}

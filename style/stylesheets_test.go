@@ -3,6 +3,7 @@ package style
 import (
 	"github.com/chris-ramon/douceur/css"
 	"golang.org/x/net/html"
+	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum/logger"
 	"strings"
 	"testing"
@@ -231,6 +232,31 @@ func TestLength(t *testing.T) {
 		}
 		if f != px {
 			t.Fatalf("expected %v but got %v", px, f)
+		}
+	}
+}
+
+func TestTlbr(tt *testing.T) {
+	cases := map[string]duit.Space{
+		"1px 2px 3px 4px": duit.Space{1, 2, 3, 4},
+		"1px 2px 3px": duit.Space{1, 2, 3, 2},
+		"1px 2px": duit.Space{1, 2, 1, 2},
+		"1px": duit.Space{1, 1, 1, 1},
+	}
+	for v, exp := range cases {
+		m := Map{
+			Declarations: make(map[string]css.Declaration),
+		}
+		m.Declarations["margin"] = css.Declaration{
+			Property: "margin",
+			Value:    v,
+		}
+		s, err := m.Tlbr("margin")
+		if err != nil {
+			tt.Errorf("%v", s)
+		}
+		if s != exp {
+			tt.Errorf("%v: %v", s, exp)
 		}
 	}
 }

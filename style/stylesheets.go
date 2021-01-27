@@ -491,10 +491,55 @@ func (cs Map) IsFlexDirectionRow() bool {
 	return true // TODO: be more specific
 }
 
+// tlbr parses 4-tuple of top-right-bottom-left like in margin,
+// margin-top, ...-right, ...-bottom, ...-left.
+func (cs *Map) Tlbr(key string) (s duit.Space, err error) {
+	if all, ok := cs.Declarations[key]; ok {
+		parts := strings.Split(all.Value, " ")
+		nums := make([]int, len(parts))
+		for i, p := range parts {
+			if f, _, err := length(p); err == nil {
+				nums[i] = int(f)
+			} else {
+				return s, fmt.Errorf("length: %w", err)
+			}
+		}
+		s.Top = nums[0]
+		s.Right = s.Top
+		s.Bottom = s.Top
+		s.Left = s.Top
+		if len(nums) >= 2 {
+			s.Right = nums[1]
+			s.Left = s.Right
+		}
+		if len(nums) >= 3 {
+			s.Bottom = nums[2]
+		}
+		if len(nums) == 4 {
+			s.Left = nums[3]
+		}
+	}
+	
+	if t, err := cs.CssPx(key+"-top"); err == nil {
+		s.Top = t
+	}
+	if r, err := cs.CssPx(key+"-right"); err == nil {
+		s.Right = r
+	}
+	if b, err := cs.CssPx(key+"-bottom"); err == nil {
+		s.Bottom = b
+	}
+	if l, err := cs.CssPx(key+"-left"); err == nil {
+		s.Left = l
+	}
+
+	return
+}
+
 func length(l string) (f float64, unit string, err error) {
 	var s string
 
-	if l == "auto" || l == "inherit" {
+	if l == "auto" || l == "inherit" || l == "0" {
 		return 0, "px", nil
 	}
 
@@ -562,4 +607,17 @@ func (cs Map) Css(propName string) string {
 		return ""
 	}
 	return d.Value
+}
+
+func (cs Map) CssPx(propName string) (l int, err error) {
+	d, ok := cs.Declarations[propName]
+	if !ok {
+		return 0, fmt.Errorf("property doesn't exist")
+	}
+	f, _, err := length(d.Value)
+	if err != nil {
+		return 0, err
+	}
+	l = int(f)
+	return
 }
