@@ -29,13 +29,15 @@ type Domino struct {
 	initialized bool
 	loop       *eventloop.EventLoop
 	html       string
+	nt           *nodes.Node
 	outputHtml string
 	domChanged chan int
 }
 
-func NewDomino(html string) (d *Domino) {
+func NewDomino(html string, nt *nodes.Node) (d *Domino) {
 	d = &Domino{
 		html: html,
+		nt: nt,
 	}
 	return
 }
@@ -119,9 +121,28 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 		window.self = window;
 		addEventListener = function() {};
 		window.location.href = 'http://example.com';
-		window.getComputedStyle = function() {
-			// stub
-		}
+		var ___fq;
+		___fq = function(pre, el) {
+			var i, p = el.parentElement;
+
+			if (p) {
+				for (i = 0; i < p.children.length; i++) {
+					if (p.children[i] === el) {
+						return ___fq('', p) + ' > :nth-child(' + (i+1) + ')';
+					}
+				}
+			} else {
+				return el.tagName;
+			}
+		};
+		window.getComputedStyle = function(el, pseudo) {
+			this.el = el;
+			this.getPropertyValue = function(prop) {
+				return opossum.style(___fq('', el), pseudo, prop, arguments[2]);
+			};
+			return this;
+		};
+		Element.prototype.getClientRects = function() { /* I'm a stub */ return []; }
 		window.screen = {
 			width: 1280,
 			height: 1024
@@ -169,6 +190,7 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 					Buf  string `json:"buf"`
 					HTML string `json:"html"`
 					Referrer func() string `json:"referrer"`
+					Style func(string, string, string, string) string `json:"style"`
 				}
 
 				vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
@@ -176,6 +198,18 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 					HTML: d.html,
 					Buf:  "yolo",
 					Referrer: func() string { return "https://example.com" },
+					Style: func(sel, pseudo, prop, prop2 string) string {
+						res, err := d.nt.Query(sel)
+						if err != nil {
+							log.Errorf("query %v: %v", sel, err)
+							return ""
+						}
+						if len(res) != 1 {
+							log.Errorf("query %v: %v", res, err)
+							return ""
+						}
+						return res[0].Css(prop)
+					},
 				})
 			}
 

@@ -3,6 +3,9 @@ package domino
 import (
 	"io/ioutil"
 	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/opossum/nodes"
+	"github.com/psilva261/opossum/style"
+	"golang.org/x/net/html"
 	"strings"
 	"testing"
 )
@@ -16,15 +19,16 @@ const simpleHTML = `
 `
 
 func init() {
+	f := false
 	t := true
 	DebugDumpJS = &t
-	logger.Quiet = &t
+	logger.Quiet = &f
 	logger.Init()
 	log = &logger.Logger{Debug: true}
 }
 
 func TestSimple(t *testing.T) {
-	d := NewDomino(simpleHTML)
+	d := NewDomino(simpleHTML, nil)
 	d.Start()
 	s := `
 	var state = 'empty';
@@ -52,7 +56,7 @@ func TestSimple(t *testing.T) {
 }
 
 func TestGlobals(t *testing.T) {
-	d := NewDomino(simpleHTML)
+	d := NewDomino(simpleHTML, nil)
 	d.Start()
 }
 
@@ -61,15 +65,9 @@ func TestJQuery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	d := NewDomino(simpleHTML)
+	d := NewDomino(simpleHTML, nil)
 	d.Start()
 	script := `
-	console.log('Hello!!');
-	//console.log(window.jQuery);
-	console.log(this);
-	Object.assign(this, window);
-	//console.log(this.jQuery);
-	console.log($);
 	$(document).ready(function() {
 		gfgf
 		console.log('yolo');
@@ -95,12 +93,72 @@ func TestJQuery(t *testing.T) {
 	d.Stop()
 }
 
+func TestJQueryHide(t *testing.T) {
+	buf, err := ioutil.ReadFile("jquery-3.5.1.js")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	d := NewDomino(simpleHTML, nil)
+	d.Start()
+	script := `
+	$(document).ready(function() {
+		$('h1').hide();
+	});
+	`
+	_, err = d.Exec(string(buf) + ";" + script, true)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	res, err := d.Exec("$('h1').attr('style')", false)
+	t.Logf("res=%v", res)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if res != "display: none;" {
+		t.Fatal()
+	}
+	d.Stop()
+}
+
+func TestJQueryCss(t *testing.T) {
+	buf, err := ioutil.ReadFile("jquery-3.5.1.js")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	h := `
+	<html>
+	<body>
+	<h1 id="title" style="display: inline-block;">Hello</h1>
+	</body>
+	</html>
+	`
+	d := NewDomino(h, nil)
+	r := strings.NewReader(h)
+	doc, err := html.Parse(r)
+	if err != nil { t.Fatalf(err.Error()) }
+	d.nt = nodes.NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
+	d.Start()
+	_, err = d.Exec(string(buf), true)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	res, err := d.Exec("$('h1').css('display')", false)
+	t.Logf("res=%v", res)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if res != "inline-block" {
+		t.Fatal()
+	}
+	d.Stop()
+}
+
 func TestGodoc(t *testing.T) {
 	buf, err := ioutil.ReadFile("godoc/pkg.html")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	d := NewDomino(string(buf))
+	d := NewDomino(string(buf), nil)
 	d.Start()
 	script := `
 	Object.assign(this, window);
@@ -124,7 +182,7 @@ func TestJqueryUI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	d := NewDomino(string(buf))
+	d := NewDomino(string(buf), nil)
 	d.Start()
 	script := `
 	Object.assign(this, window);
@@ -170,7 +228,7 @@ func TestRun(t *testing.T) {
     //elem.dispatchEvent(event);
     console.log(window.location.href);
 	`
-	d := NewDomino(simpleHTML)
+	d := NewDomino(simpleHTML, nil)
 	d.Start()
 	_, err = d.Exec(SCRIPT, true)
 	if err != nil {
@@ -206,7 +264,7 @@ func TestTriggerClick(t *testing.T) {
     	});
     });
 	`
-	d := NewDomino(simpleHTML)
+	d := NewDomino(simpleHTML, nil)
 	d.Start()
 	_, err = d.Exec(SCRIPT, true)
 	if err != nil {
@@ -268,7 +326,7 @@ func TestDomChanged(t *testing.T) {
     //elem.dispatchEvent(event);
     console.log(window.location.href);
 	`
-	d := NewDomino(simpleHTML)
+	d := NewDomino(simpleHTML, nil)
 	d.Start()
 	_, err = d.Exec(SCRIPT, true)
 	if err != nil {
@@ -292,7 +350,7 @@ func TestDomChanged(t *testing.T) {
 }
 
 func TestTrackChanges(t *testing.T) {
-	d := NewDomino(simpleHTML)
+	d := NewDomino(simpleHTML, nil)
 	d.Start()
 	_, err := d.Exec(``, true)
 	if err != nil {
@@ -415,7 +473,7 @@ func TestTrackChanges(t *testing.T) {
 }*/
 
 func TestES6(t *testing.T) {
-	d := NewDomino(simpleHTML)
+	d := NewDomino(simpleHTML, nil)
 	d.Start()
 	script := `
 	console.log('Hello!!');
@@ -437,7 +495,7 @@ func TestES6(t *testing.T) {
 }
 
 func TestWindowParent(t *testing.T) {
-	d := NewDomino(simpleHTML)
+	d := NewDomino(simpleHTML, nil)
 	d.Start()
 	script := `
 	console.log('Hello!!')
@@ -458,7 +516,7 @@ func TestWindowParent(t *testing.T) {
 }
 
 func TestReferrer(t *testing.T) {
-	d := NewDomino(simpleHTML)
+	d := NewDomino(simpleHTML, nil)
 	d.Start()
 	script := `
 	document.referrer;

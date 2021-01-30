@@ -1,10 +1,39 @@
 package nodes
 
 import (
-	//"golang.org/x/net/html"
-	//"opossum/style"
-	//"strings"
+	"fmt"
+	"github.com/andybalholm/cascadia"
+	"golang.org/x/net/html"
 )
+
+func (n *Node) Query(s string) (ns []*Node, err error) {
+	cs, err := cascadia.Compile(s)
+	if err != nil {
+		return nil, fmt.Errorf("cssSel compile %v: %w", s, err)
+	}
+	var m func(doc *html.Node, nn *Node) *Node
+	m = func(doc *html.Node, nn *Node) *Node {
+		if nn.DomSubtree == doc {
+			return nn
+		}
+		for _, c := range nn.Children {
+			if res := m(doc, c); res != nil {
+				return res
+			}
+		}
+		return nil
+	}
+	if n == nil {
+		return nil, fmt.Errorf("nil node tree")
+	}
+	for _, el := range cascadia.QueryAll(n.DomSubtree, cs) {
+		if res := m(el, n); res != nil {
+			ns = append(ns, res)
+		}
+	}
+	return
+}
+
 func (n *Node) NumVClusters() (m int) {
 	if n.IsFlex() {
 		if n.IsFlexDirectionRow() {

@@ -120,7 +120,7 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 			log.Infof("Stop existing JS instance")
 			w.d.Stop()
 		}
-		w.d = domino.NewDomino(w.html)
+		w.d = domino.NewDomino(w.html, nt)
 		w.d.Start()
 		jsProcessed, err := processJS2(w.d, nt, codes)
 		if err == nil {
