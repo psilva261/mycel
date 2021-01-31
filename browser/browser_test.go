@@ -112,6 +112,11 @@ func TestLinkedUrl(t *testing.T) {
 			href: "net/http",
 			expect: "https://golang.org/pkg/net/http",
 		},
+		item{
+			orig: "https://example.com/",
+			href: "info",
+			expect: "https://example.com/info",
+		},
 	}
 
 	for _, i := range items {

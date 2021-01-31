@@ -1246,7 +1246,7 @@ func (b *Browser) LinkedUrl(addr string) (a *url.URL, err error) {
 		addr = b.URL().Scheme + "://" + b.URL().Host + addr
 	} else if !strings.HasPrefix(addr, "http") {
 		if strings.HasSuffix(b.URL().Path, "/") {
-			addr = "/" + b.URL().Path + "/" + addr
+			addr = "/" + b.URL().Path + addr
 		} else {
 			m := strings.LastIndex(b.URL().Path, "/")
 			if m > 0 {
