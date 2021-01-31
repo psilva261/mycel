@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"image"
 	"github.com/psilva261/opossum/domino"
-	"github.com/psilva261/opossum/nodes"
-
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
+	"strings"
 )
 
 type AtomBox struct {
@@ -121,14 +120,16 @@ func CleanTree(ui duit.UI) {
 	})
 }
 
-func processJS2(d *domino.Domino, doc *nodes.Node, scripts []string) (resHtm string, err error) {
+func processJS2(d *domino.Domino, scripts []string) (resHtm string, err error) {
 	initialized := false
 	for _, script := range scripts {
-		if _, err := d.Exec/*6*/(script, !initialized); err == nil {
-			initialized = true
-		} else {
+		if _, err := d.Exec/*6*/(script, !initialized); err != nil {
+			if strings.Contains(err.Error(), "halt at") {
+				return "", fmt.Errorf("execution halted: %w", err)
+			}
 			log.Errorf("exec <script>: %v", err)
 		}
+		initialized = true
 	}
 
 	resHtm, changed, err := d.TrackChanges()

@@ -90,7 +90,7 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 			log.Printf("css: unexpected %v", contentType)
 		}
 	}
-	csss = append([]string{ /*string(revertCSS), */ style.AddOnCSS}, csss...)
+	csss = append([]string{style.AddOnCSS}, csss...)
 	doc, nodeMap := pass(w.html, csss...)
 
 	// 3rd pass is only needed initially to load the scripts and set the goja VM
@@ -122,7 +122,7 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 		}
 		w.d = domino.NewDomino(w.html, nt)
 		w.d.Start()
-		jsProcessed, err := processJS2(w.d, nt, codes)
+		jsProcessed, err := processJS2(w.d, codes)
 		if err == nil {
 			if w.html != jsProcessed {
 				log.Infof("html changed")

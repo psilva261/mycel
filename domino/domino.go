@@ -19,14 +19,13 @@ import (
 
 var DebugDumpJS *bool
 var log *logger.Logger
-var timeout = 10*time.Second
+var timeout = 20*time.Second
 
 func SetLogger(l *logger.Logger) {
 	log = l
 }
 
 type Domino struct {
-	initialized bool
 	loop       *eventloop.EventLoop
 	html       string
 	nt           *nodes.Node
@@ -102,9 +101,6 @@ func printCode(code string, maxWidth int) {
 }
 
 func (d *Domino) Exec(script string, initial bool) (res string, err error) {
-	if !initial && !d.initialized {
-		initial = true
-	}
 	script = strings.Replace(script, "const ", "var ", -1)
 	script = strings.Replace(script, "let ", "var ", -1)
 	script = strings.Replace(script, "<!--", "", -1)
@@ -237,10 +233,10 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 				if v != nil {
 					res = v.String()
 				}
-				if err == nil { d.initialized=true }
 				goto cleanup
 			case er := <- errCh:
 				log.Infof("err")
+				<-time.After(10 * time.Millisecond)
 				err = fmt.Errorf("event loop: %w", er)
 				goto cleanup
 			case <-time.After(timeout):
