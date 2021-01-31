@@ -34,14 +34,15 @@ func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) 
 	parts := strings.Split(addr, ",")
 	
 	var ctStr string
+
 	if strings.Contains(parts[0], ";") {
 		header := strings.Split(parts[0], ";")
-		ctStr = header[1]
+		ctStr = header[0]
 	} else {
 		ctStr = parts[0]
 	}
 	if ct, err = opossum.NewContentType(ctStr, nil); err != nil {
-		return nil, ct, err
+		return nil, ct, fmt.Errorf("content type: %v: %w", ctStr, err)
 	}
 	
 	if strings.Contains(addr, "base64") {
@@ -62,10 +63,100 @@ func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) 
 	return
 }
 
+func quoteAttrsInTag(s string) string {
+	eqs := make([]int, 0, 5)
+	offset := 0
+
+	for {
+		i := strings.Index(s[offset:], "=")
+		if i >= 0 {
+			eqs = append(eqs, i+offset)
+			offset += i + 1
+		} else {
+			break
+		}
+	}
+
+	keyStarts := make([]int, len(eqs))
+	for i, eq := range eqs {
+		j := strings.LastIndex(s[:eq], " ")
+		keyStarts[i] = j
+	}
+	
+	valueEnds := make([]int, len(keyStarts))
+	for i, _ := range keyStarts {
+		if i+1 < len(keyStarts) {
+			valueEnds[i] = keyStarts[i+1]
+		} else {
+			off := eqs[i]
+			jj := strings.Index(s[off:], ">")
+			valueEnds[i] = jj+off
+			if s[valueEnds[i]-1:valueEnds[i]] == "/" {
+				valueEnds[i]--
+			}
+		}
+	}
+
+	for i := len(eqs) - 1; i >= 0; i-- {
+		s = s[:valueEnds[i]] + `"` + s[valueEnds[i]:]
+		s = s[:eqs[i]+1] + `"` + s[eqs[i]+1:]
+	}
+
+	return s
+}
+
+func quoteAttrs(s string) string {
+	if strings.Contains(s, `"`) {
+		return s
+	}
+
+	tagStarts := make([]int, 0, 5)
+	tagEnds := make([]int, 0, 5)
+
+	offset := 0
+	for {
+		i := strings.Index(s[offset:], "<")
+		if i >= 0 {
+			tagStarts = append(tagStarts, i+offset)
+			offset += i + 1
+		} else {
+			break
+		}
+	}
+
+	offset = 0
+	for {
+		i := strings.Index(s[offset:], ">")
+		if i >= 0 {
+			tagEnds = append(tagEnds, i+offset)
+			offset += i + 1
+		} else {
+			break
+		}
+	}
+	
+	if len(tagStarts) != len(tagEnds) {
+		log.Errorf("quoteAttrs: len(tagStarts) != len(tagEnds)")
+		return s
+	}
+
+	for i := len(tagStarts) - 1; i >= 0; i-- {
+		from := tagStarts[i]
+		to := tagEnds[i] + 1
+		q := quoteAttrsInTag(s[from:to])
+		s = s[:tagStarts[i]] + q + s[tagEnds[i]+1:]
+	}
+
+	return s
+}
+
 // Svg returns the svg+xml encoded as jpg with the sizing defined in
 // viewbox unless w and h != 0
 func Svg(data string, w, h int) (bs []byte, err error) {
 	data = strings.ReplaceAll(data, "currentColor", "black")
+	data = strings.ReplaceAll(data, "inherit", "black")
+	data = quoteAttrs(data)
+
 	r := bytes.NewReader([]byte(data))
 	icon, err := oksvg.ReadIconStream(r)
 	if err != nil {
