@@ -19,7 +19,7 @@ import (
 
 var DebugDumpJS *bool
 var log *logger.Logger
-var timeout = 20*time.Second
+var timeout = 60*time.Second
 
 func SetLogger(l *logger.Logger) {
 	log = l
@@ -339,7 +339,20 @@ func Srcs(doc *nodes.Node) (srcs []string) {
 }
 
 func blocked(src string) bool {
-	for _, s := range []string{"adsense", "adsystem", "adservice", "googletagservice", "googletagmanager", "script.ioam.de","googlesyndication","adserver", "nativeads", "prebid", ".ads."} {
+	for _, s := range []string{
+		"adsense",
+		"adsystem",
+		"adservice",
+		"googletagservice",
+		"googletagmanager",
+		"script.ioam.de",
+		"googlesyndication",
+		"adserver",
+		"nativeads",
+		"prebid",
+		".ads.",
+		"google-analytics.com",
+	} {
 		if strings.Contains(src, s) {
 			return true
 		}

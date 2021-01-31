@@ -177,6 +177,9 @@ func (n *Node) queryRef() (ref string, ok bool) {
 	}
 
 	if id := n.Attr("id"); id != "" {
+		// https://stackoverflow.com/questions/605630/how-to-select-html-nodes-by-id-with-jquery-when-the-id-contains-a-dot
+		id = strings.ReplaceAll(id, `.`, `\\.`)
+
 		return "#" + id, true
 	}
 
