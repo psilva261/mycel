@@ -2,7 +2,7 @@ package nodes
 
 import (
 	"bytes"
-	//"fmt"
+	"fmt"
 	"golang.org/x/net/html"
 	"github.com/chris-ramon/douceur/css"
 	"github.com/psilva261/opossum/logger"
@@ -146,6 +146,7 @@ func (n *Node) Attr(k string) string {
 	return ""
 }
 
+// QueryRef relative to html > body
 func (n *Node) QueryRef() string {
 	nRef, ok := n.queryRef()
 	if ok && strings.Contains(nRef, "#") {
@@ -168,7 +169,7 @@ func (n *Node) QueryRef() string {
 			}
 		}
 	}
-	return strings.TrimSpace(strings.Join(path, " "))
+	return strings.TrimSpace(strings.Join(path, " > "))
 }
 
 func (n *Node) queryRef() (ref string, ok bool) {
@@ -185,23 +186,20 @@ func (n *Node) queryRef() (ref string, ok bool) {
 
 	ref = n.Data()
 
-	var sl []string
-	if c := strings.TrimSpace(n.Attr("class")); c != "" {
-		l := strings.Split(c, " ")
-		sl = make([]string, 0, len(l))
+	if n.Parent == nil {
+		return ref, true
+	}
 
-		for _, cl := range l {
-			if cl == "" {
-				continue
-			}
-
-			sl = append(sl, cl)
+	i := 0
+	for _, c := range n.Parent.Children {
+		if c.Type() == html.ElementNode {
+			i++
 		}
-
-		if len(sl) > 0 {
-			ref += "." + strings.Join(sl, ".")
+		if c == n {
+			break
 		}
 	}
+	ref += fmt.Sprintf(":nth-child(%v)", i)
 
 	return ref, true
 }
