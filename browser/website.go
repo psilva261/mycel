@@ -150,7 +150,7 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 	body := grep(doc, "body")
 
 	log.Printf("Layout website...")
-	scroller = duit.NewScroll(
+	scroller = NewScroll(
 		NodeToBox(0, browser, nodes.NewNodeTree(body, style.Map{}, nodeMap, &nodes.Node{})),
 	)
 	numElements := 0
@@ -161,7 +161,7 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 	log.Printf("Layouting done (%v elements created)", numElements)
 	if numElements < 10 {
 		log.Errorf("Less than 10 elements layouted, seems css processing failed. Will layout without css")
-		scroller = duit.NewScroll(
+		scroller = NewScroll(
 			NodeToBox(0, browser, nodes.NewNodeTree(body, style.Map{}, make(map[*html.Node]style.Map), nil)),
 		)
 		w.UI = scroller

@@ -37,7 +37,7 @@ type Scroll struct {
 	barR          image.Rectangle
 	barActiveR    image.Rectangle
 	childR        image.Rectangle
-	offset        int         // current scroll offset in pixels
+	Offset        int         // current scroll offset in pixels
 	img           *draw.Image // for child to draw on
 	scrollbarSize int
 	lastMouseUI   duit.UI
@@ -113,7 +113,7 @@ func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig imag
 		barR := ui.barR.Add(orig)
 		img.Draw(barR, bg, nil, image.ZP)
 		barH := h * h / uih
-		barY := ui.offset * h / uih
+		barY := ui.Offset * h / uih
 		ui.barActiveR = ui.barR
 		ui.barActiveR.Min.Y += barY
 		ui.barActiveR.Max.Y = ui.barActiveR.Min.Y + barH
@@ -143,7 +143,7 @@ func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig imag
 	} else if ui.Kid.Draw == duit.Dirty {
 		ui.img.Draw(ui.img.R, dui.Background, nil, image.ZP)
 	}
-	m.Point = m.Point.Add(image.Pt(-ui.childR.Min.X, ui.offset))
+	m.Point = m.Point.Add(image.Pt(-ui.childR.Min.X, ui.Offset))
 	if ui.Kid.Draw != duit.Clean {
 		if force {
 			ui.Kid.Draw = duit.Dirty
@@ -151,15 +151,15 @@ func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig imag
 		ui.Kid.UI.Draw(dui, &ui.Kid, ui.img, image.ZP, m, ui.Kid.Draw == duit.Dirty)
 		ui.Kid.Draw = duit.Clean
 	}
-	img.Draw(ui.childR.Add(orig), ui.img, nil, image.Pt(0, ui.offset))
+	img.Draw(ui.childR.Add(orig), ui.img, nil, image.Pt(0, ui.Offset))
 }
 
 func (ui *Scroll) scroll(delta int) bool {
-	o := ui.offset
-	ui.offset += delta
-	ui.offset = maximum(0, ui.offset)
-	ui.offset = minimum(ui.offset, maximum(0, ui.Kid.R.Dy()-ui.childR.Dy()))
-	return o != ui.offset
+	o := ui.Offset
+	ui.Offset += delta
+	ui.Offset = maximum(0, ui.Offset)
+	ui.Offset = minimum(ui.Offset, maximum(0, ui.Kid.R.Dy()-ui.childR.Dy()))
+	return o != ui.Offset
 }
 
 func (ui *Scroll) scrollKey(k rune) (consumed bool) {
@@ -191,12 +191,12 @@ func (ui *Scroll) scrollMouse(m draw.Mouse, scrollOnly bool) (consumed bool) {
 	case duit.Button1:
 		return ui.scroll(-m.Y)
 	case duit.Button2:
-		offset := m.Y * ui.Kid.R.Dy() / ui.barR.Dy()
-		offsetMax := ui.Kid.R.Dy() - ui.childR.Dy()
-		offset = maximum(0, minimum(offset, offsetMax))
-		o := ui.offset
-		ui.offset = offset
-		return o != ui.offset
+		Offset := m.Y * ui.Kid.R.Dy() / ui.barR.Dy()
+		OffsetMax := ui.Kid.R.Dy() - ui.childR.Dy()
+		Offset = maximum(0, minimum(Offset, OffsetMax))
+		o := ui.Offset
+		ui.Offset = Offset
+		return o != ui.Offset
 	case duit.Button3:
 		return ui.scroll(m.Y)
 	}
@@ -223,9 +223,9 @@ func (ui *Scroll) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.
 	}
 	if m.Point.In(ui.childR) {
 		nOrigM := origM
-		nOrigM.Point = nOrigM.Point.Add(image.Pt(-ui.scrollbarSize, ui.offset))
+		nOrigM.Point = nOrigM.Point.Add(image.Pt(-ui.scrollbarSize, ui.Offset))
 		nm := m
-		nm.Point = nm.Point.Add(image.Pt(-ui.scrollbarSize, ui.offset))
+		nm.Point = nm.Point.Add(image.Pt(-ui.scrollbarSize, ui.Offset))
 		r = ui.Kid.UI.Mouse(dui, &ui.Kid, nm, nOrigM, image.ZP)
 		ui.warpScroll(dui, self, r.Warp, orig)
 		scrolled := false
@@ -256,7 +256,7 @@ func (ui *Scroll) Key(dui *duit.DUI, self *duit.Kid, k rune, m draw.Mouse, orig 
 		}
 	}
 	if m.Point.In(ui.childR) {
-		m.Point = m.Point.Add(image.Pt(-ui.scrollbarSize, ui.offset))
+		m.Point = m.Point.Add(image.Pt(-ui.scrollbarSize, ui.Offset))
 		r = ui.Kid.UI.Key(dui, &ui.Kid, k, m, image.ZP)
 		ui.warpScroll(dui, self, r.Warp, orig)
 		scrolled := false
@@ -274,20 +274,20 @@ func (ui *Scroll) warpScroll(dui *duit.DUI, self *duit.Kid, warp *image.Point, o
 		return
 	}
 
-	offset := ui.offset
-	if warp.Y < ui.offset {
-		ui.offset = maximum(0, warp.Y-dui.Scale(40))
-	} else if warp.Y > ui.offset+ui.r.Dy() {
-		ui.offset = minimum(ui.Kid.R.Dy()-ui.r.Dy(), warp.Y+dui.Scale(40)-ui.r.Dy())
+	Offset := ui.Offset
+	if warp.Y < ui.Offset {
+		ui.Offset = maximum(0, warp.Y-dui.Scale(40))
+	} else if warp.Y > ui.Offset+ui.r.Dy() {
+		ui.Offset = minimum(ui.Kid.R.Dy()-ui.r.Dy(), warp.Y+dui.Scale(40)-ui.r.Dy())
 	}
-	if offset != ui.offset {
+	if Offset != ui.Offset {
 		if self != nil {
 			self.Draw = duit.Dirty
 		} else {
 			dui.MarkDraw(ui)
 		}
 	}
-	warp.Y -= ui.offset
+	warp.Y -= ui.Offset
 	warp.X += orig.X + ui.scrollbarSize
 	warp.Y += orig.Y
 }
@@ -336,7 +336,7 @@ func (ui *Scroll) Mark(self *duit.Kid, o duit.UI, forLayout bool) (marked bool) 
 }
 
 func (ui *Scroll) Print(self *duit.Kid, indent int) {
-	what := fmt.Sprintf("Scroll offset=%d childR=%v", ui.offset, ui.childR)
+	what := fmt.Sprintf("Scroll Offset=%d childR=%v", ui.Offset, ui.childR)
 	duit.PrintUI(what, self, indent)
 	ui.Kid.UI.Print(&ui.Kid, indent+1)
 }

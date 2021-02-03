@@ -50,7 +50,7 @@ var cache = make(map[string]struct {
 	buf []byte
 })
 var log *logger.Logger
-var scroller *duit.Scroll
+var scroller *Scroll
 var display *draw.Display
 
 func SetLogger(l *logger.Logger) {
@@ -493,8 +493,10 @@ func (el *Element) click() (consumed bool) {
 		return
 	}
 
+	offset := scroller.Offset
 	browser.Website.html = res
 	browser.Website.layout(browser, ClickRelayout)
+	scroller.Offset = offset
 	dui.MarkLayout(dui.Top.UI)
 	dui.MarkDraw(dui.Top.UI)
 	dui.Render()
@@ -1054,7 +1056,7 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 	switch v := ui.(type) {
 	case nil:
 		panic("null")
-	case *duit.Scroll:
+	case *Scroll:
 		traverseTree(r+1, v.Kid.UI, f)
 	case *duit.Box:
 		for _, kid := range v.Kids {
