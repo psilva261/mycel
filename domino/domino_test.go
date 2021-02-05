@@ -109,6 +109,9 @@ func TestJQueryHide(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
+	if err = d.CloseDoc(); err != nil {
+		t.Fatalf("%v", err)
+	}
 	res, err := d.Exec("$('h1').attr('style')", false)
 	t.Logf("res=%v", res)
 	if err != nil {
@@ -160,10 +163,6 @@ func TestGodoc(t *testing.T) {
 	}
 	d := NewDomino(string(buf), nil)
 	d.Start()
-	script := `
-	Object.assign(this, window);
-	`
-	_ = script
 	for i, fn := range []string{"initfuncs.js", "jquery-1.8.2.js", "goversion.js", "godocs.js"} {
 		buf, err := ioutil.ReadFile("godoc/"+fn)
 		if err != nil {
@@ -174,6 +173,37 @@ func TestGodoc(t *testing.T) {
 			t.Fatalf("%v", err)
 		}
 	}
+	d.Stop()
+}
+
+func TestGoplayground(t *testing.T) {
+	buf, err := ioutil.ReadFile("godoc/golang.html")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	d := NewDomino(string(buf), nil)
+	d.Start()
+	for i, fn := range []string{"initfuncs.js", "jquery-1.8.2.js", "playground.js", "goversion.js", "godocs.js", "golang.js"} {
+		buf, err := ioutil.ReadFile("godoc/"+fn)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		_, err = d.Exec(string(buf) /*+ ";" + script*/, i == 0)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+	}
+	res, err := d.Exec("window.playground", false)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if !strings.Contains(res, "function playground(opts) {")  {
+		t.Fatalf("%v", res)
+	}
+	if err = d.CloseDoc(); err != nil {
+		t.Fatalf("%v", err)
+	}
+
 	d.Stop()
 }
 
@@ -250,16 +280,10 @@ func TestTriggerClick(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	//t.Parallel()
 	SCRIPT := string(jQuery) + `
-    ;;;
-    Object.assign(this, window);
-	console.log("Started");
 	var clicked = false;
     $(document).ready(function() {
-    	console.log('READDDYYYYY!!!!!!!');
     	$('h1').click(function() {
-    		console.log('CLICKED!!!!');
     		clicked = true;
     	});
     });
@@ -269,6 +293,9 @@ func TestTriggerClick(t *testing.T) {
 	_, err = d.Exec(SCRIPT, true)
 	if err != nil {
 		t.Fatalf(err.Error())
+	}
+	if err = d.CloseDoc(); err != nil {
+		t.Fatalf("%v", err)
 	}
 
 	res, err := d.Exec("$('h1').html()", false)

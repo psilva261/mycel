@@ -190,13 +190,13 @@ func (n *Node) queryRef() (ref string, ok bool) {
 		return ref, true
 	}
 
-	i := 0
+	i := 1
 	for _, c := range n.Parent.Children {
-		if c.Type() == html.ElementNode {
-			i++
-		}
 		if c == n {
 			break
+		}
+		if c.Type() == html.ElementNode {
+			i++
 		}
 	}
 	ref += fmt.Sprintf(":nth-child(%v)", i)

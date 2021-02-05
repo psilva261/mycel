@@ -132,6 +132,10 @@ func processJS2(d *domino.Domino, scripts []string) (resHtm string, err error) {
 		initialized = true
 	}
 
+	if err = d.CloseDoc(); err != nil {
+		return "", fmt.Errorf("close doc: %w", err)
+	}
+
 	resHtm, changed, err := d.TrackChanges()
 	if err != nil {
 		return "", fmt.Errorf("track changes: %w", err)

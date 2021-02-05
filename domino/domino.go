@@ -116,6 +116,7 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 		window.top = window;
 		window.self = window;
 		addEventListener = function() {};
+		removeEventListener = function() {};
 		window.location.href = 'http://example.com';
 		var ___fq;
 		___fq = function(pre, el) {
@@ -151,8 +152,6 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 			userAgent: 'opossum'
 		};
 		HTMLElement = domino.impl.HTMLElement;
-		// Fire DOMContentLoaded to trigger $(document).ready(..)
-		document.close();
 	` + script
 	if !initial {
 		SCRIPT = script
@@ -271,6 +270,12 @@ func (d *Domino) Exec6(script string) (res string, err error) {
 	return d.Exec(string(buf), true)
 }
 
+// CloseDoc fires DOMContentLoaded to trigger $(document).ready(..)
+func (d *Domino) CloseDoc() (err error) {
+	_, err = d.Exec("document.close();", false)
+	return
+}
+
 // TriggerClick, and return the result html
 // ...then HTML5 parse it, diff the node tree
 // (probably faster and cleaner than anything else)
@@ -281,7 +286,10 @@ func (d *Domino) TriggerClick(selector string) (newHTML string, ok bool, err err
 
 		console.log('query ' + sel);
 
-		if (el._listeners && el._listeners.click) {
+		if (!el) {
+			console.log('el is null/undefined');
+			null;
+		} else if (el._listeners && el._listeners.click) {
 			var fn = el.click.bind(el);
 
 			if (fn) {
