@@ -245,7 +245,7 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *duit.Box, ok bool) {
 	} else {
 		log.Printf("box background: %f", err)
 	}
-	
+
 	if p, err = n.Tlbr("padding"); err != nil {
 		log.Errorf("padding: %v", err)
 	}
@@ -1262,6 +1262,10 @@ func (b *Browser) LinkedUrl(addr string) (a *url.URL, err error) {
 		addr = b.URL().Scheme + "://" + b.URL().Host + addr
 	}
 	return url.Parse(addr)
+}
+
+func (b *Browser) Origin() *url.URL {
+	return b.History.URL()
 }
 
 func (b *Browser) Back() (e duit.Event) {

@@ -2,12 +2,15 @@ package domino
 
 import (
 	"io/ioutil"
+	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
 	"golang.org/x/net/html"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 const simpleHTML = `
@@ -28,7 +31,7 @@ func init() {
 }
 
 func TestSimple(t *testing.T) {
-	d := NewDomino(simpleHTML, nil)
+	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 	s := `
 	var state = 'empty';
@@ -56,7 +59,7 @@ func TestSimple(t *testing.T) {
 }
 
 func TestGlobals(t *testing.T) {
-	d := NewDomino(simpleHTML, nil)
+	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 }
 
@@ -65,7 +68,7 @@ func TestJQuery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	d := NewDomino(simpleHTML, nil)
+	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 	script := `
 	$(document).ready(function() {
@@ -98,7 +101,7 @@ func TestJQueryHide(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	d := NewDomino(simpleHTML, nil)
+	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 	script := `
 	$(document).ready(function() {
@@ -135,7 +138,7 @@ func TestJQueryCss(t *testing.T) {
 	</body>
 	</html>
 	`
-	d := NewDomino(h, nil)
+	d := NewDomino(h, nil, nil)
 	r := strings.NewReader(h)
 	doc, err := html.Parse(r)
 	if err != nil { t.Fatalf(err.Error()) }
@@ -161,7 +164,7 @@ func TestGodoc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	d := NewDomino(string(buf), nil)
+	d := NewDomino(string(buf), nil, nil)
 	d.Start()
 	for i, fn := range []string{"initfuncs.js", "jquery-1.8.2.js", "goversion.js", "godocs.js"} {
 		buf, err := ioutil.ReadFile("godoc/"+fn)
@@ -181,7 +184,7 @@ func TestGoplayground(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	d := NewDomino(string(buf), nil)
+	d := NewDomino(string(buf), nil, nil)
 	d.Start()
 	for i, fn := range []string{"initfuncs.js", "jquery-1.8.2.js", "playground.js", "goversion.js", "godocs.js", "golang.js"} {
 		buf, err := ioutil.ReadFile("godoc/"+fn)
@@ -212,7 +215,7 @@ func TestJqueryUI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	d := NewDomino(string(buf), nil)
+	d := NewDomino(string(buf), nil, nil)
 	d.Start()
 	script := `
 	Object.assign(this, window);
@@ -258,7 +261,7 @@ func TestRun(t *testing.T) {
     //elem.dispatchEvent(event);
     console.log(window.location.href);
 	`
-	d := NewDomino(simpleHTML, nil)
+	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 	_, err = d.Exec(SCRIPT, true)
 	if err != nil {
@@ -288,7 +291,7 @@ func TestTriggerClick(t *testing.T) {
     	});
     });
 	`
-	d := NewDomino(simpleHTML, nil)
+	d := NewDomino(simpleHTML, nil,  nil)
 	d.Start()
 	_, err = d.Exec(SCRIPT, true)
 	if err != nil {
@@ -353,7 +356,7 @@ func TestDomChanged(t *testing.T) {
     //elem.dispatchEvent(event);
     console.log(window.location.href);
 	`
-	d := NewDomino(simpleHTML, nil)
+	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 	_, err = d.Exec(SCRIPT, true)
 	if err != nil {
@@ -377,7 +380,7 @@ func TestDomChanged(t *testing.T) {
 }
 
 func TestTrackChanges(t *testing.T) {
-	d := NewDomino(simpleHTML, nil)
+	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 	_, err := d.Exec(``, true)
 	if err != nil {
@@ -500,7 +503,7 @@ func TestTrackChanges(t *testing.T) {
 }*/
 
 func TestES6(t *testing.T) {
-	d := NewDomino(simpleHTML, nil)
+	d := NewDomino(simpleHTML, nil,  nil)
 	d.Start()
 	script := `
 	console.log('Hello!!');
@@ -522,7 +525,7 @@ func TestES6(t *testing.T) {
 }
 
 func TestWindowParent(t *testing.T) {
-	d := NewDomino(simpleHTML, nil)
+	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 	script := `
 	console.log('Hello!!')
@@ -543,7 +546,7 @@ func TestWindowParent(t *testing.T) {
 }
 
 func TestReferrer(t *testing.T) {
-	d := NewDomino(simpleHTML, nil)
+	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 	script := `
 	document.referrer;
@@ -556,5 +559,98 @@ func TestReferrer(t *testing.T) {
 	if res != "https://example.com" {
 		t.Fatal()
 	}
+	d.Stop()
+}
+
+type MockBrowser struct {
+	origin *url.URL
+	linkedUrl *url.URL
+}
+
+func (mb *MockBrowser) LinkedUrl(string) (*url.URL, error) {
+	return mb.linkedUrl, nil
+}
+
+func (mb *MockBrowser) Origin() (*url.URL) {
+	return mb.origin
+}
+
+func (mb *MockBrowser) Get(*url.URL) (bs []byte, ct opossum.ContentType, err error) {
+	return
+}
+
+func TestXMLHttpRequest(t *testing.T) {
+	mb := &MockBrowser{}
+	mb.origin, _ = url.Parse("https://example.com")
+	mb.linkedUrl, _ = url.Parse("https://example.com")
+	d := NewDomino(simpleHTML, mb, nil)
+	d.Start()
+	script := `
+		var oReq = new XMLHttpRequest();
+		var loaded = false;
+		oReq.addEventListener("load", function() {
+			console.log('loaded!!!!! !!! 11!!!1!!elf!!!1!');
+			loaded = true;
+		});
+		console.log(oReq.open);
+		console.log('open:');
+		oReq.open("GET", "http://www.example.org/example.txt");
+		console.log('send:');
+		oReq.send();
+		console.log('return:');
+	`
+	_, err := d.Exec(script, true)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	<-time.After(time.Second)
+	res, err := d.Exec("oReq.responseText;", false)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	t.Logf("res=%v", res)
+	if !strings.Contains(res, "<html") {
+		t.Fatal()
+	}
+	d.Stop()
+}
+
+func TestJQueryAjax(t *testing.T) {
+	mb := &MockBrowser{}
+	mb.origin, _ = url.Parse("https://example.com")
+	mb.linkedUrl, _ = url.Parse("https://example.com")
+	buf, err := ioutil.ReadFile("jquery-3.5.1.js")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	d := NewDomino(simpleHTML, mb, nil)
+	d.Start()
+	script := `
+	var res;
+	$.ajax({
+		url: '/',
+		success: function() {
+			console.log('success!!!');
+			res = 'success';
+		},
+		error: function() {
+			console.log('error!!!');
+			res = 'err';
+		}
+	});
+	`
+	_, err = d.Exec(string(buf) + ";" + script, true)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if err = d.CloseDoc(); err != nil {
+		t.Fatalf("%v", err)
+	}
+	<-time.After(time.Second)
+	res, err := d.Exec("res;", false)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	t.Logf("res=%v", res)
 	d.Stop()
 }

@@ -1,8 +1,10 @@
 package domino
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dop251/goja"
+	"github.com/dop251/goja/parser"
 	"github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/eventloop"
 	"github.com/dop251/goja_nodejs/require"
@@ -12,8 +14,12 @@ import (
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -26,6 +32,7 @@ func SetLogger(l *logger.Logger) {
 }
 
 type Domino struct {
+	fetcher   opossum.Fetcher
 	loop       *eventloop.EventLoop
 	html       string
 	nt           *nodes.Node
@@ -33,9 +40,10 @@ type Domino struct {
 	domChanged chan int
 }
 
-func NewDomino(html string, nt *nodes.Node) (d *Domino) {
+func NewDomino(html string, fetcher opossum.Fetcher, nt *nodes.Node) (d *Domino) {
 	d = &Domino{
 		html: html,
+		fetcher: fetcher,
 		nt: nt,
 	}
 	return
@@ -100,6 +108,22 @@ func printCode(code string, maxWidth int) {
 	log.Infof("js code: %v", code[:maxWidth])
 }
 
+func srcLoader(fn string) ([]byte, error) {
+	path := filepath.FromSlash(fn)
+	if !strings.Contains(path, "/domino-lib/") || !strings.HasSuffix(path, ".js") {
+		return nil, require.ModuleFileDoesNotExistError
+	}
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) || errors.Is(err, syscall.EISDIR) {
+			err = require.ModuleFileDoesNotExistError
+		} else {
+			log.Errorf("srcLoader: handling of require('%v') is not implemented", fn)
+		}
+	}
+	return data, err
+}
+
 func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 	script = strings.Replace(script, "const ", "var ", -1)
 	script = strings.Replace(script, "let ", "var ", -1)
@@ -152,6 +176,44 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 			userAgent: 'opossum'
 		};
 		HTMLElement = domino.impl.HTMLElement;
+
+		function XMLHttpRequest() {
+			var _method, _uri;
+			var h = {};
+			var ls = {};
+
+			this.readyState = 0;
+
+			var cb = function(data, err) {
+				if (data !== '') {
+					this.responseText = data;
+					this.readyState = 4;
+					this.state = 200;
+					this.status = 200;
+					if (ls['load']) ls['load'].bind(this)();
+					if (this.onload) this.onload.bind(this)();
+					if (this.onreadystatechange) this.onreadystatechange.bind(this)();
+				}
+			}.bind(this);
+
+			this.addEventListener = function(k, fn) {
+				ls[k] = fn;
+			};
+			this.open = function(method, uri) {
+				_method = method;
+				_uri = uri;
+			};
+			this.setRequestHeader = function(k, v) {
+				h[k] = v;
+			};
+			this.send = function(data) {
+				opossum.xhr(_method, _uri, h, data, cb);
+				this.readyState = 2;
+			};
+			this.getAllResponseHeaders = function() {
+				return '';
+			};
+		}
 	` + script
 	if !initial {
 		SCRIPT = script
@@ -169,12 +231,17 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 			log.Printf("RunOnLoop")
 
 			if initial {
+				vm.SetParserOptions(parser.WithDisableSourceMaps)
+
 				// find domino-lib folder
 				registry := require.NewRegistry(
 					require.WithGlobalFolders(
 						".",     // standalone
 						"..",    // tests
 						"../..", // go run
+					),
+					require.WithLoader(
+						require.SourceLoader(srcLoader),
 					),
 				)
 
@@ -186,6 +253,7 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 					HTML string `json:"html"`
 					Referrer func() string `json:"referrer"`
 					Style func(string, string, string, string) string `json:"style"`
+					XHR func(string, string, map[string]string, string, func(string, string)) `json:"xhr"`
 				}
 
 				vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
@@ -205,6 +273,7 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 						}
 						return res[0].Css(prop)
 					},
+					XHR: d.xhr,
 				})
 			}
 
@@ -421,6 +490,42 @@ func iterateJsElements(doc *nodes.Node, fn func(src string, inlineCode string)) 
 	f(doc)
 
 	return
+}
+
+func (d *Domino) xhr(method, uri string, h map[string]string, data string, cb func(data string, err string)) {
+	c := &http.Client{}
+	u, err := d.fetcher.LinkedUrl(uri)
+	if err != nil {
+		cb("", err.Error())
+		return
+	}
+	if u.Host != d.fetcher.Origin().Host {
+		log.Infof("origin: %v", d.fetcher.Origin())
+		log.Infof("uri: %v", uri)
+		cb("", "cannot do crossorigin request to " + u.String())
+		return
+	}
+	fmt.Printf("data=%+v\n", data)
+	req, err := http.NewRequest(method, u.String(), strings.NewReader(data))
+	if err != nil {
+		cb("", err.Error())
+		return
+	}
+	for k, v := range h {
+		req.Header.Add(k, v)
+	}
+	resp, err := c.Do(req)
+	if err != nil {
+		cb("", err.Error())
+		return
+	}
+	defer resp.Body.Close()
+	bs, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		cb("", err.Error())
+		return
+	}
+	cb(string(bs), "")
 }
 
 // AJAX:

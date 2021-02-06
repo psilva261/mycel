@@ -12,7 +12,7 @@ Supported features:
 - Server-side rendered websites
 - Images (pre-loaded all at once though)
 - TLS
-- experimental JS/DOM without AJAX can be activated (basically script tags are evaluated)
+- experimental JS/DOM can be activated (very basic jQuery examples work)
 - file downloads
 
 # Install
@@ -66,7 +66,20 @@ go run .
 
 # JS support
 
-Very experimental support for that, the whole page is re-rendered after click events. (http://psilva.sdf.org/demo.gif) Mostly based on goja (ECMAScript 5.1) and github.com/fgnass/domino (DOM implementation in JS). Some sort of DOM diffing is needed, also AJAX functions, `getComputedStyle` etc. are either missing or stubs. Very simple jQuery based code works though, e.g. jQuery UI Tab view https://jqueryui.com/resources/demos/tabs/default.html or the toggle buttons on https://golang.org/pkg There is also highly experimental ES6 support with Babel.
+It's more like a demo and it's not really clear right now how much sandboxing
+is really needed. A rudimentary AJAX implementation
+is there though.
+
+Use on your own Risk!
+
+![Demo](http://psilva.sdf.org/demo.gif "Demo")
+
+Mostly based on goja (ECMAScript 5.1) and https://github.com/fgnass/domino
+(DOM implementation in JS). Some sort of DOM diffing
+is needed, also AJAX functions, `getComputedStyle` etc. are either missing or stubs.
+Very simple jQuery based code works though, e.g. jQuery UI Tab view
+https://jqueryui.com/resources/demos/tabs/default.html or the toggle buttons on
+https://golang.org/pkg There is also highly experimental ES6 support with Babel.
 
 Try on Plan 9 with e.g.:
 

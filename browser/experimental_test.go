@@ -40,7 +40,7 @@ func TestProcessJS2SkipFailure(t *testing.T) {
 	doc, err := html.Parse(buf)
 	if err != nil { t.Fatalf(err.Error()) }
 	nt := nodes.NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
-	d := domino.NewDomino(h, nt)
+	d := domino.NewDomino(h, nil, nt)
 	d.Start()
 	jq, err := ioutil.ReadFile("../domino/jquery-3.5.1.js")
 	if err != nil {

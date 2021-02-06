@@ -17,6 +17,8 @@ func SetLogger(l *logger.Logger) {
 }
 
 type Fetcher interface {
+	Origin() *url.URL
+
 	// LinkedUrl relative to current page
 	LinkedUrl(string) (*url.URL, error)
 
@@ -57,7 +59,7 @@ func (c ContentType) IsHTML() bool {
 }
 
 func (c ContentType) IsCSS() bool {
-	return c.MediaType != "text/html"	
+	return c.MediaType != "text/html"
 }
 
 func (c ContentType) IsJS() bool {
@@ -70,7 +72,7 @@ func (c ContentType) IsJS() bool {
 }
 
 func (c ContentType) IsPlain() bool {
-	return c.MediaType == "text/plain"	
+	return c.MediaType == "text/plain"
 }
 
 func (c ContentType) IsDownload() bool {
@@ -79,7 +81,7 @@ func (c ContentType) IsDownload() bool {
 }
 
 func (c ContentType) IsSvg() bool {
-	return c.MediaType == "image/svg+xml"	
+	return c.MediaType == "image/svg+xml"
 }
 
 func (c ContentType) Utf8(buf []byte) []byte {
