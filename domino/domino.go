@@ -31,13 +31,19 @@ func SetLogger(l *logger.Logger) {
 	log = l
 }
 
+type Mutation struct {
+	time.Time
+	Type int
+	Sel string
+}
+
 type Domino struct {
 	fetcher   opossum.Fetcher
 	loop       *eventloop.EventLoop
 	html       string
 	nt           *nodes.Node
 	outputHtml string
-	domChanged chan int
+	domChange chan Mutation
 }
 
 func NewDomino(html string, fetcher opossum.Fetcher, nt *nodes.Node) (d *Domino) {
@@ -45,6 +51,7 @@ func NewDomino(html string, fetcher opossum.Fetcher, nt *nodes.Node) (d *Domino)
 		html: html,
 		fetcher: fetcher,
 		nt: nt,
+		domChange: make(chan Mutation, 100),
 	}
 	return
 }
@@ -144,7 +151,12 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 		window.location.href = 'http://example.com';
 		var ___fq;
 		___fq = function(pre, el) {
-			var i, p = el.parentElement;
+			var i, p;
+			
+			if (!el) {
+				return undefined;
+			}
+			p = el.parentElement;
 
 			if (p) {
 				for (i = 0; i < p.children.length; i++) {
@@ -156,6 +168,11 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 				return el.tagName;
 			}
 		};
+		document._setMutationHandler(function(a) {
+			// a provides attributes type, target and node or attr
+			// (cf Object.keys(a))
+			opossum.mutated(a.type, ___fq('yolo', a.target));
+		});
 		window.getComputedStyle = function(el, pseudo) {
 			this.el = el;
 			this.getPropertyValue = function(prop) {
@@ -254,6 +271,7 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 					Referrer func() string `json:"referrer"`
 					Style func(string, string, string, string) string `json:"style"`
 					XHR func(string, string, map[string]string, string, func(string, string)) `json:"xhr"`
+					Mutated func(int, string) `json:"mutated"`
 				}
 
 				vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
@@ -274,6 +292,7 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 						return res[0].Css(prop)
 					},
 					XHR: d.xhr,
+					Mutated: d.mutated,
 				})
 			}
 
@@ -341,7 +360,7 @@ func (d *Domino) Exec6(script string) (res string, err error) {
 
 // CloseDoc fires DOMContentLoaded to trigger $(document).ready(..)
 func (d *Domino) CloseDoc() (err error) {
-	_, err = d.Exec("document.close();", false)
+	_, err = d.Exec("if (this.document) document.close();", false)
 	return
 }
 
@@ -394,11 +413,23 @@ func (d *Domino) PutAttr(selector, attr, val string) (ok bool, err error) {
 }
 
 func (d *Domino) TrackChanges() (html string, changed bool, err error) {
-	html, err = d.Exec("document.querySelector('html').innerHTML;", false)
-	if err != nil {
-		return
+	outer:
+	for {
+		select {
+		case m := <-d.domChange:
+			log.Infof("mutation received @ %v for %v", m.Time, m.Sel)
+			changed = true
+		default:
+			break outer
+		}
 	}
-	changed = d.outputHtml != html
+	
+	if changed {
+		html, err = d.Exec("document.querySelector('html').innerHTML;", false)
+		if err != nil {
+			return
+		}
+	}
 	d.outputHtml = html
 	return
 }
@@ -526,6 +557,21 @@ func (d *Domino) xhr(method, uri string, h map[string]string, data string, cb fu
 		return
 	}
 	cb(string(bs), "")
+}
+
+func (d *Domino) mutated(t int, q string) {
+	m := Mutation{
+		Time: time.Now(),
+		Type: t,
+		Sel: q,
+	}
+	log.Infof("mutation received: %+v", m)
+	select {
+	case d.domChange <- m:
+	default:
+		// TODO: that's not supposed to happen
+		log.Errorf("dom changes backlog full")
+	}
 }
 
 // AJAX:

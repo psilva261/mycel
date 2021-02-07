@@ -53,7 +53,7 @@ func TestProcessJS2SkipFailure(t *testing.T) {
 		`$('body').hide()`,
 		`throw 'fail';`,
 	}
-	h, err = processJS2(d, scripts)
+	h, _, err = processJS2(d, scripts)
 	if err != nil { t.Errorf(err.Error()) }
 	t.Logf("h = %+v", h)
 	if !strings.Contains(h, `<body style="display: none;">`) {

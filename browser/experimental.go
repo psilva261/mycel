@@ -120,12 +120,12 @@ func CleanTree(ui duit.UI) {
 	})
 }
 
-func processJS2(d *domino.Domino, scripts []string) (resHtm string, err error) {
+func processJS2(d *domino.Domino, scripts []string) (resHtm string, changed bool, err error) {
 	initialized := false
 	for _, script := range scripts {
 		if _, err := d.Exec/*6*/(script, !initialized); err != nil {
 			if strings.Contains(err.Error(), "halt at") {
-				return "", fmt.Errorf("execution halted: %w", err)
+				return "", false, fmt.Errorf("execution halted: %w", err)
 			}
 			log.Errorf("exec <script>: %v", err)
 		}
@@ -133,12 +133,12 @@ func processJS2(d *domino.Domino, scripts []string) (resHtm string, err error) {
 	}
 
 	if err = d.CloseDoc(); err != nil {
-		return "", fmt.Errorf("close doc: %w", err)
+		return "", false, fmt.Errorf("close doc: %w", err)
 	}
 
-	resHtm, changed, err := d.TrackChanges()
+	resHtm, changed, err = d.TrackChanges()
 	if err != nil {
-		return "", fmt.Errorf("track changes: %w", err)
+		return "", false, fmt.Errorf("track changes: %w", err)
 	}
 	log.Printf("processJS: changed = %v", changed)
 	return

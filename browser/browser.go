@@ -492,6 +492,7 @@ func (el *Element) click() (consumed bool) {
 	if !consumed {
 		return
 	}
+	log.Infof("click processed")
 
 	offset := scroller.Offset
 	browser.Website.html = res

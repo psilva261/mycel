@@ -122,17 +122,14 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 		}
 		w.d = domino.NewDomino(w.html, browser, nt)
 		w.d.Start()
-		jsProcessed, err := processJS2(w.d, codes)
-		if err == nil {
-			if w.html != jsProcessed {
-				log.Infof("html changed")
-			}
+		jsProcessed, changed, err := processJS2(w.d, codes)
+		if changed && err == nil {
 			w.html = jsProcessed
 			if debugPrintHtml {
 				log.Printf("%v\n", jsProcessed)
 			}
 			doc, nodeMap = pass(w.html, csss...)
-		} else {
+		} else if err != nil {
 			log.Errorf("JS error: %v", err)
 		}
 		log.Infof("JS pipeline end")

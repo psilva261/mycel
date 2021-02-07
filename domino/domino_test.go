@@ -395,18 +395,12 @@ func TestTrackChanges(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	if html == "" {
-		t.Fatalf(err.Error())
-	}
 	if changed == true {
 		t.Fatal()
 	}
 	// 2nd time: no change
 	html, changed, err = d.TrackChanges()
 	if err != nil {
-		t.Fatalf(err.Error())
-	}
-	if html == "" {
 		t.Fatalf(err.Error())
 	}
 	if changed == true {
@@ -652,5 +646,31 @@ func TestJQueryAjax(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 	t.Logf("res=%v", res)
+	d.Stop()
+}
+
+func TestMutationEvents(t *testing.T) {
+	buf, err := ioutil.ReadFile("jquery-3.5.1.js")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	d := NewDomino(simpleHTML, nil, nil)
+	d.Start()
+	script := `
+	$('h1').hide();
+	$('h1').show();
+	`
+	_, err = d.Exec(string(buf) + ";" + script, true)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if err = d.CloseDoc(); err != nil {
+		t.Fatalf("%v", err)
+	}
+	res, err := d.Exec("$('h1').attr('style')", false)
+	t.Logf("res=%v", res)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 	d.Stop()
 }
