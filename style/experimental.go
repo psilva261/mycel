@@ -28,29 +28,27 @@ var TextNode = Map{
 }
 
 func (cs Map) BoxBackground() (i *draw.Image, err error) {
-	if ExperimentalUseBoxBackgrounds {
-		var bgImg *draw.Image
+	var bgImg *draw.Image
 
-		bgImg = cs.backgroundImage()
+	bgImg = cs.backgroundImage()
 
-		if bgImg == nil {
-			bgColor, ok := cs.backgroundColor()
-			if !ok {
-				return
-			}
-			log.Printf("bgColor=%+v", bgColor)
-			i, ok = colorCache[bgColor]
-			if !ok {
-				var err error
-				i, err = dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, bgColor)
-				if err != nil {
-					return nil, fmt.Errorf("alloc img: %w", err)
-				}
-				colorCache[bgColor] = i
-			}
-		} else {
-			i = bgImg
+	if bgImg == nil {
+		bgColor, ok := cs.backgroundColor()
+		if !ok {
+			return
 		}
+		log.Printf("bgColor=%+v", bgColor)
+		i, ok = colorCache[bgColor]
+		if !ok {
+			var err error
+			i, err = dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, bgColor)
+			if err != nil {
+				return nil, fmt.Errorf("alloc img: %w", err)
+			}
+			colorCache[bgColor] = i
+		}
+	} else {
+		i = bgImg
 	}
 	return
 }

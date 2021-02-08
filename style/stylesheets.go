@@ -16,12 +16,8 @@ import (
 	"strings"
 )
 
-var CssFonts = true
 var fontCache = make(map[string]*draw.Font)
 
-// experimentalUseBoxBackgrounds should probably be combined with
-// setting stashElements to false
-var ExperimentalUseBoxBackgrounds = false
 var dui *duit.DUI
 var availableFontNames []string
 var log *logger.Logger
@@ -274,9 +270,6 @@ func (cs Map) ApplyChildStyle(ccs Map, copyAll bool) (res Map) {
 }
 
 func (cs Map) Font() *draw.Font {
-	if !CssFonts {
-		return nil
-	}
 	fn := cs.FontFilename()
 	if dui == nil {
 		return nil

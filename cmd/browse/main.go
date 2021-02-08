@@ -24,8 +24,6 @@ var dui *duit.DUI
 var log *logger.Logger
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-var cssFonts = flag.Bool("cssFonts", true, "toggle css fonts (default true)")
-var experimentalUseBoxBackgrounds = flag.Bool("experimentalUseBoxBackgrounds", true, "show box BGs (default true)")
 var startPage = flag.String("startPage", "http://9p.io", "")
 var dbg = flag.Bool("debug", false, "show debug logs")
 
@@ -176,8 +174,6 @@ func main() {
 
 	log = logger.Log
 	log.Debug = *dbg
-	style.CssFonts = *cssFonts
-	style.ExperimentalUseBoxBackgrounds = *experimentalUseBoxBackgrounds
 
 	if err := Main(); err != nil {
 		log.Fatalf("Main: %v", err)
