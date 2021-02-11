@@ -117,7 +117,7 @@ func printCode(code string, maxWidth int) {
 
 func srcLoader(fn string) ([]byte, error) {
 	path := filepath.FromSlash(fn)
-	if !strings.Contains(path, "/domino-lib/") || !strings.HasSuffix(path, ".js") {
+	if !strings.Contains(path, "domino-lib/") || !strings.HasSuffix(path, ".js") {
 		return nil, require.ModuleFileDoesNotExistError
 	}
 	data, err := ioutil.ReadFile(path)

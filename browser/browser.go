@@ -239,6 +239,10 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *duit.Box, ok bool) {
 	zs := duit.Space{}
 	w := n.Width()
 	h := n.Height()
+	mw, err := n.CssPx("max-width")
+	if err != nil {
+		log.Printf("max-width: %v", err)
+	}
 
 	if bg, err := n.BoxBackground(); err == nil {
 		i = bg
@@ -253,7 +257,7 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *duit.Box, ok bool) {
 		log.Errorf("margin: %v", err)
 	}
 
-	if w == 0 && h == 0 && i == nil && m == zs && p == zs {
+	if w == 0 && h == 0 && mw == 0 && i == nil && m == zs && p == zs {
 		return nil, false
 	}
 
@@ -261,6 +265,7 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *duit.Box, ok bool) {
 		Kids:       duit.NewKids(ui),
 		Width:      w,
 		Height:     h,
+		MaxWidth: mw,
 		Background: i,
 		Margin: m.Topleft(),
 		Padding: p,
@@ -360,34 +365,32 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 
 func NewInputField(n *nodes.Node) *Element {
 	t := attr(*n.DomSubtree, "type")
-	return NewElement(
-		&duit.Box{
-			Kids: duit.NewKids(&duit.Field{
-				Font:        n.Font(),
-				Placeholder: attr(*n.DomSubtree, "placeholder"),
-				Password:    t == "password",
-				Text:        attr(*n.DomSubtree, "value"),
-				Changed: func(t string) (e duit.Event) {
-					setAttr(n.DomSubtree, "value", t)
-					e.Consumed = true
-					return
-				},
-				Keys: func(k rune, m draw.Mouse) (e duit.Event) {
-					if k == 10 {
-						browser.submit(n.Ancestor("form").DomSubtree, nil)
-						return duit.Event{
-							Consumed:   true,
-							NeedLayout: true,
-							NeedDraw:   true,
-						}
-					}
-					return
-				},
-			}),
-			MaxWidth: 200,
+	if n.Css("width") == "" && n.Css("max-width") == "" {
+		n.SetCss("max-width", "200px")
+	}
+	f := &duit.Field{
+		Font:        n.Font(),
+		Placeholder: attr(*n.DomSubtree, "placeholder"),
+		Password:    t == "password",
+		Text:        attr(*n.DomSubtree, "value"),
+		Changed: func(t string) (e duit.Event) {
+			setAttr(n.DomSubtree, "value", t)
+			e.Consumed = true
+			return
 		},
-		n,
-	)
+		Keys: func(k rune, m draw.Mouse) (e duit.Event) {
+			if k == 10 {
+				browser.submit(n.Ancestor("form").DomSubtree, nil)
+				return duit.Event{
+					Consumed:   true,
+					NeedLayout: true,
+					NeedDraw:   true,
+				}
+			}
+			return
+		},
+	}
+	return NewElement(f, n)
 }
 
 func NewTextArea(n *nodes.Node) *Element {
