@@ -512,7 +512,7 @@ func (cs *Map) Tlbr(key string) (s duit.Space, err error) {
 			s.Left = nums[3]
 		}
 	}
-	
+
 	if t, err := cs.CssPx(key+"-top"); err == nil {
 		s.Top = t
 	}
@@ -613,4 +613,11 @@ func (cs Map) CssPx(propName string) (l int, err error) {
 	}
 	l = int(f)
 	return
+}
+
+func (cs Map) SetCss(k, v string) {
+	cs.Declarations[k] = css.Declaration{
+		Property: k,
+		Value: v,
+	}
 }

@@ -1,9 +1,11 @@
 package browser
 
 import (
+	"9fans.net/go/draw"
 	"fmt"
 	"github.com/mjl-/duit"
 	"golang.org/x/net/html"
+	"image"
 	"net/http"
 	"net/url"
 	"github.com/chris-ramon/douceur/css"
@@ -311,3 +313,18 @@ func TestInlining2(t *testing.T) {
 func TestAlwaysOneElement(t *testing.T) {
 }
 
+func TestTextArea(t *testing.T) {
+	htm := `
+		<textarea height="100">
+		</textarea>
+	`
+	nt, _, err := digestHtm(htm)
+	if err != nil {
+		t.Fatalf("digest: %v", err)
+	}
+
+	ta := nt.Find("textarea")
+	el := NewTextArea(ta)
+	// Trigger key press to trigger call to changed
+	el.Key(nil, nil, 'a', draw.Mouse{}, image.Point{})
+}

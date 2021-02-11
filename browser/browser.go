@@ -401,13 +401,11 @@ func NewTextArea(n *nodes.Node) *Element {
 	}
 	edit.Append([]byte(formatted))
 
-	el := NewElement(
-		&duit.Box{
-			Kids:   duit.NewKids(edit),
-			Height: (int(n.FontSize()) + 4) * (len(lines)+2),
-		},
-		n,
-	)
+	if n.Css("height") == "" {
+		n.SetCss("height", fmt.Sprintf("%vpx", (int(n.FontSize()) + 4) * (len(lines)+2)))
+	}
+
+	el := NewElement(edit, n)
 	el.Changed = func(e *Element) {
 		ed := e.UI.(*duit.Box).Kids[0].UI.(*duit.Edit)
 
