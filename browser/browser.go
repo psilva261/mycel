@@ -273,9 +273,13 @@ func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig ima
 	if el == nil {
 		return
 	}
-	/*if self.Draw == duit.DirtyKid {
-		force = true
-	}*/
+	// It would be possible to avoid flickers under certain circumstances
+	// of overlapping elements but the load for this is high:
+	// if self.Draw == duit.DirtyKid {
+	//	force = true
+	// }
+	//
+	// Make boxes use full size for image backgrounds
 	box, ok := el.UI.(*duit.Box)
 	if ok && box.Width > 0 && box.Height > 0 {
 		uiSize := image.Point{X: box.Width, Y: box.Height}
@@ -289,6 +293,7 @@ func (el *Element) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, 
 	if el == nil {
 		return
 	}
+	// Make boxes use full size for image backgrounds
 	box, ok := el.UI.(*duit.Box)
 	if ok && box.Width > 0 && box.Height > 0 {
 		//dui.debugLayout(self)
