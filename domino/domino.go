@@ -417,7 +417,7 @@ func (d *Domino) TrackChanges() (html string, changed bool, err error) {
 	for {
 		select {
 		case m := <-d.domChange:
-			log.Infof("mutation received @ %v for %v", m.Time, m.Sel)
+			log.Printf("mutation received @ %v for %v", m.Time, m.Sel)
 			changed = true
 		default:
 			break outer
@@ -565,12 +565,11 @@ func (d *Domino) mutated(t int, q string) {
 		Type: t,
 		Sel: q,
 	}
-	log.Infof("mutation received: %+v", m)
+	log.Printf("mutation received: %+v", m)
 	select {
 	case d.domChange <- m:
 	default:
-		// TODO: that's not supposed to happen
-		log.Errorf("dom changes backlog full")
+		log.Printf("dom changes backlog full")
 	}
 }
 

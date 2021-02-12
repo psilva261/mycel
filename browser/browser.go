@@ -139,6 +139,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 	var i *draw.Image
 	var cached bool
 	src := attr(*n.DomSubtree, "src")
+	log.Printf("newImage: src: %v", src)
 
 	if display == nil {
 		// probably called from a unit test
@@ -150,6 +151,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 		if  err != nil {
 			return nil, fmt.Errorf("serialize: %w", err)
 		}
+		log.Printf("newImage: xml: %v", xml)
 		buf, err := img.Svg(xml, n.Width(), n.Height())
 		if err == nil {
 			var err error
