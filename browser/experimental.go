@@ -72,7 +72,7 @@ func isLeaf(ui duit.UI) bool {
 		return true
 	case *duit.Label:
 		return true
-	case *ColoredLabel:
+	case *Label:
 		return false
 	case *duit.Button:
 		return true
@@ -109,7 +109,7 @@ func CleanTree(ui duit.UI) {
 		case *duit.Grid:
 		case *duit.Image:
 		case *duit.Label:
-		case *ColoredLabel:
+		case *Label:
 		case *duit.Button:
 		case *Image:
 		case *duit.Field:

@@ -57,13 +57,23 @@ func SetLogger(l *logger.Logger) {
 	log = l
 }
 
-type ColoredLabel struct {
+type Label struct {
 	*duit.Label
 
 	n *nodes.Node
 }
 
-func (ui *ColoredLabel) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
+func NewLabel(t string, n *nodes.Node) *Label {
+	return &Label{
+		Label: &duit.Label{
+			Text: t,
+			Font: n.Font(),
+		},
+		n: n,
+	}
+}
+
+func (ui *Label) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
 	c := ui.n.Map.Color()
 	i, ok := colorCache[c]
 	if !ok {
@@ -932,13 +942,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 						t = "• " + t
 					}
 				}
-				innerContent = &ColoredLabel{
-					Label: &duit.Label{
-						Text: t,
-						Font: n.Font(),
-					},
-					n: n,
-				}
+				innerContent = NewLabel(t, n)
 			} else {
 				innerContent = InnerNodesToBox(r+1, b, n)
 			}
@@ -952,13 +956,10 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			var innerContent duit.UI
 
 			if nodes.IsPureTextContent(*n) {
-				innerContent = &ColoredLabel{
-					Label: &duit.Label{
-						Text:  nodes.ContentFrom(*n),
-						Font:  n.Font(),
-					},
-					n: n,
-				}
+				innerContent = NewLabel(
+					nodes.ContentFrom(*n),
+					n,
+				)
 			} else {
 				innerContent = InnerNodesToBox(r+1, b, n)
 			}
@@ -983,13 +984,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			var innerContent duit.UI
 			if nodes.IsPureTextContent(*n) {
 				t := strings.TrimSpace(nodes.ContentFrom(*n))
-				innerContent = &ColoredLabel{
-					Label: &duit.Label{
-						Text: t,
-						Font: n.Font(),
-					},
-					n: n,
-				}
+				innerContent = NewLabel(t, n)
 			} else {
 				innerContent = InnerNodesToBox(r+1, b, n)
 			}
@@ -1015,13 +1010,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			}
 
 			text = strings.Join(nn, " ")
-			ui := &ColoredLabel{
-				Label: &duit.Label{
-					Text: text,
-					Font: n.Font(),
-				},
-				n: n,
-			}
+			ui := NewLabel(text, n)
 
 			return NewElement(
 				ui,
@@ -1084,7 +1073,7 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 		}
 	case *duit.Image:
 	case *duit.Label:
-	case *ColoredLabel:
+	case *Label:
 		traverseTree(r+1, v.Label, f)
 	case *Image:
 		traverseTree(r+1, v.Image, f)
@@ -1143,12 +1132,12 @@ func printTree(r int, ui duit.UI) {
 			t = t[:15] + "..."
 		}
 		fmt.Printf("Label %v\n", t)
-	case *ColoredLabel:
+	case *Label:
 		t := v.Text
 		if len(t) > 20 {
 			t = t[:15] + "..."
 		}
-		fmt.Printf("ColoredLabel %v\n", t)
+		fmt.Printf("Label %v\n", t)
 	default:
 		fmt.Printf("%+v\n", v)
 	}
