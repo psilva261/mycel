@@ -116,7 +116,7 @@ func NewCodeView(s string, n style.Map) (cv *CodeView) {
 	edit.Append([]byte(formatted))
 	cv.UI = &duit.Box{
 		Kids:   duit.NewKids(edit),
-		Height: (int(n.FontSize()) + 4) * (len(lines)+2),
+		Height: n.Font().Height * (len(lines)+2),
 	}
 	return
 }
@@ -405,6 +405,42 @@ func NewInputField(n *nodes.Node) *Element {
 	return NewElement(f, n)
 }
 
+func NewSelect(n *nodes.Node) *Element {
+	var l *duit.List
+	l = &duit.List{
+		Values: make([]*duit.ListValue, 0, len(n.Children)),
+		Font: n.Font(),
+		Changed: func(i int) (e duit.Event) {
+			v := l.Values[i]
+			vv := fmt.Sprintf("%v", v.Value)
+			if vv == "" {
+				vv = v.Text
+			}
+			setAttr(n.DomSubtree, "value", vv)
+			e.Consumed = true
+			return
+		},
+	}
+	for _, c := range n.Children {
+		if c.Data() != "option" {
+			continue
+		}
+		lv := &duit.ListValue{
+			Text: nodes.ContentFrom(*c),
+			Value: c.Attr("value"),
+			Selected: c.HasAttr("selected"),
+		}
+		l.Values = append(l.Values, lv)
+	}
+	if n.Css("width") == "" && n.Css("max-width") == "" {
+		n.SetCss("max-width", "200px")
+	}
+	if n.Css("height") == "" {
+		n.SetCss("height", fmt.Sprintf("%vpx", 4 * n.Font().Height))
+	}
+	return NewElement(NewScroll(l), n)
+}
+
 func NewTextArea(n *nodes.Node) *Element {
 	t := strings.TrimSpace(nodes.ContentFrom(*n))
 	formatted := ""
@@ -422,7 +458,7 @@ func NewTextArea(n *nodes.Node) *Element {
 	edit.Append([]byte(formatted))
 
 	if n.Css("height") == "" {
-		n.SetCss("height", fmt.Sprintf("%vpx", (int(n.FontSize()) + 4) * (len(lines)+2)))
+		n.SetCss("height", fmt.Sprintf("%vpx", (n.Font().Height * (len(lines)+2))))
 	}
 
 	el := NewElement(edit, n)
@@ -488,6 +524,15 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 	}
 
 	return el.UI.Mouse(dui, self, m, origM, orig)
+}
+
+func (el *Element) FirstFocus(dui *duit.DUI, self *duit.Kid) *image.Point {
+	// Provide custom implementation with nil check because of nil Elements.
+	// (TODO: remove)
+	if el == nil {
+		return &image.Point{}
+	}
+	return el.UI.FirstFocus(dui, self)
 }
 
 func (el *Element) click() (consumed bool) {
@@ -905,6 +950,8 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			} else {
 				return nil
 			}
+		case "select":
+			return NewSelect(n)
 		case "textarea":
 			return NewTextArea(n)
 		case "button":
@@ -1080,6 +1127,8 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 	case *duit.Field:
 	case *duit.Edit:
 	case *duit.Button:
+	case *duit.List:
+	case *duit.Scroll:
 	case *CodeView:
 	default:
 		panic(fmt.Sprintf("unknown: %+v", v))

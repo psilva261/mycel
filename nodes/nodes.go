@@ -146,6 +146,15 @@ func (n *Node) Attr(k string) string {
 	return ""
 }
 
+func (n *Node) HasAttr(k string) bool {
+	for _, a := range n.Attrs {
+		if a.Key == k {
+			return true
+		}
+	}
+	return false
+}
+
 // QueryRef relative to html > body
 func (n *Node) QueryRef() string {
 	nRef, ok := n.queryRef()

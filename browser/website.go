@@ -171,7 +171,7 @@ func formData(n, submitBtn *html.Node) (data url.Values) {
 	nm := attr(*n, "name")
 
 	switch n.Data {
-	case "input":
+	case "input", "select":
 		if attr(*n, "type") == "submit" && n != submitBtn {
 			return
 		}

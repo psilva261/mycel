@@ -87,39 +87,6 @@ func isLeaf(ui duit.UI) bool {
 	}
 }
 
-func CleanTree(ui duit.UI) {
-	if ui == nil {
-		panic("nil root")
-	}
-	TraverseTree(ui, func(ui duit.UI) {
-		if ui == nil {
-			panic("null")
-		}
-		switch v := ui.(type) {
-		case nil:
-			panic("null")
-		case *duit.Scroll:
-			panic("like nil root")
-		case *duit.Box:
-			//realKids := make([])
-		case *Element:
-			if v == nil {
-				panic("null element")
-			}
-		case *duit.Grid:
-		case *duit.Image:
-		case *duit.Label:
-		case *Label:
-		case *duit.Button:
-		case *Image:
-		case *duit.Field:
-		case *CodeView:
-		default:
-			panic(fmt.Sprintf("unknown: %+v", v))
-		}
-	})
-}
-
 func processJS2(d *domino.Domino, scripts []string) (resHtm string, changed bool, err error) {
 	initialized := false
 	for _, script := range scripts {
