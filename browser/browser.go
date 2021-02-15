@@ -100,13 +100,6 @@ func NewCodeView(s string, n style.Map) (cv *CodeView) {
 	edit := &duit.Edit{
 		Font: Style.Font(),
 	}
-	/*edit.Keys = func(k rune, m draw.Mouse) (e duit.Event) {
-		//log.Printf("k=%v (c %v    p %v)", k, unicode.IsControl(k), unicode.IsPrint(k))
-		if unicode.IsPrint(k) {
-			e.Consumed = true
-		}
-		return
-	}*/
 	formatted := ""
 	lines := strings.Split(s, "\n")
 	for _, line := range lines {

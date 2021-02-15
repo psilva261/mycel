@@ -136,7 +136,7 @@ func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig imag
 		if ui.Kid.R.Dx() == 0 || ui.Kid.R.Dy() == 0 {
 			return
 		}
-		ui.img, err = dui.Display.AllocImage(ui.Kid.R, draw.ARGB32, false, dui.BackgroundColor)
+		ui.img, err = dui.Display.AllocImage(ui.drawRect(), draw.ARGB32, false, dui.BackgroundColor)
 		if duitError(dui, err, "allocimage") {
 			return
 		}
@@ -152,6 +152,29 @@ func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig imag
 		ui.Kid.Draw = duit.Clean
 	}
 	img.Draw(ui.childR.Add(orig), ui.img, nil, image.Pt(0, ui.Offset))
+}
+
+// Allocate only an image buffer of view size ui.r
+// - which is translated by scroll offset ui.Offset - instead
+// of whole Kid view size ui.Kid.R which leads to much
+// faster render times sometimes. Add same size rectangles
+// above/below to decrease flickering.
+func (ui *Scroll) drawRect() image.Rectangle {
+	if 2*ui.r.Dy() > ui.Kid.R.Dy() {
+		return ui.Kid.R
+	}
+	r := image.Rectangle{
+		Min: ui.r.Min,
+		Max: image.Point{
+			ui.r.Max.X,
+			2*ui.r.Max.Y,
+		},
+	}
+	r = r.Add(image.Point{X:0, Y:ui.Offset})
+	if r.Min.Y > ui.Offset {
+		r.Min.Y -= ui.Offset
+	}
+	return r
 }
 
 func (ui *Scroll) scroll(delta int) bool {
