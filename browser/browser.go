@@ -1422,7 +1422,11 @@ func (b *Browser) statusBarMsg(msg string, emptyBody bool) {
 	if dui == nil || dui.Top.UI == nil {
 		return
 	}
-	b.StatusBar.Text = msg
+	if msg == "" {
+		b.StatusBar.Text = ""
+	} else {
+		b.StatusBar.Text += msg + "\n"
+	}
 	if emptyBody {
 		b.Website.UI = &duit.Label{}
 	}
@@ -1435,9 +1439,6 @@ func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType o
 	msg := fmt.Sprintf("Get %v", uri.String())
 	log.Printf(msg)
 	b.statusBarMsg(msg, true)
-	defer func() {
-		b.statusBarMsg("", true)
-	}()
 	req, err := http.NewRequest("GET", uri.String(), nil)
 	if err != nil {
 		return

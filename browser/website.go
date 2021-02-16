@@ -24,6 +24,9 @@ type Website struct {
 }
 
 func (w *Website) layout(f opossum.Fetcher, layouting int) {
+	defer func() {
+		browser.statusBarMsg("", false)
+	}()
 	pass := func(htm string, csss ...string) (*html.Node, map[*html.Node]style.Map) {
 
 		if debugPrintHtml {
