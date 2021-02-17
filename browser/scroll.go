@@ -23,6 +23,7 @@ package browser
 import (
 	"fmt"
 	"image"
+	"math"
 
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
@@ -41,6 +42,7 @@ type Scroll struct {
 	img           *draw.Image // for child to draw on
 	scrollbarSize int
 	lastMouseUI   duit.UI
+	drawOffset int
 }
 
 var _ duit.UI = &Scroll{}
@@ -126,7 +128,11 @@ func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig imag
 	if ui.childR.Empty() {
 		return
 	}
-	if ui.img == nil || ui.Kid.R.Size() != ui.img.R.Size() {
+	d := math.Abs(float64(ui.drawOffset - ui.Offset))
+	if  d > float64(ui.r.Max.Y) {
+		ui.Kid.Draw = duit.Dirty
+	}
+	if ui.img == nil || ui.drawRect().Size() != ui.img.R.Size() || ui.Kid.Draw == duit.Dirty {
 		var err error
 		if ui.img != nil {
 			ui.img.Free()
@@ -140,6 +146,7 @@ func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig imag
 		if duitError(dui, err, "allocimage") {
 			return
 		}
+		ui.drawOffset = ui.Offset
 	} else if ui.Kid.Draw == duit.Dirty {
 		ui.img.Draw(ui.img.R, dui.Background, nil, image.ZP)
 	}
@@ -157,7 +164,7 @@ func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig imag
 // Allocate only an image buffer of view size ui.r
 // - which is translated by scroll offset ui.Offset - instead
 // of whole Kid view size ui.Kid.R which leads to much
-// faster render times sometimes. Add same size rectangles
+// faster render times for large pages. Add same size rectangles
 // above/below to decrease flickering.
 func (ui *Scroll) drawRect() image.Rectangle {
 	if 2*ui.r.Dy() > ui.Kid.R.Dy() {
@@ -167,10 +174,10 @@ func (ui *Scroll) drawRect() image.Rectangle {
 		Min: ui.r.Min,
 		Max: image.Point{
 			ui.r.Max.X,
-			2*ui.r.Max.Y,
+			3*ui.r.Max.Y,
 		},
 	}
-	r = r.Add(image.Point{X:0, Y:ui.Offset})
+	r = r.Add(image.Point{X:0, Y:ui.Offset-ui.r.Max.Y})
 	if r.Min.Y > ui.Offset {
 		r.Min.Y -= ui.Offset
 	}
