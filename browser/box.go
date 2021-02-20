@@ -49,7 +49,7 @@ func NewReverseBox(uis ...duit.UI) *Box {
 type Box struct {
 	Kids       []*duit.Kid      // Kids and UIs in this box.
 	Reverse    bool        // Lay out children from bottom to top. First kid will be at the bottom.
-	Margin     image.Point // In lowDPI pixels, will be adjusted for highDPI screens.
+	Margin     duit.Space // In lowDPI pixels, will be adjusted for highDPI screens.
 	Padding    duit.Space       // Padding inside box, so children don't touch the sides; in lowDPI pixels, also adjusted for highDPI screens.
 	Valign     duit.Valign      // How to align children on a line.
 	Width      int         // 0 means dynamic (as much as needed), -1 means full width, >0 means that exact amount of lowDPI pixels.
@@ -83,7 +83,7 @@ func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, forc
 		sizeAvail.Y = dui.Scale(ui.Height)
 	}
 	padding := dui.ScaleSpace(ui.Padding)
-	margin := scalePt(dui.Display, ui.Margin)
+	margin := dui.ScaleSpace(ui.Margin)
 	sizeAvail = sizeAvail.Sub(padding.Size())
 	nx := 0 // number on current line
 
@@ -113,18 +113,18 @@ func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, forc
 		var kr image.Rectangle
 		if nx == 0 || cur.X+childSize.X <= sizeAvail.X {
 			kr = rect(childSize).Add(cur).Add(padding.Topleft())
-			cur.X += childSize.X + margin.X
+			cur.X += childSize.X + margin.Topleft().X
 			lineY = maximum(lineY, childSize.Y)
 			nx += 1
 		} else {
 			if nx > 0 {
 				fixValign(ui.Kids[i-nx : i])
 				cur.X = 0
-				cur.Y += lineY + margin.Y
+				cur.Y += lineY + margin.Topleft().Y
 			}
 			kr = rect(childSize).Add(cur).Add(padding.Topleft())
 			nx = 1
-			cur.X = childSize.X + margin.X
+			cur.X = childSize.X + margin.Topleft().X
 			lineY = childSize.Y
 		}
 		k.R = kr
@@ -144,18 +144,23 @@ func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, forc
 		}
 	}
 
-	ui.size = image.Pt(xmax-margin.X, cur.Y).Add(padding.Size())
+	ui.size = image.Pt(xmax-margin.Dx(), cur.Y).Add(padding.Size())
 	if ui.Width < 0 {
 		ui.size.X = osize.X
 	}
 	if ui.Height < 0 && ui.size.Y < osize.Y {
 		ui.size.Y = osize.Y
 	}
-	self.R = rect(ui.size)
+	//self.R = rect(ui.size.Add(image.Point{X: margin.Right, Y: margin.Bottom}))
+	self.R = image.Rectangle{
+		image.ZP,
+		ui.size.Add(margin.Size()),
+	}
 }
 
 func (ui *Box) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
-	duit.KidsDraw(dui, self, ui.Kids, ui.size, ui.Background, img, orig, m, force)
+	orig2 := orig.Add(ui.Margin.Topleft())
+	duit.KidsDraw(dui, self, ui.Kids, ui.size, ui.Background, img, orig2, m, force)
 }
 
 func (ui *Box) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (r duit.Result) {
@@ -193,18 +198,4 @@ func (ui *Box) Mark(self *duit.Kid, o duit.UI, forLayout bool) (marked bool) {
 func (ui *Box) Print(self *duit.Kid, indent int) {
 	duit.PrintUI("Box", self, indent)
 	duit.KidsPrint(ui.Kids, indent+1)
-}
-
-//////////////////////
-//                  //
-// helper functions //
-//                  //
-//////////////////////
-
-func scalePt(d *draw.Display, p image.Point) image.Point {
-	f := d.DPI / 100
-	if f <= 1 {
-		f = 1
-	}
-	return p.Mul(f)
 }

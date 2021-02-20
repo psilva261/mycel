@@ -90,7 +90,7 @@ func TestArrange(t *testing.T) {
 			}
 		}
 		if d == "inline" {
-			b := v.UI.(*duit.Box)
+			b := v.UI.(*Box)
 			if len(b.Kids) != 3 {
 				t.Fatalf("%+v", b)
 			}
@@ -222,7 +222,7 @@ func explodeRow(e *Element) (cols []*duit.Kid, ok bool) {
 			break
 		}
 	}
-	el := e.UI.(*duit.Box)
+	el := e.UI.(*Box)
 	return el.Kids, true
 }
 

@@ -107,7 +107,7 @@ func NewCodeView(s string, n style.Map) (cv *CodeView) {
 	}
 	log.Printf("formatted=%+v", formatted)
 	edit.Append([]byte(formatted))
-	cv.UI = &duit.Box{
+	cv.UI = &Box{
 		Kids:   duit.NewKids(edit),
 		Height: n.Font().Height * (len(lines)+2),
 	}
@@ -230,7 +230,7 @@ func NewElement(ui duit.UI, n *nodes.Node) *Element {
 	}
 }
 
-func newBoxElement(ui duit.UI, n *nodes.Node) (box *duit.Box, ok bool) {
+func newBoxElement(ui duit.UI, n *nodes.Node) (box *Box, ok bool) {
 	if ui == nil {
 		return nil, false
 	}
@@ -266,13 +266,13 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *duit.Box, ok bool) {
 		return nil, false
 	}
 
-	box = &duit.Box{
+	box = &Box{
 		Kids:       duit.NewKids(ui),
 		Width:      w,
 		Height:     h,
 		MaxWidth: mw,
 		Background: i,
-		Margin: m.Topleft(),
+		Margin: m,
 		Padding: p,
 	}
 
@@ -290,7 +290,7 @@ func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig ima
 	// }
 	//
 	// Make boxes use full size for image backgrounds
-	box, ok := el.UI.(*duit.Box)
+	box, ok := el.UI.(*Box)
 	if ok && box.Width > 0 && box.Height > 0 {
 		uiSize := image.Point{X: box.Width, Y: box.Height}
 		duit.KidsDraw(dui, self, box.Kids, uiSize, box.Background, img, orig, m, force)
@@ -304,7 +304,7 @@ func (el *Element) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, 
 		return
 	}
 	// Make boxes use full size for image backgrounds
-	box, ok := el.UI.(*duit.Box)
+	box, ok := el.UI.(*Box)
 	if ok && box.Width > 0 && box.Height > 0 {
 		//dui.debugLayout(self)
 		//if ui.Image == nil {
@@ -456,7 +456,7 @@ func NewTextArea(n *nodes.Node) *Element {
 
 	el := NewElement(edit, n)
 	el.Changed = func(e *Element) {
-		ed := e.UI.(*duit.Box).Kids[0].UI.(*duit.Edit)
+		ed := e.UI.(*Box).Kids[0].UI.(*duit.Edit)
 
 		tt, err := ed.Text()
 		if err != nil {
@@ -712,9 +712,9 @@ func horizontalSeq(wrap bool, es []*Element) duit.UI {
 			}
 		}
 
-		return &duit.Box{
+		return &Box{
 			Padding: duit.SpaceXY(6, 4),
-			Margin:  image.Pt(6, 4),
+			Margin:  duit.SpaceXY(6, 4),
 			Kids:    duit.NewKids(finalUis...),
 		}
 	} else {
@@ -1096,7 +1096,7 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 		panic("null")
 	case *Scroll:
 		traverseTree(r+1, v.Kid.UI, f)
-	case *duit.Box:
+	case *Box:
 		for _, kid := range v.Kids {
 			traverseTree(r+1, kid.UI, f)
 		}
@@ -1149,8 +1149,8 @@ func printTree(r int, ui duit.UI) {
 	case *duit.Scroll:
 		fmt.Printf("duit.Scroll\n")
 		printTree(r+1, v.Kid.UI)
-	case *duit.Box:
-		fmt.Printf("duit.Box\n")
+	case *Box:
+		fmt.Printf("Box\n")
 		for _, kid := range v.Kids {
 			printTree(r+1, kid.UI)
 		}
