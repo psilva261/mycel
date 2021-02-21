@@ -388,7 +388,11 @@ func NewInputField(n *nodes.Node) *Element {
 		},
 		Keys: func(k rune, m draw.Mouse) (e duit.Event) {
 			if k == 10 {
-				browser.submit(n.Ancestor("form").DomSubtree, nil)
+				f := n.Ancestor("form")
+				if f == nil {
+					return
+				}
+				browser.submit(f.DomSubtree, nil)
 				return duit.Event{
 					Consumed:   true,
 					NeedLayout: true,
