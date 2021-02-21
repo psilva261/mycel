@@ -1450,9 +1450,18 @@ func (b *Browser) statusBarMsg(msg string, emptyBody bool) {
 	if emptyBody {
 		b.Website.UI = &duit.Label{}
 	}
+
+	// Workaround to clear background to white for websites that don't use the whole window
+	white, err := dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, 0xffffffff)
+	if err != nil {
+		log.Errorf("%v", err)
+	}
+	tmp := dui.Background
+	dui.Background = white
 	dui.MarkLayout(dui.Top.UI)
 	dui.MarkDraw(dui.Top.UI)
 	dui.Render()
+	dui.Background = tmp
 }
 
 func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType opossum.ContentType, err error) {
