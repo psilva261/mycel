@@ -1289,6 +1289,10 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	browser = b
 	style.SetFetcher(b)
 	dui = _dui
+	dui.Background, err = dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, 0x00000000)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
 	display = dui.Display
 
 	b.Website.layout(b, InitialLayout)
