@@ -55,9 +55,10 @@ type Box struct {
 	Width      int         // 0 means dynamic (as much as needed), -1 means full width, >0 means that exact amount of lowDPI pixels.
 	Height     int         // 0 means dynamic (as much as needed), -1 means full height, >0 means that exact amount of lowDPI pixels.
 	MaxWidth   int         // if >0, the max number of lowDPI pixels that will be used.
+	ContentBox bool        // Use ContentBox (BorderBox by default)
 	Background *draw.Image `json:"-"` // Background for this box, instead of default duit background.
 
-	size image.Point // of entire box, including padding
+	size image.Point // of entire box, including padding but excluding margin
 }
 
 var _ duit.UI = &Box{}
@@ -72,22 +73,34 @@ func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, forc
 		panic("combination ui.Width < 0 and ui.MaxWidth > 0 invalid")
 	}
 
-	osize := sizeAvail
-	if ui.Width > 0 && dui.Scale(ui.Width) < sizeAvail.X {
-		sizeAvail.X = dui.Scale(ui.Width)
-	} else if ui.MaxWidth > 0 && dui.Scale(ui.MaxWidth) < sizeAvail.X {
-		// note: ui.Width is currently the same as MaxWidth, but that might change when we don't mind extending beyong given X, eg with horizontal scroll
-		sizeAvail.X = dui.Scale(ui.MaxWidth)
-	}
-	if ui.Height > 0 {
-		sizeAvail.Y = dui.Scale(ui.Height)
-	}
 	padding := dui.ScaleSpace(ui.Padding)
 	margin := dui.ScaleSpace(ui.Margin)
-	sizeAvail = sizeAvail.Sub(padding.Size())
+
+	// widths and heights
+	bbw := dui.Scale(ui.Width)
+	bbmaxw := dui.Scale(ui.MaxWidth)
+	bbh := dui.Scale(ui.Height)
+
+	if ui.ContentBox {
+		bbw += margin.Dx()+padding.Dx()
+		bbmaxw += margin.Dx()+padding.Dx()
+		bbh += margin.Dy()+padding.Dy()
+	}
+
+	osize := sizeAvail
+	if ui.Width > 0 && bbw < sizeAvail.X {
+		sizeAvail.X = bbw
+	} else if ui.MaxWidth > 0 && bbmaxw < sizeAvail.X {
+		// note: ui.Width is currently the same as MaxWidth, but that might change when we don't mind extending beyong given X, eg with horizontal scroll
+		sizeAvail.X = bbmaxw
+	}
+	if ui.Height > 0 {
+		sizeAvail.Y = bbh
+	}
+	sizeAvail = sizeAvail.Sub(padding.Size()).Sub(margin.Size())
 	nx := 0 // number on current line
 
-	// variables below are about box contents not offset for padding
+	// variables below are about box contents excluding offsets for padding and margin
 	cur := image.ZP
 	xmax := 0  // max x seen so far
 	lineY := 0 // max y of current line
@@ -113,7 +126,7 @@ func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, forc
 		var kr image.Rectangle
 		if nx == 0 || cur.X+childSize.X <= sizeAvail.X {
 			kr = rect(childSize).Add(cur).Add(padding.Topleft())
-			cur.X += childSize.X + margin.Topleft().X
+			cur.X += childSize.X
 			lineY = maximum(lineY, childSize.Y)
 			nx += 1
 		} else {
@@ -122,9 +135,10 @@ func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, forc
 				cur.X = 0
 				cur.Y += lineY + margin.Topleft().Y
 			}
+			// Add padding translation, so the child UI can be drawn right there
 			kr = rect(childSize).Add(cur).Add(padding.Topleft())
 			nx = 1
-			cur.X = childSize.X + margin.Topleft().X
+			cur.X = childSize.X
 			lineY = childSize.Y
 		}
 		k.R = kr
@@ -144,30 +158,35 @@ func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, forc
 		}
 	}
 
-	ui.size = image.Pt(xmax-margin.Dx(), cur.Y).Add(padding.Size())
+	ui.size = image.Pt(xmax, cur.Y).Add(padding.Size())
 	if ui.Width < 0 {
 		ui.size.X = osize.X
 	}
 	if ui.Height < 0 && ui.size.Y < osize.Y {
 		ui.size.Y = osize.Y
 	}
-	//self.R = rect(ui.size.Add(image.Point{X: margin.Right, Y: margin.Bottom}))
-	self.R = image.Rectangle{
-		image.ZP,
-		ui.size.Add(margin.Size()),
-	}
+	self.R = rect(ui.size.Add(margin.Size()))
 }
 
 func (ui *Box) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
-	orig2 := orig.Add(ui.Margin.Topleft())
-	duit.KidsDraw(dui, self, ui.Kids, ui.size, ui.Background, img, orig2, m, force)
+	margin := dui.ScaleSpace(ui.Margin)
+	orig = orig.Add(margin.Topleft())
+	duit.KidsDraw(dui, self, ui.Kids, ui.size, ui.Background, img, orig, m, force)
 }
 
 func (ui *Box) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (r duit.Result) {
+	margin := dui.ScaleSpace(ui.Margin)
+	origM.Point = origM.Point.Sub(margin.Topleft())
+	m.Point = m.Point.Sub(margin.Topleft())
 	return duit.KidsMouse(dui, self, ui.Kids, m, origM, orig)
 }
 
 func (ui *Box) Key(dui *duit.DUI, self *duit.Kid, k rune, m draw.Mouse, orig image.Point) (r duit.Result) {
+	// nil check for tests
+	if dui != nil {
+		margin := dui.ScaleSpace(ui.Margin)
+		m.Point = m.Point.Sub(margin.Topleft())
+	}
 	return duit.KidsKey(dui, self, ui.orderedKids(), k, m, orig)
 }
 

@@ -262,7 +262,7 @@ func TestInlining(t *testing.T) {
 		t.Errorf("bel: %+v", bel)
 	}
 	if ael.n.Data() != "a" {
-		t.Errorf("ael: %+v %+v", ael, ael.n)
+		t.Errorf("ael: %+v %+v '%v'", ael, ael.n, ael.n.Data())
 	}
 }
 
@@ -311,6 +311,33 @@ func TestInlining2(t *testing.T) {
 }
 
 func TestAlwaysOneElement(t *testing.T) {
+	h := `
+		<!DOCTYPE html>
+		<html>
+			<body>
+				<div class="wrapper">
+					<main></main>
+					<footer></footer>
+				</div>
+			</body>
+		</html>
+	`
+	_, boxed, err := digestHtm(h)
+	if err != nil {
+		t.Fatalf("digest: %v", err)
+	}
+	n := 0
+
+	TraverseTree(boxed, func(ui duit.UI) {
+		if el, ok := ui.(*Element); ok && el.n.Attr("class") == "wrapper" {
+			n++
+			fmt.Printf("n data=%v\n", el.n.Data())
+			fmt.Printf("n cls=%v\n", el.n.Attr("class"))
+		}
+	})
+	if n != 1 {
+		t.Errorf("%v", n)
+	}
 }
 
 func TestTextArea(t *testing.T) {

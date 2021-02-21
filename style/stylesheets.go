@@ -51,6 +51,7 @@ address, article, aside, blockquote, details, dialog, dd, div, dl, dt, fieldset,
 
 a {
   color: blue;
+  margin-right: 2px;
 }
 `
 

@@ -66,7 +66,7 @@ type Label struct {
 func NewLabel(t string, n *nodes.Node) *Label {
 	return &Label{
 		Label: &duit.Label{
-			Text: t,
+			Text: t + " ",
 			Font: n.Font(),
 		},
 		n: n,
@@ -220,8 +220,10 @@ func NewElement(ui duit.UI, n *nodes.Node) *Element {
 		return nil
 	}
 
-	if box, ok := newBoxElement(ui, n); ok {
-		ui = box
+	if n.Type() != html.TextNode {
+		if box, ok := newBoxElement(ui, n); ok {
+			ui = box
+		}
 	}
 
 	return &Element{
@@ -271,6 +273,7 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *Box, ok bool) {
 		Width:      w,
 		Height:     h,
 		MaxWidth: mw,
+		ContentBox: true,
 		Background: i,
 		Margin: m,
 		Padding: p,
@@ -657,14 +660,26 @@ func Arrange(n *nodes.Node, elements ...*Element) *Element {
 		} else if len(rows[0]) == 1 {
 			return rows[0][0]
 		}
-		return NewElement(horizontalSeq(true, rows[0]), n)
+		s := horizontalSeq(true, rows[0])
+		if el, ok := s.(*Element); ok {
+			return el
+		}
+		return NewElement(s, n)
 	} else {
 		seqs := make([]*Element, 0, len(rows))
 		for _, row := range rows {
 			seq := horizontalSeq(true, row)
-			seqs = append(seqs, NewElement(seq, n))
+			if el, ok := seq.(*Element); ok {
+				seqs = append(seqs, el)
+			} else {
+				seqs = append(seqs, NewElement(seq, n))
+			}
 		}
-		return NewElement(verticalSeq(seqs), n)
+		s := verticalSeq(seqs)
+		if el, ok := s.(*Element); ok {
+			return el
+		}
+		return NewElement(s, n)
 	}
 }
 
@@ -984,7 +999,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				}
 				innerContent = NewLabel(t, n)
 			} else {
-				innerContent = InnerNodesToBox(r+1, b, n)
+				return InnerNodesToBox(r+1, b, n)
 			}
 
 			return NewElement(
@@ -1008,10 +1023,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				return nil
 			}
 
-			el := NewElement(
-				innerContent,
-				n,
-			)
+			el := NewElement(innerContent, n)
 			el.makeLink(href)
 			return el
 		case "noscript":
@@ -1026,7 +1038,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				t := strings.TrimSpace(nodes.ContentFrom(*n))
 				innerContent = NewLabel(t, n)
 			} else {
-				innerContent = InnerNodesToBox(r+1, b, n)
+				return InnerNodesToBox(r+1, b, n)
 			}
 
 			return NewElement(
