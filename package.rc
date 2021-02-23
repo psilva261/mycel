@@ -4,7 +4,6 @@ rm -rf ./$name
 mkdir ./$name
 mkdir -p ./packages
 chmod +t ./$name
-mkdir ./$name/domino-lib
 
 echo Testing...
 go vet ./...
@@ -17,9 +16,7 @@ cd ../..
 mv cmd/browse/$name.bin .
 mv $name.bin ./$name/
 cp README.md ./$name/
-cp normalize.css ./$name/
 cp possum-655x493.jpg ./$name/
-dircp domino-lib ./$name/domino-lib
 tarball=`{pwd} ^ '/packages/' ^ $name ^ '-v0.0.1-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
 tar czf $tarball $name
 chmod +t $tarball

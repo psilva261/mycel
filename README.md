@@ -1,6 +1,6 @@
 # Opossum Web Browser
 
-Basic portable Web browser; only needs a Go compiler to compile, no C dependencies.
+Basic portable Web browser; only needs a Go compiler to compile.
 
 The UI is built with https://github.com/mjl-/duit
 
@@ -31,7 +31,7 @@ Also `/sys/lib/tls/ca.pem` needs to be present for TLS to work. ca certs can be 
 hget https://curl.haxx.se/ca/cacert.pem > /sys/lib/tls/ca.pem
 ```
 
-To compile the source Go 1.15 is needed. Probably `$GOPROXY` should be set to `https://proxy.golang.org`
+To compile the source Go 1.16 is needed. Probably `$GOPROXY` should be set to `https://proxy.golang.org`
 
 ```
 cd cmd/browse

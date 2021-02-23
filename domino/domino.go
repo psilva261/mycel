@@ -1,6 +1,7 @@
 package domino
 
 import (
+	"embed"
 	"errors"
 	"fmt"
 	"github.com/dop251/goja"
@@ -26,6 +27,9 @@ import (
 var DebugDumpJS *bool
 var log *logger.Logger
 var timeout = 60*time.Second
+
+//go:embed domino-lib/*js
+var lib embed.FS
 
 func SetLogger(l *logger.Logger) {
 	log = l
@@ -120,7 +124,7 @@ func srcLoader(fn string) ([]byte, error) {
 	if !strings.Contains(path, "domino-lib/") || !strings.HasSuffix(path, ".js") {
 		return nil, require.ModuleFileDoesNotExistError
 	}
-	data, err := ioutil.ReadFile(path)
+	data, err := lib.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) || errors.Is(err, syscall.EISDIR) {
 			err = require.ModuleFileDoesNotExistError
@@ -252,11 +256,7 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 
 				// find domino-lib folder
 				registry := require.NewRegistry(
-					require.WithGlobalFolders(
-						".",     // standalone
-						"..",    // tests
-						"../..", // go run
-					),
+					require.WithGlobalFolders("."),
 					require.WithLoader(
 						require.SourceLoader(srcLoader),
 					),
