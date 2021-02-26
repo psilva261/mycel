@@ -646,6 +646,52 @@ func TestJQueryAjax(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 	t.Logf("res=%v", res)
+	if res != "success" {
+		t.Fatalf(res)
+	}
+	d.Stop()
+}
+
+func TestJQueryAjax182(t *testing.T) {
+	mb := &MockBrowser{}
+	mb.origin, _ = url.Parse("https://example.com")
+	mb.linkedUrl, _ = url.Parse("https://example.com")
+	buf, err := ioutil.ReadFile("godoc/jquery-1.8.2.js")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	d := NewDomino(simpleHTML, mb, nil)
+	d.Start()
+	script := `
+	var res;
+	$.ajax({
+		url: '/',
+		success: function() {
+			console.log('success!!!');
+			res = 'success';
+		},
+		error: function() {
+			console.log('error!!!');
+			res = 'err';
+		}
+	});
+	`
+	_, err = d.Exec(string(buf) + ";" + script, true)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if err = d.CloseDoc(); err != nil {
+		t.Fatalf("%v", err)
+	}
+	<-time.After(5*time.Second)
+	res, err := d.Exec("res;", false)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	t.Logf("res=%v", res)
+	if res != "success" {
+		t.Fatalf(res)
+	}
 	d.Stop()
 }
 

@@ -156,7 +156,7 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 		var ___fq;
 		___fq = function(pre, el) {
 			var i, p;
-			
+
 			if (!el) {
 				return undefined;
 			}
@@ -213,6 +213,7 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 					this.status = 200;
 					if (ls['load']) ls['load'].bind(this)();
 					if (this.onload) this.onload.bind(this)();
+
 					if (this.onreadystatechange) this.onreadystatechange.bind(this)();
 				}
 			}.bind(this);
@@ -415,15 +416,16 @@ func (d *Domino) PutAttr(selector, attr, val string) (ok bool, err error) {
 func (d *Domino) TrackChanges() (html string, changed bool, err error) {
 	outer:
 	for {
+		// TODO: either add other change types like ajax begin/end or
+		// just have one channel for all events worth waiting for.
 		select {
-		case m := <-d.domChange:
-			log.Printf("mutation received @ %v for %v", m.Time, m.Sel)
+		case <-d.domChange:
 			changed = true
-		default:
+		case <-time.After(time.Second):
 			break outer
 		}
 	}
-	
+
 	if changed {
 		html, err = d.Exec("document.querySelector('html').innerHTML;", false)
 		if err != nil {
@@ -536,7 +538,7 @@ func (d *Domino) xhr(method, uri string, h map[string]string, data string, cb fu
 		cb("", "cannot do crossorigin request to " + u.String())
 		return
 	}
-	fmt.Printf("data=%+v\n", data)
+
 	req, err := http.NewRequest(method, u.String(), strings.NewReader(data))
 	if err != nil {
 		cb("", err.Error())
@@ -545,18 +547,23 @@ func (d *Domino) xhr(method, uri string, h map[string]string, data string, cb fu
 	for k, v := range h {
 		req.Header.Add(k, v)
 	}
-	resp, err := c.Do(req)
-	if err != nil {
-		cb("", err.Error())
-		return
-	}
-	defer resp.Body.Close()
-	bs, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		cb("", err.Error())
-		return
-	}
-	cb(string(bs), "")
+	// TODO: timeout? context? http timeout?
+	go func() {
+		resp, err := c.Do(req)
+		if err != nil {
+			cb("", err.Error())
+			return
+		}
+		defer resp.Body.Close()
+		bs, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			cb("", err.Error())
+			return
+		}
+		d.loop.RunOnLoop(func(*goja.Runtime) {
+			cb(string(bs), "")
+		})
+	}()
 }
 
 func (d *Domino) mutated(t int, q string) {
@@ -565,7 +572,7 @@ func (d *Domino) mutated(t int, q string) {
 		Type: t,
 		Sel: q,
 	}
-	log.Printf("mutation received: %+v", m)
+
 	select {
 	case d.domChange <- m:
 	default:
