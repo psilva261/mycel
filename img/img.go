@@ -209,7 +209,6 @@ func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
 		if err != nil {
 			return nil, fmt.Errorf("decode %v: %w", imgUrl, err)
 		}
-		// check err
 
 		newImage := resize.Resize(uint(w), uint(h), image, resize.Lanczos3)
 

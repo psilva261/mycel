@@ -11,7 +11,7 @@ go test -cover ./...
 
 echo Compiling...
 cd cmd/browse
-go build -o $name.bin
+go build -ldflags '-s -w' -o $name.bin
 cd ../..
 mv cmd/browse/$name.bin .
 mv $name.bin ./$name/
