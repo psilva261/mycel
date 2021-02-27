@@ -969,23 +969,18 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 		case "button":
 			if t := attr(*n.DomSubtree, "type"); t == "" || t == "submit" {
 				return NewSubmitButton(b, n)
-			} else {
-				btn := &duit.Button{
-					Text: nodes.ContentFrom(*n),
-					Font: n.Font(),
-				}
-				return NewElement(
-					btn,
-					n,
-				)
 			}
+
+			btn := &duit.Button{
+				Text: nodes.ContentFrom(*n),
+				Font: n.Font(),
+			}
+
+			return NewElement(btn, n)
 		case "table":
 			return NewTable(n).Element(r+1, b, n)
 		case "img", "svg":
-			return NewElement(
-				NewImage(n),
-				n,
-			)
+			return NewElement(NewImage(n), n)
 		case "pre":
 			return NewElement(
 				NewCodeView(nodes.ContentFrom(*n), n.Map),
