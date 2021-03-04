@@ -1,9 +1,10 @@
 package main
 
 import (
+	"9fans.net/go/draw"
 	"flag"
 	"fmt"
-
+	"image"
 	"os"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser"
@@ -14,7 +15,6 @@ import (
 	"github.com/psilva261/opossum/nodes"
 	"runtime/pprof"
 	"time"
-
 	"github.com/mjl-/duit"
 )
 
@@ -35,30 +35,39 @@ func init() {
 	logger.Quiet = flag.Bool("quiet", defaultQuietActive, "don't print info messages and non-fatal errors")
 }
 
-func render(b *browser.Browser) {
+func mainView(b *browser.Browser) []*duit.Kid {
+	return duit.NewKids(
+		&duit.Grid{
+			Columns: 2,
+			Padding: duit.NSpace(2, duit.SpaceXY(5, 3)),
+			Halign:  []duit.Halign{duit.HalignLeft, duit.HalignRight},
+			Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle},
+			Kids: duit.NewKids(
+				&duit.Button{
+					Text:  "Back",
+					Font:  browser.Style.Font(),
+					Click: b.Back,
+				},
+				&duit.Box{
+					Kids: duit.NewKids(
+						b.LocationField,
+					),
+				},
+			),
+		},
+		b.StatusBar,
+		b.Website,
+	)
+}
+
+func render(b *browser.Browser, kids []*duit.Kid) {
+	white, err := dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, 0xffffffff)
+	if err != nil {
+		log.Errorf("%v", err)
+	}
 	dui.Top.UI = &duit.Box{
-		Kids: duit.NewKids(
-			&duit.Grid{
-				Columns: 2,
-				Padding: duit.NSpace(2, duit.SpaceXY(5, 3)),
-				Halign:  []duit.Halign{duit.HalignLeft, duit.HalignRight},
-				Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle},
-				Kids: duit.NewKids(
-					&duit.Button{
-						Text:  "Back",
-						Font:  browser.Style.Font(),
-						Click: b.Back,
-					},
-					&duit.Box{
-						Kids: duit.NewKids(
-							b.LocationField,
-						),
-					},
-				),
-			},
-			b.StatusBar,
-			b.Website,
-		),
+		Kids: kids,
+		Background: white,
 	}
 	browser.PrintTree(b.Website.UI)
 	log.Printf("Render.....")
@@ -76,45 +85,40 @@ func confirm(b *browser.Browser, text, value string) chan string {
 			Text: value,
 		}
 
-		dui.Top.UI = &duit.Box{
-			Kids: duit.NewKids(
-				&duit.Grid{
-					Columns: 3,
-					Padding: duit.NSpace(3, duit.SpaceXY(5, 3)),
-					Halign:  []duit.Halign{duit.HalignLeft, duit.HalignLeft, duit.HalignRight},
-					Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle, duit.ValignMiddle},
-					Kids: duit.NewKids(
-						&duit.Button{
-							Text:  "Ok",
-							Font:  browser.Style.Font(),
-							Click: func() (e duit.Event) {
-								res <- f.Text
-								e.Consumed = true
-								return
-							},
+		kids := duit.NewKids(
+			&duit.Grid{
+				Columns: 3,
+				Padding: duit.NSpace(3, duit.SpaceXY(5, 3)),
+				Halign:  []duit.Halign{duit.HalignLeft, duit.HalignLeft, duit.HalignRight},
+				Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle, duit.ValignMiddle},
+				Kids: duit.NewKids(
+					&duit.Button{
+						Text:  "Ok",
+						Font:  browser.Style.Font(),
+						Click: func() (e duit.Event) {
+							res <- f.Text
+							e.Consumed = true
+							return
 						},
-						&duit.Button{
-							Text:  "Abort",
-							Font:  browser.Style.Font(),
-							Click: func() (e duit.Event) {
-								res <- ""
-								e.Consumed = true
-								return
-							},
+					},
+					&duit.Button{
+						Text:  "Abort",
+						Font:  browser.Style.Font(),
+						Click: func() (e duit.Event) {
+							res <- ""
+							e.Consumed = true
+							return
 						},
-						f,
-					),
-				},
-				&duit.Label{
-					Text: text,
-				},
-			),
-		}
-		log.Printf("Render.....")
-		dui.MarkLayout(dui.Top.UI)
-		dui.MarkDraw(dui.Top.UI)
-		dui.Render()
-		log.Printf("Rendering done")
+					},
+					f,
+				),
+			},
+			&duit.Label{
+				Text: text,
+			},
+		)
+
+		render(b, kids)
 	}
 
 	return res
@@ -138,12 +142,12 @@ func Main() (err error) {
 		go func() {
 			<-done
 			dui.Call <- func() {
-				render(b)
+				render(b, mainView(b))
 			}
 		}()
 		return confirm(b, fmt.Sprintf("Download %v", b.URL()), "/download.file")
 	}
-	render(b)
+	render(b, mainView(b))
 
 	for {
 		select {
