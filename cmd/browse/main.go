@@ -70,50 +70,52 @@ func render(b *browser.Browser) {
 
 func confirm(b *browser.Browser, text, value string) chan string {
 	res := make(chan string)
-	
-	f := &duit.Field{
-		Text: value,
-	}
 
-	dui.Top.UI = &duit.Box{
-		Kids: duit.NewKids(
-			&duit.Grid{
-				Columns: 3,
-				Padding: duit.NSpace(3, duit.SpaceXY(5, 3)),
-				Halign:  []duit.Halign{duit.HalignLeft, duit.HalignLeft, duit.HalignRight},
-				Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle, duit.ValignMiddle},
-				Kids: duit.NewKids(
-					&duit.Button{
-						Text:  "Ok",
-						Font:  browser.Style.Font(),
-						Click: func() (e duit.Event) {
-							res <- f.Text
-							e.Consumed = true
-							return
+	dui.Call <- func() {
+		f := &duit.Field{
+			Text: value,
+		}
+
+		dui.Top.UI = &duit.Box{
+			Kids: duit.NewKids(
+				&duit.Grid{
+					Columns: 3,
+					Padding: duit.NSpace(3, duit.SpaceXY(5, 3)),
+					Halign:  []duit.Halign{duit.HalignLeft, duit.HalignLeft, duit.HalignRight},
+					Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle, duit.ValignMiddle},
+					Kids: duit.NewKids(
+						&duit.Button{
+							Text:  "Ok",
+							Font:  browser.Style.Font(),
+							Click: func() (e duit.Event) {
+								res <- f.Text
+								e.Consumed = true
+								return
+							},
 						},
-					},
-					&duit.Button{
-						Text:  "Abort",
-						Font:  browser.Style.Font(),
-						Click: func() (e duit.Event) {
-							res <- ""
-							e.Consumed = true
-							return
+						&duit.Button{
+							Text:  "Abort",
+							Font:  browser.Style.Font(),
+							Click: func() (e duit.Event) {
+								res <- ""
+								e.Consumed = true
+								return
+							},
 						},
-					},
-					f,
-				),
-			},
-			&duit.Label{
-				Text: text,
-			},
-		),
+						f,
+					),
+				},
+				&duit.Label{
+					Text: text,
+				},
+			),
+		}
+		log.Printf("Render.....")
+		dui.MarkLayout(dui.Top.UI)
+		dui.MarkDraw(dui.Top.UI)
+		dui.Render()
+		log.Printf("Rendering done")
 	}
-	log.Printf("Render.....")
-	dui.MarkLayout(dui.Top.UI)
-	dui.MarkDraw(dui.Top.UI)
-	dui.Render()
-	log.Printf("Rendering done")
 
 	return res
 }
@@ -135,7 +137,9 @@ func Main() (err error) {
 	b.Download = func(done chan int) chan string {
 		go func() {
 			<-done
-			render(b)
+			dui.Call <- func() {
+				render(b)
+			}
 		}()
 		return confirm(b, fmt.Sprintf("Download %v", b.URL()), "/download.file")
 	}

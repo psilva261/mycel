@@ -366,7 +366,10 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 			return
 		}
 
-		b.submit(f.DomSubtree, n.DomSubtree)
+		if !b.loading {
+			b.loading = true
+			go b.submit(f.DomSubtree, n.DomSubtree)
+		}
 
 		return duit.Event{
 			Consumed:   true,
@@ -404,7 +407,10 @@ func NewInputField(n *nodes.Node) *Element {
 				if f == nil {
 					return
 				}
-				browser.submit(f.DomSubtree, nil)
+				if !browser.loading {
+					browser.loading = true
+					go browser.submit(f.DomSubtree, nil)
+				}
 				return duit.Event{
 					Consumed:   true,
 					NeedLayout: true,
@@ -1240,6 +1246,7 @@ type Browser struct {
 	Website   *Website
 	StatusBar *duit.Label
 	LocationField *duit.Field
+	loading bool
 	client    *http.Client
 	Download func(done chan int) chan string
 }
@@ -1265,7 +1272,8 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 		Text:    initUrl,
 		Font:    Style.Font(),
 		Keys:    func(k rune, m draw.Mouse) (e duit.Event) {
-			if k == EnterKey {
+			if k == EnterKey && !b.loading {
+				b.loading = true
 				a := b.LocationField.Text
 				if !strings.HasPrefix(strings.ToLower(a), "http") {
 					a = "http://" + a
@@ -1336,7 +1344,8 @@ func (b *Browser) Origin() *url.URL {
 }
 
 func (b *Browser) Back() (e duit.Event) {
-	if len(b.History.urls) > 0 {
+	if len(b.History.urls) > 0 && !b.loading {
+		b.loading = true
 		b.History.Back()
 		b.LocationField.Text = b.History.URL().String()
 		b.LoadUrl(b.History.URL())
@@ -1347,8 +1356,11 @@ func (b *Browser) Back() (e duit.Event) {
 
 func (b *Browser) SetAndLoadUrl(u *url.URL) func() duit.Event {
 	return func() duit.Event {
-		b.LocationField.Text = u.String()
-		b.LoadUrl(u)
+		if !b.loading {
+			b.loading = true
+			b.LocationField.Text = u.String()
+			b.LoadUrl(u)
+		}
 
 		return duit.Event{
 			Consumed: true,
@@ -1366,7 +1378,15 @@ func (b *Browser) showBodyMessage(msg string) {
 	dui.Render()
 }
 
+// LoadUrl after from location field,
 func (b *Browser) LoadUrl(url *url.URL) (e duit.Event) {
+	go b.loadUrl(url)
+	e.Consumed = true
+
+	return
+}
+
+func (b *Browser) loadUrl(url *url.URL) {
 	buf, contentType, err := b.get(url, true)
 	if err != nil {
 		log.Errorf("error loading %v: %v", url, err)
@@ -1374,6 +1394,7 @@ func (b *Browser) LoadUrl(url *url.URL) (e duit.Event) {
 			err = er
 		}
 		b.showBodyMessage(err.Error())
+		b.loading = false
 		return
 	}
 	if contentType.IsHTML() || contentType.IsPlain() || contentType.IsEmpty() {
@@ -1384,23 +1405,18 @@ func (b *Browser) LoadUrl(url *url.URL) (e duit.Event) {
 
 		log.Infof("Download unhandled content type: %v", contentType)
 
-		go func() {
-			fn := <-res
+		fn := <-res
 
-			if fn != "" {
-				log.Infof("Download to %v", fn)
-				f, _ := os.Create(fn)
-				f.Write(buf)
-				f.Close()
-			}
-
+		if fn != "" {
+			log.Infof("Download to %v", fn)
+			f, _ := os.Create(fn)
+			f.Write(buf)
+			f.Close()
+		}
+		dui.Call <- func() {
 			done <- 1
-		}()
-	}
-	return duit.Event{
-		Consumed:   true,
-		NeedLayout: true,
-		NeedDraw:   true,
+			b.loading = false
+		}
 	}
 }
 
@@ -1415,19 +1431,22 @@ func (b *Browser) render(buf []byte) {
 	b.Website.html = string(buf) // TODO: correctly interpret UTF8
 	b.Website.layout(b, InitialLayout)
 
-	dui.MarkLayout(dui.Top.UI)
-	dui.MarkDraw(dui.Top.UI)
-	TraverseTree(b.Website.UI, func(ui duit.UI) {
-		// just checking for nil elements. That would be a bug anyway and it's better
-		// to notice it before it gets rendered
-
-		if ui == nil {
-			panic("nil")
-		}
-	})
-	PrintTree(b.Website.UI)
 	log.Printf("Render...")
-	dui.Render()
+	dui.Call <- func() {
+		TraverseTree(b.Website.UI, func(ui duit.UI) {
+			// just checking for nil elements. That would be a bug anyway and it's better
+			// to notice it before it gets rendered
+
+			if ui == nil {
+				panic("nil")
+			}
+		})
+		PrintTree(b.Website.UI)
+		dui.MarkLayout(dui.Top.UI)
+		dui.MarkDraw(dui.Top.UI)
+		dui.Render()
+		b.loading = false
+	}
 	log.Printf("Rendering done")
 }
 
@@ -1449,26 +1468,29 @@ func (b *Browser) statusBarMsg(msg string, emptyBody bool) {
 	if dui == nil || dui.Top.UI == nil {
 		return
 	}
-	if msg == "" {
-		b.StatusBar.Text = ""
-	} else {
-		b.StatusBar.Text += msg + "\n"
-	}
-	if emptyBody {
-		b.Website.UI = &duit.Label{}
-	}
 
-	// Workaround to clear background to white for websites that don't use the whole window
-	white, err := dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, 0xffffffff)
-	if err != nil {
-		log.Errorf("%v", err)
+	dui.Call <- func() {
+		if msg == "" {
+			b.StatusBar.Text = ""
+		} else {
+			b.StatusBar.Text += msg + "\n"
+		}
+		if emptyBody {
+			b.Website.UI = &duit.Label{}
+		}
+
+		// Workaround to clear background to white for websites that don't use the whole window
+		white, err := dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, 0xffffffff)
+		if err != nil {
+			log.Errorf("%v", err)
+		}
+		tmp := dui.Background
+		dui.Background = white
+		dui.MarkLayout(dui.Top.UI)
+		dui.MarkDraw(dui.Top.UI)
+		dui.Render()
+		dui.Background = tmp
 	}
-	tmp := dui.Background
-	dui.Background = white
-	dui.MarkLayout(dui.Top.UI)
-	dui.MarkDraw(dui.Top.UI)
-	dui.Render()
-	dui.Background = tmp
 }
 
 func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType opossum.ContentType, err error) {
