@@ -720,3 +720,23 @@ func TestMutationEvents(t *testing.T) {
 	}
 	d.Stop()
 }
+
+func TestNoJsCompatComment(t *testing.T) {
+	d := NewDomino(simpleHTML, nil, nil)
+	d.Start()
+	script := `
+<!--
+	const a = 1;
+	a + 7;
+// -->
+	`
+	res, err := d.Exec(script, true)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	t.Logf("res=%v", res)
+	if res != "8" {
+		t.Fatal()
+	}
+	d.Stop()
+}

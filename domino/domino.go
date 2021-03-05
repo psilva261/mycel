@@ -149,7 +149,7 @@ func srcLoader(fn string) ([]byte, error) {
 }
 
 func (d *Domino) Exec(script string, initial bool) (res string, err error) {
-	script = strings.Replace(script, "<!--", "", -1)
+	script = strings.Replace(script, "<!--", "//", -1)
 	SCRIPT := domIntf + script
 	if !initial {
 		SCRIPT = script
