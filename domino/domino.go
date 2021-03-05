@@ -475,6 +475,11 @@ func (d *Domino) xhr(method, uri string, h map[string]string, data string, cb fu
 			return
 		}
 		d.loop.RunOnLoop(func(*goja.Runtime) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Errorf("recovered in xhr: %v", r)
+				}
+			}()
 			cb(string(bs), "")
 		})
 	}()
