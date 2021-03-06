@@ -11,6 +11,9 @@ window.self = window;
 addEventListener = function() {};
 removeEventListener = function() {};
 window.location.href = 'http://example.com';
+window.history = {
+	replaceState: function() {}
+};
 
 var ___fq;
 ___fq = function(pre, el) {

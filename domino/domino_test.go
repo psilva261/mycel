@@ -500,19 +500,23 @@ func TestES6(t *testing.T) {
 	d := NewDomino(simpleHTML, nil,  nil)
 	d.Start()
 	script := `
-	console.log('Hello!!');
-	const numberOne = 1;
+	var foo = function(data={}) {}
+	var h = {
+		a: 1,
+		b: 11
+	};
+	var {a, b} = h;
 	`
-	_, err := d.Exec6(script)
+	_, err := d.Exec6(script, true)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	res, err := d.Exec("numberOne+1", false)
+	res, err := d.Exec("a+b", false)
 	t.Logf("res=%v", res)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	if res != "2" {
+	if res != "12" {
 		t.Fatal()
 	}
 	d.Stop()

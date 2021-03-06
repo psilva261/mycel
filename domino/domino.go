@@ -255,12 +255,14 @@ cleanup:
 	return
 }
 
-func (d *Domino) Exec6(script string) (res string, err error) {
+func (d *Domino) Exec6(script string, initial bool) (res string, err error) {
 	babel.Init(4) // Setup 4 transformers (can be any number > 0)
 	r, err := babel.Transform(strings.NewReader(script), map[string]interface{}{
 		"plugins": []string{
-			"transform-react-jsx",
 			"transform-es2015-block-scoping",
+			"transform-es2015-destructuring",
+			"transform-es2015-spread",
+			"transform-es2015-parameters",
 		},
 	})
 	if err != nil {
@@ -270,7 +272,7 @@ func (d *Domino) Exec6(script string) (res string, err error) {
 	if err != nil {
 		return "", fmt.Errorf("read all: %v", err)
 	}
-	return d.Exec(string(buf), true)
+	return d.Exec(string(buf), initial)
 }
 
 // CloseDoc fires DOMContentLoaded to trigger $(document).ready(..)
