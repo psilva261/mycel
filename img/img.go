@@ -20,6 +20,8 @@ import (
 	_ "image/png"
 )
 
+const SrcZero = "//:0"
+
 var log *logger.Logger
 
 func SetLogger(l *logger.Logger) {

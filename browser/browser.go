@@ -155,6 +155,10 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 	var cached bool
 	src := attr(*n.DomSubtree, "src")
 	log.Printf("newImage: src: %v", src)
+ 
+	if src == img.SrcZero {
+		return
+	}
 
 	if display == nil {
 		// probably called from a unit test
