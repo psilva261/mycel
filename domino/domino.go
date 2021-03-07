@@ -256,13 +256,13 @@ cleanup:
 }
 
 func (d *Domino) Exec6(script string, initial bool) (res string, err error) {
-	babel.Init(4) // Setup 4 transformers (can be any number > 0)
+	babel.Init(2) // Setup 4 transformers (can be any number > 0)
 	r, err := babel.Transform(strings.NewReader(script), map[string]interface{}{
 		"plugins": []string{
-			"transform-es2015-block-scoping",
-			"transform-es2015-destructuring",
-			"transform-es2015-spread",
-			"transform-es2015-parameters",
+			"transform-block-scoping",
+			"transform-destructuring",
+			"transform-spread",
+			"transform-parameters",
 		},
 	})
 	if err != nil {

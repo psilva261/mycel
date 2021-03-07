@@ -60,6 +60,7 @@ navigator = {
 	userAgent: 'opossum'
 };
 HTMLElement = domino.impl.HTMLElement;
+Node = domino.impl.Node;
 
 function XMLHttpRequest() {
 	var _method, _uri;
