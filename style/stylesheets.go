@@ -22,8 +22,8 @@ var dui *duit.DUI
 var availableFontNames []string
 var log *logger.Logger
 
-var rMinWidth = regexp.MustCompile(`min-width: (\d+)px`)
-var rMaxWidth = regexp.MustCompile(`max-width: (\d+)px`)
+var rMinWidth = regexp.MustCompile(`min-width: (\d+)(px|em|rem)`)
+var rMaxWidth = regexp.MustCompile(`max-width: (\d+)(px|em|rem)`)
 
 const FontBaseSize = 11.0
 var WindowWidth = 1280
@@ -179,20 +179,24 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 			continue
 		}
 		if rMaxWidth.MatchString(r.Prelude) {
-			maxWidth, err := strconv.Atoi(rMaxWidth.FindStringSubmatch(r.Prelude)[1])
+			m := rMaxWidth.FindStringSubmatch(r.Prelude)
+			l := m[1]+m[2]
+			maxWidth, _, err := length(l)
 			if err != nil {
 				return nil, fmt.Errorf("atoi: %w", err)
 			}
-			if windowWidth > maxWidth {
+			if float64(windowWidth) > maxWidth {
 				continue
 			}
 		}
 		if rMinWidth.MatchString(r.Prelude) {
-			minWidth, err := strconv.Atoi(rMinWidth.FindStringSubmatch(r.Prelude)[1])
+			m := rMinWidth.FindStringSubmatch(r.Prelude)
+			l := m[1]+m[2]
+			minWidth, _, err := length(l)
 			if err != nil {
 				return nil, fmt.Errorf("atoi: %w", err)
 			}
-			if windowWidth < minWidth {
+			if float64(windowWidth) < minWidth {
 				continue
 			}
 		}
@@ -552,13 +556,14 @@ func length(l string) (f float64, unit string, err error) {
 
 	switch unit {
 	case "px":
-	case "em":
+	case "em", "rem":
+		// TODO: distinguish between em and rem
 		f *= FontBaseSize
 	case "vw":
 		f *= float64(WindowWidth) / 100.0
 	case "vh":
 		f *= float64(WindowHeight) / 100.0
-	case "%", "rem":
+	case "%":
 		f = 0
 	default:
 		return f, unit, fmt.Errorf("unknown suffix: %v", l)
