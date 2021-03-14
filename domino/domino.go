@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -149,7 +150,8 @@ func srcLoader(fn string) ([]byte, error) {
 }
 
 func (d *Domino) Exec(script string, initial bool) (res string, err error) {
-	script = strings.Replace(script, "<!--", "//", -1)
+	r := regexp.MustCompile(`^\s<!--`)
+	script = r.ReplaceAllString(script, "//")
 	SCRIPT := domIntf + script
 	if !initial {
 		SCRIPT = script

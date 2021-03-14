@@ -729,7 +729,9 @@ func TestNoJsCompatComment(t *testing.T) {
 	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 	script := `
-<!--
+<!-- This is an actual comment
+
+	''.replace(/^\s*<!--/g, '');
 	const a = 1;
 	a + 7;
 // -->
