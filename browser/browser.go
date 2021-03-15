@@ -52,7 +52,7 @@ var EnableNoScriptTag *bool
 
 var browser *Browser // TODO: limit global objects;
 //       at least put them in separate pkgs
-//       with good choiced private/public
+//       with well chosen private/public
 var Style = style.Map{}
 var dui *duit.DUI
 var colorCache = make(map[draw.Color]*draw.Image)
@@ -117,7 +117,6 @@ func NewCodeView(s string, n style.Map) (cv *CodeView) {
 	for _, line := range lines {
 		formatted += strings.TrimSpace(line) + "\n"
 	}
-	log.Printf("formatted=%+v", formatted)
 	edit.Append([]byte(formatted))
 	cv.UI = &Box{
 		Kids:   duit.NewKids(edit),
@@ -127,7 +126,6 @@ func NewCodeView(s string, n style.Map) (cv *CodeView) {
 }
 
 func (cv *CodeView) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (r duit.Result) {
-	//log.Printf("m=%+v",m.Buttons)
 	if m.Buttons == 8 || m.Buttons == 16 {
 		//r.Consumed = true
 		return

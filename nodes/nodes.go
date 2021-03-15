@@ -31,38 +31,27 @@ type Node struct {
 //
 // First applies the parent style and at the end the local style attribute's style is attached.
 func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map, parent *Node) (n *Node) {
-	//fmt.Printf("<%v %v>\n", doc.Data, doc.Attr)
-	//fmt.Printf("       nodeMap=%+v\n", nodeMap)
 	ncs := style.Map{
 		Declarations: make(map[string]css.Declaration),
 	}
-	//fmt.Printf("     ps=%+v\n", ps)
 	ncs = ps.ApplyChildStyle(ncs, false)
-	//fmt.Printf("     ncs=%+v\n", ncs)
 
 	// add from matching selectors
 	// (keep only inheriting properties from parent node)
 	if m, ok := nodeMap[doc]; ok {
-		//fmt.Printf("     m=%+v\n", m)
 		ncs = ncs.ApplyChildStyle(m, false)
-	} else {
-		//fmt.Printf("     no nodeMap entry\n")
 	}
-	//fmt.Printf("     ncs=%+v\n", ncs)
 
 	// add style attribute
 	// (keep all properties that already match)
 	styleAttr := style.NewMap(doc)
 	ncs = ncs.ApplyChildStyle(styleAttr, true)
-	//fmt.Printf("     ncs=%+v\n", ncs)
 
 	data := doc.Data
 	if doc.Type == html.ElementNode {
 		data = strings.ToLower(data)
 	}
 	n = &Node{
-		//Data:           data,
-		//Type:           doc.Type,
 		DomSubtree:   doc,
 		Attrs:           doc.Attr,
 		Map: ncs,
@@ -71,7 +60,6 @@ func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map,
 	}
 	n.Wrappable = doc.Type == html.TextNode || doc.Data == "span" // TODO: probably this list needs to be extended
 	if doc.Type == html.TextNode {
-
 		n.Text = filterText(doc.Data)
 		n.Map = style.Map{
 			Declarations: make(map[string]css.Declaration),
