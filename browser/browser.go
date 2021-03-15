@@ -280,6 +280,18 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *Box, ok bool) {
 		log.Errorf("margin: %v", err)
 	}
 
+	if n.Css("display") == "inline" {
+		// Actually this doesn't fix the problem to the full extend
+		// exploded texts' elements might still do double and triple
+		// horizontal pads/margins
+		w = 0
+		mw = 0
+		m.Top = 0
+		m.Bottom = 0
+		p.Top = 0
+		p.Bottom = 0
+	}
+
 	if w == 0 && h == 0 && mw == 0 && i == nil && m == zs && p == zs {
 		return nil, false
 	}
@@ -354,7 +366,7 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 
 	if v := attr(*n.DomSubtree, "value"); v != "" {
 		t = v
-	} else if c := strings.TrimSpace(nodes.ContentFrom(*n)); c != "" {
+	} else if c := strings.TrimSpace(n.ContentString()); c != "" {
 		t = c
 	} else {
 		t = "Submit"
@@ -448,7 +460,7 @@ func NewSelect(n *nodes.Node) *Element {
 			continue
 		}
 		lv := &duit.ListValue{
-			Text: nodes.ContentFrom(*c),
+			Text: c.ContentString(),
 			Value: c.Attr("value"),
 			Selected: c.HasAttr("selected"),
 		}
@@ -464,7 +476,7 @@ func NewSelect(n *nodes.Node) *Element {
 }
 
 func NewTextArea(n *nodes.Node) *Element {
-	t := strings.TrimSpace(nodes.ContentFrom(*n))
+	t := n.ContentString()
 	formatted := ""
 	lines := strings.Split(t, "\n")
 	for _, line := range lines {
@@ -994,7 +1006,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			}
 
 			btn := &duit.Button{
-				Text: nodes.ContentFrom(*n),
+				Text: n.ContentString(),
 				Font: n.Font(),
 			}
 
@@ -1005,13 +1017,13 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			return NewElement(NewImage(n), n)
 		case "pre":
 			return NewElement(
-				NewCodeView(nodes.ContentFrom(*n), n.Map),
+				NewCodeView(n.ContentString(), n.Map),
 				n,
 			)
 		case "li":
 			var innerContent duit.UI
 			if nodes.IsPureTextContent(*n) {
-				t := nodes.ContentFrom(*n)
+				t := n.ContentString()
 
 				if ul := n.Ancestor("ul"); ul != nil {
 					if ul.Css("list-style") != "none" && n.Css("list-style-type") != "none" {
@@ -1033,7 +1045,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 
 			if nodes.IsPureTextContent(*n) {
 				innerContent = NewLabel(
-					nodes.ContentFrom(*n),
+					n.ContentString(),
 					n,
 				)
 			} else {
@@ -1056,7 +1068,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			// Internal node object
 			var innerContent duit.UI
 			if nodes.IsPureTextContent(*n) {
-				t := strings.TrimSpace(nodes.ContentFrom(*n))
+				t := n.ContentString()
 				innerContent = NewLabel(t, n)
 			} else {
 				return InnerNodesToBox(r+1, b, n)
@@ -1070,19 +1082,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 	} else if n.Type() == html.TextNode {
 		// Leaf text object
 
-		if text := strings.TrimSpace(nodes.ContentFrom(*n)); text != "" {
-			text = strings.ReplaceAll(text, "\n", "")
-			text = strings.ReplaceAll(text, "\t", "")
-			l := strings.Split(text, " ")
-			nn := make([]string, 0, len(l))
-
-			for _, w := range l {
-				if w != "" {
-					nn = append(nn, w)
-				}
-			}
-
-			text = strings.Join(nn, " ")
+		if text := n.ContentString(); text != "" {
 			ui := NewLabel(text, n)
 
 			return NewElement(
@@ -1097,11 +1097,45 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 	}
 }
 
+func isWrapped(n *nodes.Node) bool {
+	isText := nodes.IsPureTextContent(*n)
+	isCTag := false
+	for _, t := range []string{"span", "i", "b", "tt"} {
+		if n.Data() == t {
+			isCTag = true
+		}
+	}
+	return ((isCTag && n.IsInline()) || n.Type() == html.TextNode) && isText
+}
+
 func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
 	els := make([]*Element, 0, len(n.Children))
 
 	for _, c := range n.Children {
-		if el := NodeToBox(r+1, b, c); el != nil && !c.IsDisplayNone() {
+		if c.IsDisplayNone() {
+			continue
+		}
+		if isWrapped(c) {
+			tt := strings.Join(c.Content(), " ")
+
+			// '\n' is nowhere visible
+			tt = strings.Replace(tt, "\n", " ", -1)
+
+			ts := strings.Split(tt, " ")
+			for _, t := range ts {
+				t = strings.TrimSpace(t)
+
+				if t == "" {
+					continue
+				}
+
+				el := &Element{
+					UI: NewLabel(t, c),
+					n: c,
+				}
+				els = append(els, el)
+			}
+		} else if el := NodeToBox(r+1, b, c); el != nil {
 			els = append(els, el)
 		}
 	}

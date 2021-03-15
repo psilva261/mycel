@@ -310,6 +310,33 @@ func TestInlining2(t *testing.T) {
 	}
 }
 
+func TestSpansCanBeWrapped(t *testing.T) {
+	htm := `
+		<body>
+			<span>
+				A text with multiple words.
+			</span>
+		</body>
+	`
+	_, boxed, err := digestHtm(htm)
+	if err != nil {
+		t.Fatalf("digest: %v", err)
+	}
+
+	n := 0
+
+	TraverseTree(boxed, func(ui duit.UI) {
+		if el, ok := ui.(*Label); ok {
+			n++
+			fmt.Printf("n data=%v\n", el.n.Data())
+			fmt.Printf("n cls=%v\n", el.n.Attr("class"))
+		}
+	})
+	if n != 5 {
+		t.Errorf("%v", n)
+	}
+}
+
 func TestAlwaysOneElement(t *testing.T) {
 	h := `
 		<!DOCTYPE html>

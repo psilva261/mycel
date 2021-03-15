@@ -225,20 +225,30 @@ func IsPureTextContent(n Node) bool {
 	return true
 }
 
-func ContentFrom(n Node) string {
-	var content string
+func (n Node) Content() []string {
+	content := make([]string, 0, len(n.Children))
 
 	if n.Text != "" && n.Type() == html.TextNode && !n.Map.IsDisplayNone() {
-		content += n.Text
+		t := strings.TrimSpace(n.Text)
+		if t != "" {
+			content = append(content, t)
+		}
 	}
 
 	for _, c := range n.Children {
 		if !c.Map.IsDisplayNone() {
-			content += ContentFrom(*c)
+			content = append(content, c.Content()...)
 		}
 	}
 
-	return strings.TrimSpace(content)
+	return content
+}
+
+func (n Node) ContentString() (t string) {
+	t = strings.Join(n.Content(), " ")
+	t = strings.TrimSpace(t)
+
+	return
 }
 
 func (n *Node) Serialized() (string, error) {
