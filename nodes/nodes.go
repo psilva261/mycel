@@ -61,9 +61,6 @@ func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map,
 	n.Wrappable = doc.Type == html.TextNode || doc.Data == "span" // TODO: probably this list needs to be extended
 	if doc.Type == html.TextNode {
 		n.Text = filterText(doc.Data)
-		n.Map = style.Map{
-			Declarations: make(map[string]css.Declaration),
-		}
 		n.Map.Declarations["display"] = css.Declaration{
 			Property: "display",
 			Value: "inline",
