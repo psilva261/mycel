@@ -85,6 +85,32 @@ func NewLabel(t string, n *nodes.Node) *Label {
 	}
 }
 
+func NewText(content []string, n *nodes.Node) (el []*Element) {
+	tt := strings.Join(content, " ")
+
+	// '\n' is nowhere visible
+	tt = strings.Replace(tt, "\n", " ", -1)
+
+	ts := strings.Split(tt, " ")
+	ls := make([]*Element, 0, len(ts))
+
+	for _, t := range ts {
+		t = strings.TrimSpace(t)
+
+		if t == "" {
+			continue
+		}
+
+		l := &Element{
+			UI: NewLabel(t, n),
+			n: n,
+		}
+		ls = append(ls, l)
+	}
+
+	return ls
+}
+
 func (ui *Label) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
 	c := ui.n.Map.Color()
 	i, ok := colorCache[c]
@@ -1064,18 +1090,18 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			fallthrough
 		default:
 			// Internal node object
-			var innerContent duit.UI
-			if nodes.IsPureTextContent(*n) {
+			//var innerContent duit.UI
+			/*if nodes.IsPureTextContent(*n) {
 				t := n.ContentString()
 				innerContent = NewLabel(t, n)
-			} else {
+			} else {*/
 				return InnerNodesToBox(r+1, b, n)
-			}
+			//}
 
-			return NewElement(
+			/*return NewElement(
 				innerContent,
 				n,
-			)
+			)*/
 		}
 	} else if n.Type() == html.TextNode {
 		// Leaf text object
@@ -1114,25 +1140,19 @@ func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
 			continue
 		}
 		if isWrapped(c) {
-			tt := strings.Join(c.Content(), " ")
-
-			// '\n' is nowhere visible
-			tt = strings.Replace(tt, "\n", " ", -1)
-
-			ts := strings.Split(tt, " ")
-			for _, t := range ts {
-				t = strings.TrimSpace(t)
-
-				if t == "" {
-					continue
-				}
-
-				el := &Element{
-					UI: NewLabel(t, c),
-					n: c,
-				}
-				els = append(els, el)
+			ls := NewText(c.Content(), c)
+			els = append(els, ls...)
+		} else if nodes.IsPureTextContent(*n) {
+			// Handle text wrapped in unwrappable tags like p, div, ...
+			ls := NewText(c.Content(), c.Children[0])
+			if len(ls) == 0 {
+				continue
 			}
+			el := NewElement(horizontalSeq(true, ls), c)
+			if el == nil {
+				continue
+			}
+			els = append(els, el)
 		} else if el := NodeToBox(r+1, b, c); el != nil {
 			els = append(els, el)
 		}

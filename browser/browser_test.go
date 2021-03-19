@@ -343,8 +343,8 @@ func TestAlwaysOneElement(t *testing.T) {
 		<html>
 			<body>
 				<div class="wrapper">
-					<main></main>
-					<footer></footer>
+					<main>main content</main>
+					<footer>footer</footer>
 				</div>
 			</body>
 		</html>
