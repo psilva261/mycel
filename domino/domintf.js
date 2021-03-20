@@ -1,45 +1,22 @@
 global = {};
 //global.__domino_frozen__ = true; // Must precede any require('domino')
 var domino = require('domino-lib/index');
-var Element = domino.impl.Element; // etc
 
 Object.assign(this, domino.createWindow(opossum.html, 'http://example.com'));
 window = this;
+window.self = window;
 window.parent = window;
 window.top = window;
-window.self = window;
-addEventListener = function() {};
-removeEventListener = function() {};
-window.location.href = 'http://example.com';
 window.history = {
 	replaceState: function() {}
 };
-
-var ___fq;
-___fq = function(pre, el) {
-	var i, p;
-
-	if (!el) {
-		return undefined;
-	}
-	p = el.parentElement;
-
-	if (p) {
-		for (i = 0; i < p.children.length; i++) {
-			if (p.children[i] === el) {
-				return ___fq('', p) + ' > :nth-child(' + (i+1) + ')';
-			}
-		}
-	} else {
-		return el.tagName;
-	}
+window.location.href = 'http://example.com';
+window.screen = {
+	width: 1280,
+	height: 1024
 };
-
-document._setMutationHandler(function(a) {
-	// a provides attributes type, target and node or attr
-	// (cf Object.keys(a))
-	opossum.mutated(a.type, ___fq('yolo', a.target));
-});
+window.screenX = 0;
+window.screenY = 25;
 window.getComputedStyle = function(el, pseudo) {
 	this.el = el;
 	this.getPropertyValue = function(prop) {
@@ -47,20 +24,26 @@ window.getComputedStyle = function(el, pseudo) {
 	};
 	return this;
 };
-Element.prototype.getClientRects = function() { /* I'm a stub */ return []; }
-window.screen = {
-	width: 1280,
-	height: 1024
-};
-window.screenX = 0;
-window.screenY = 25;
+(function() {
+	var utils = require('domino-lib/utils');
+	utils.merge(window, domino.impl);
+})()
+
 location = window.location;
 navigator = {
 	platform: 'plan9(port)',
 	userAgent: 'opossum'
 };
-HTMLElement = domino.impl.HTMLElement;
-Node = domino.impl.Node;
+Element.prototype.getClientRects = function() { /* I'm a stub */ return []; }
+
+document._setMutationHandler(function(a) {
+	// a provides attributes type, target and node or attr
+	// (cf Object.keys(a))
+	opossum.mutated(a.type, ___fq('yolo', a.target));
+});
+
+addEventListener = function() {};
+removeEventListener = function() {};
 
 function XMLHttpRequest() {
 	var _method, _uri;
@@ -100,3 +83,23 @@ function XMLHttpRequest() {
 		return '';
 	};
 }
+
+var ___fq;
+___fq = function(pre, el) {
+	var i, p;
+
+	if (!el) {
+		return undefined;
+	}
+	p = el.parentElement;
+
+	if (p) {
+		for (i = 0; i < p.children.length; i++) {
+			if (p.children[i] === el) {
+				return ___fq('', p) + ' > :nth-child(' + (i+1) + ')';
+			}
+		}
+	} else {
+		return el.tagName;
+	}
+};
