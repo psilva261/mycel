@@ -4,7 +4,7 @@ Basic portable Web browser; only needs a Go compiler to compile.
 
 The UI is built with https://github.com/mjl-/duit
 
-Still very experimental and most features are missing, here's a screenshot: http://psilva.sdf.org/scr.png
+Still experimental and a lot of features are missing, see website for screenshots: http://psilva.sdf.org/opossum.html
 
 Supported features:
 
@@ -19,7 +19,7 @@ Supported features:
 
 ## Plan 9
 
-You can download a tarball with the binary at http://psilva.sdf.org/opossum-plan9-amd64.tgz
+You can download a tarball with the binary at http://psilva.sdf.org/opossum.tgz
 
 ```
 ./opossum-plan9-amd64.bin
@@ -71,8 +71,6 @@ is really needed. A rudimentary AJAX implementation
 is there though.
 
 Use on your own Risk!
-
-![Demo](http://psilva.sdf.org/demo.gif "Demo")
 
 Mostly based on goja (ECMAScript 5.1) and https://github.com/fgnass/domino
 (DOM implementation in JS). Some sort of DOM diffing
