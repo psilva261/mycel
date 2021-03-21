@@ -998,34 +998,32 @@ func grep(n *html.Node, tag string) *html.Node {
 	return t
 }
 
-func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
-	if attr(*n.DomSubtree, "aria-hidden") == "true" || hasAttr(*n.DomSubtree, "hidden") {
-		return nil
+func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
+	if n.Attr("aria-hidden") == "true" || n.Attr("hidden") != "" {
+		return
 	}
 
 	if n.IsDisplayNone() {
-		return nil
+		return
 	}
 
 	if n.Type() == html.ElementNode {
 		switch n.Data() {
 		case "style", "script", "template":
-			return nil
+			return
 		case "input":
-			t := attr(*n.DomSubtree, "type")
-			if isPw := t == "password"; t == "text" || t == "" || t == "search" || isPw {
+			t := n.Attr("type")
+			if t == "" || t == "text" || t == "search" || t == "password" {
 				return NewInputField(n)
 			} else if t == "submit" {
 				return NewSubmitButton(b, n)
-			} else {
-				return nil
 			}
 		case "select":
 			return NewSelect(n)
 		case "textarea":
 			return NewTextArea(n)
 		case "button":
-			if t := attr(*n.DomSubtree, "type"); t == "" || t == "submit" {
+			if t := n.Attr("type"); t == "" || t == "submit" {
 				return NewSubmitButton(b, n)
 			}
 
@@ -1046,6 +1044,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 			)
 		case "li":
 			var innerContent duit.UI
+
 			if nodes.IsPureTextContent(*n) {
 				t := n.ContentString()
 
@@ -1059,49 +1058,19 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 				return InnerNodesToBox(r+1, b, n)
 			}
 
-			return NewElement(
-				innerContent,
-				n,
-			)
+			return NewElement(innerContent, n)
 		case "a":
-			var href = n.Attr("href")
-			var innerContent duit.UI
-
-			if nodes.IsPureTextContent(*n) {
-				innerContent = NewLabel(
-					n.ContentString(),
-					n,
-				)
-			} else {
-				innerContent = InnerNodesToBox(r+1, b, n)
-			}
-
-			if innerContent == nil {
-				return nil
-			}
-
-			el := NewElement(innerContent, n)
+			href := n.Attr("href")
+			el = InnerNodesToBox(r+1, b, n)
 			el.makeLink(href)
-			return el
 		case "noscript":
 			if *ExperimentalJsInsecure || !*EnableNoScriptTag {
-				return nil
+				return
 			}
 			fallthrough
 		default:
 			// Internal node object
-			//var innerContent duit.UI
-			/*if nodes.IsPureTextContent(*n) {
-				t := n.ContentString()
-				innerContent = NewLabel(t, n)
-			} else {*/
-				return InnerNodesToBox(r+1, b, n)
-			//}
-
-			/*return NewElement(
-				innerContent,
-				n,
-			)*/
+			return InnerNodesToBox(r+1, b, n)
 		}
 	} else if n.Type() == html.TextNode {
 		// Leaf text object
@@ -1109,16 +1078,11 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) *Element {
 		if text := n.ContentString(); text != "" {
 			ui := NewLabel(text, n)
 
-			return NewElement(
-				ui,
-				n,
-			)
-		} else {
-			return nil
+			return NewElement(ui, n)
 		}
-	} else {
-		return nil
 	}
+
+	return
 }
 
 func isWrapped(n *nodes.Node) bool {
