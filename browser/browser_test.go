@@ -410,3 +410,22 @@ func TestHistoryNoDup(t *testing.T) {
 	}
 }
 
+func TestNewPicture(t *testing.T) {
+	htm := `
+		<picture itemprop="contentUrl">
+			<source srcset="https://example.com/2040 2040w,https://example.com/1880 1880w,https://example.com/1400 1400w" media="(-webkit-min-device-pixel-ratio: 1.25), (min-resolution: 120dpi)">
+    		<source srcset="https://example.com/1020 1020w,https://example.com/940 940w,https://example.com/700 700w">
+    		<img src="https://example.com/465" height="5000" width="7000" loading="lazy">
+    	</picture>
+	`
+	nt, _, err := digestHtm(htm)
+	if err != nil {
+		t.Fatalf("digest: %v", err)
+	}
+
+	p := nt.Find("picture")
+	src := newPicture(p)
+	if src != "https://example.com/700" {
+		t.Error()
+	}
+}

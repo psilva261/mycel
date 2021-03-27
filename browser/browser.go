@@ -18,6 +18,7 @@ import (
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/mjl-/duit"
@@ -189,7 +190,9 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 		return nil, fmt.Errorf("display nil")
 	}
 
-	if n.Data() == "svg" {
+	if n.Data() == "picture" {
+		src = newPicture(n)
+	} else if n.Data() == "svg" {
 		xml, err := n.Serialized()
 		if  err != nil {
 			return nil, fmt.Errorf("serialize: %w", err)
@@ -238,6 +241,43 @@ img_elem:
 		},
 		n,
 	), nil
+}
+
+func newPicture(n *nodes.Node) string {
+	smallestImg := ""
+	smallestW := 0
+	scale := 1
+
+	if dui != nil {
+		scale = int(dui.Scale(1))
+	}
+
+	for _, source := range n.FindAll("source") {
+		for _, s := range strings.Split(source.Attr("srcset"), ",") {
+			s = strings.TrimSpace(s)
+			tmp := strings.Split(s, " ")
+			src := ""
+			s := ""
+			src = tmp[0]
+			if len(tmp) == 2 {
+				s = tmp[1]
+			}
+			if s == "" || s == fmt.Sprintf("%vx", scale) {
+				return src
+			}
+			s = strings.TrimSuffix(s, "w")
+			w, err := strconv.Atoi(s)
+			if err != nil {
+				continue
+			}
+			if smallestImg == "" || smallestW > w {
+				smallestImg = src
+				smallestW = w
+			}
+		}
+	}
+
+	return smallestImg
 }
 
 type Element struct {
@@ -1035,7 +1075,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 			return NewElement(btn, n)
 		case "table":
 			return NewTable(n).Element(r+1, b, n)
-		case "img", "svg":
+		case "picture", "img", "svg":
 			return NewElement(NewImage(n), n)
 		case "pre":
 			return NewElement(

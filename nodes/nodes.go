@@ -122,6 +122,18 @@ func (n *Node) Find(tag string) (c *Node) {
 	return
 }
 
+func (n *Node) FindAll(tag string) (cs []*Node) {
+	for _, cc := range n.Children {
+		if cc.Data() == tag {
+			cs = append(cs, cc)
+		} else {
+			cs = append(cs, cc.FindAll(tag)...)
+		}
+	}
+
+	return
+}
+
 func (n *Node) Attr(k string) string {
 	for _, a := range n.Attrs {
 		if a.Key == k {
