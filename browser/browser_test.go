@@ -382,3 +382,25 @@ func TestTextArea(t *testing.T) {
 	// Trigger key press to trigger call to changed
 	el.Key(nil, nil, 'a', draw.Mouse{}, image.Point{})
 }
+
+func TestHistoryNoDup(t *testing.T) {
+	h := History{}
+	uris := []string{
+		"https://example.com",
+		"https://example.com/a",
+		"https://example.com/a",
+		"https://example.com/b",
+		"https://example.com/b",
+	}
+	for _, uri := range uris {
+		u, err := url.Parse(uri)
+		if err != nil {
+			t.Error()
+		}
+		h.Push(u)
+	}
+	if len(h.urls) != 3 {
+		t.Error()
+	}
+}
+

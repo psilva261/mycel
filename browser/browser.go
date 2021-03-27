@@ -1243,6 +1243,9 @@ func (h History) URL() *url.URL {
 }
 
 func (h *History) Push(u *url.URL) {
+	if len(h.urls) > 0 && h.urls[len(h.urls)-1].String() == u.String() {
+		return
+	}
 	h.urls = append(h.urls, u)
 }
 
