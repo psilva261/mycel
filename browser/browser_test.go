@@ -261,7 +261,10 @@ func TestInlining(t *testing.T) {
 	if bel.n.Data() != "(" {
 		t.Errorf("bel: %+v", bel)
 	}
-	if ael.n.Data() != "a" {
+	if ael.n.Data() != "span" {
+		t.Errorf("ael: %+v %+v '%v'", ael, ael.n, ael.n.Data())
+	}
+	if !ael.IsLink || ael.Click == nil {
 		t.Errorf("ael: %+v %+v '%v'", ael, ael.n, ael.n.Data())
 	}
 }
@@ -305,7 +308,10 @@ func TestInlining2(t *testing.T) {
 	if sel.n.Data() != "span" {
 		t.Errorf("sel: %+v", sel)
 	}
-	if ael.n.Data() != "a" {
+	if ael.n.Data() != "edit" {
+		t.Errorf("ael: %+v %+v", ael, ael.n)
+	}
+	if !ael.IsLink || ael.Click == nil {
 		t.Errorf("ael: %+v %+v", ael, ael.n)
 	}
 }
