@@ -139,15 +139,11 @@ func NewCodeView(s string, n style.Map) (cv *CodeView) {
 	edit := &duit.Edit{
 		Font: Style.Font(),
 	}
-	formatted := ""
-	lines := strings.Split(s, "\n")
-	for _, line := range lines {
-		formatted += strings.TrimSpace(line) + "\n"
-	}
-	edit.Append([]byte(formatted))
+	lines := len(strings.Split(s, "\n"))
+	edit.Append([]byte(s))
 	cv.UI = &Box{
 		Kids:   duit.NewKids(edit),
-		Height: n.Font().Height * (len(lines)+2),
+		Height: int(n.FontHeight()) * (lines+2),
 	}
 	return
 }
@@ -430,7 +426,7 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 
 	if v := attr(*n.DomSubtree, "value"); v != "" {
 		t = v
-	} else if c := strings.TrimSpace(n.ContentString()); c != "" {
+	} else if c := strings.TrimSpace(n.ContentString(false)); c != "" {
 		t = c
 	} else {
 		t = "Submit"
@@ -524,7 +520,7 @@ func NewSelect(n *nodes.Node) *Element {
 			continue
 		}
 		lv := &duit.ListValue{
-			Text: c.ContentString(),
+			Text: c.ContentString(false),
 			Value: c.Attr("value"),
 			Selected: c.HasAttr("selected"),
 		}
@@ -540,12 +536,8 @@ func NewSelect(n *nodes.Node) *Element {
 }
 
 func NewTextArea(n *nodes.Node) *Element {
-	t := n.ContentString()
-	formatted := ""
-	lines := strings.Split(t, "\n")
-	for _, line := range lines {
-		formatted += line + "\n"
-	}
+	t := n.ContentString(true)
+	lines := len(strings.Split(t, "\n"))
 	edit := &duit.Edit{
 		Font: Style.Font(),
 		Keys: func(k rune, m draw.Mouse) (e duit.Event) {
@@ -553,10 +545,10 @@ func NewTextArea(n *nodes.Node) *Element {
 			return
 		},
 	}
-	edit.Append([]byte(formatted))
+	edit.Append([]byte(t))
 
 	if n.Css("height") == "" {
-		n.SetCss("height", fmt.Sprintf("%vpx", (n.Font().Height * (len(lines)+2))))
+		n.SetCss("height", fmt.Sprintf("%vpx", (int(n.FontHeight()) * (lines+2))))
 	}
 
 	el := NewElement(edit, n)
@@ -1068,7 +1060,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 			}
 
 			btn := &duit.Button{
-				Text: n.ContentString(),
+				Text: n.ContentString(false),
 				Font: n.Font(),
 			}
 
@@ -1079,14 +1071,14 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 			return NewElement(NewImage(n), n)
 		case "pre":
 			return NewElement(
-				NewCodeView(n.ContentString(), n.Map),
+				NewCodeView(n.ContentString(true), n.Map),
 				n,
 			)
 		case "li":
 			var innerContent duit.UI
 
 			if nodes.IsPureTextContent(*n) {
-				t := n.ContentString()
+				t := n.ContentString(false)
 
 				if ul := n.Ancestor("ul"); ul != nil {
 					if ul.Css("list-style") != "none" && n.Css("list-style-type") != "none" {
@@ -1115,7 +1107,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 	} else if n.Type() == html.TextNode {
 		// Leaf text object
 
-		if text := n.ContentString(); text != "" {
+		if text := n.ContentString(false); text != "" {
 			ui := NewLabel(text, n)
 
 			return NewElement(ui, n)
@@ -1144,11 +1136,11 @@ func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
 			continue
 		}
 		if isWrapped(c) {
-			ls := NewText(c.Content(), c)
+			ls := NewText(c.Content(false), c)
 			els = append(els, ls...)
 		} else if nodes.IsPureTextContent(*n) {
 			// Handle text wrapped in unwrappable tags like p, div, ...
-			ls := NewText(c.Content(), c.Children[0])
+			ls := NewText(c.Content(false), c.Children[0])
 			if len(ls) == 0 {
 				continue
 			}

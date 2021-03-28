@@ -10,7 +10,6 @@ import (
 	"golang.org/x/image/colornames"
 	"golang.org/x/net/html"
 	"github.com/psilva261/opossum/logger"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -60,15 +59,6 @@ func Init(d *duit.DUI, l *logger.Logger) {
 	log = l
 
 	initFontserver()
-}
-
-func initFontserver() {
-	buf, err := exec.Command("fontsrv", "-p", ".").Output()
-	if err == nil {
-		availableFontNames = strings.Split(string(buf), "\n")
-	} else {
-		log.Printf("exec fontsrv: %v", err)
-	}
 }
 
 func Hrefs(doc *html.Node) (hrefs []string) {
@@ -334,6 +324,11 @@ func (cs Map) FontSize() float64 {
 		f *= FontBaseSize
 	}
 	return f
+}
+
+// FontHeight in lowDPI pixels.
+func (cs Map) FontHeight() float64 {
+	return float64(cs.Font().Height) / float64(dui.Scale(1))
 }
 
 func (cs Map) Color() draw.Color {

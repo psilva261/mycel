@@ -39,11 +39,11 @@ func TestSetText(t *testing.T) {
 	doc, err := html.Parse(buf)
 	if err != nil { t.Fatalf(err.Error()) }
 	n := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
-	if s := n.ContentString(); s != "initial" {
+	if s := n.ContentString(false); s != "initial" {
 		t.Fatalf(s)
 	}
 	n.SetText("123")
-	if s := n.ContentString(); s != "123" {
+	if s := n.ContentString(false); s != "123" {
 		t.Fatalf(s)
 	}
 }

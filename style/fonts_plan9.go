@@ -7,6 +7,8 @@ import (
 	"math"
 )
 
+func initFontserver() {}
+
 func matchClosestFontSize(desired float64, available []int) (closest int) {
 	for _, a := range available {
 		if closest == 0 || math.Abs(float64(a)-desired) < math.Abs(float64(closest)-desired) {

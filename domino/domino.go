@@ -430,7 +430,7 @@ func iterateJsElements(doc *nodes.Node, fn func(src string, inlineCode string)) 
 			}
 
 			if isJS {
-				fn(src, n.ContentString())
+				fn(src, n.ContentString(true))
 			}
 		}
 		for _, c := range n.Children {

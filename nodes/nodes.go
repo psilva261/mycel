@@ -222,11 +222,14 @@ func IsPureTextContent(n Node) bool {
 	return true
 }
 
-func (n Node) Content() []string {
+func (n Node) Content(pre bool) []string {
 	content := make([]string, 0, len(n.Children))
 
 	if n.Text != "" && n.Type() == html.TextNode && !n.Map.IsDisplayNone() {
-		t := strings.TrimSpace(n.Text)
+		t := n.Text
+		if !pre {
+			t = strings.TrimSpace(t)
+		}
 		if t != "" {
 			content = append(content, t)
 		}
@@ -234,16 +237,21 @@ func (n Node) Content() []string {
 
 	for _, c := range n.Children {
 		if !c.Map.IsDisplayNone() {
-			content = append(content, c.Content()...)
+			content = append(content, c.Content(pre)...)
 		}
 	}
 
 	return content
 }
 
-func (n Node) ContentString() (t string) {
-	t = strings.Join(n.Content(), " ")
-	t = strings.TrimSpace(t)
+func (n Node) ContentString(pre bool) (t string) {
+	ts := n.Content(pre)
+	if pre {
+		t = strings.Join(ts, "")
+	} else {
+		t = strings.Join(ts, " ")
+		t = strings.TrimSpace(t)
+	}
 
 	return
 }

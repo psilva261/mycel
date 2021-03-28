@@ -185,7 +185,7 @@ func formData(n, submitBtn *html.Node) (data url.Values) {
 		nn := nodes.NewNodeTree(n, style.Map{}, make(map[*html.Node]style.Map), nil)
 
 		if nm != "" {
-			data.Set(nm, nn.ContentString())
+			data.Set(nm, nn.ContentString(false))
 		}
 	}
 
