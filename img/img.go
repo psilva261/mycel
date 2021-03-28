@@ -36,7 +36,6 @@ func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) 
 	parts := strings.Split(addr, ",")
 	
 	var ctStr string
-
 	if strings.Contains(parts[0], ";") {
 		header := strings.Split(parts[0], ";")
 		ctStr = header[0]
@@ -46,7 +45,10 @@ func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) 
 	if ct, err = opossum.NewContentType(ctStr, nil); err != nil {
 		return nil, ct, fmt.Errorf("content type: %v: %w", ctStr, err)
 	}
-	
+
+	if len(parts) == 1 {
+		return nil, ct, fmt.Errorf("empty: %v", addr)
+	}
 	if strings.Contains(addr, "base64") {
 		e := base64.RawStdEncoding
 		if strings.HasSuffix(addr, "=") {

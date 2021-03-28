@@ -31,6 +31,14 @@ func TestParseDataUri(t *testing.T) {
 	}
 }
 
+func TestEmpty(t *testing.T) {
+	src := "data:image/svg+xml"
+	_, _, err := parseDataUri(src)
+	if err == nil {
+		t.Fatalf(err.Error())
+	}
+}
+
 func TestSvg(t *testing.T) {
        xml := `
                <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24">
