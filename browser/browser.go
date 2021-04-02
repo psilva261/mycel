@@ -13,6 +13,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"github.com/psilva261/opossum"
+	"github.com/psilva261/opossum/browser/cache"
 	"github.com/psilva261/opossum/browser/history"
 	"github.com/psilva261/opossum/img"
 	"github.com/psilva261/opossum/logger"
@@ -59,10 +60,6 @@ var Style = style.Map{}
 var dui *duit.DUI
 var colorCache = make(map[draw.Color]*draw.Image)
 var imageCache = make(map[string]*draw.Image)
-var cache = make(map[string]struct {
-	opossum.ContentType
-	buf []byte
-})
 var log *logger.Logger
 var scroller *Scroll
 var display *draw.Display
@@ -1448,11 +1445,8 @@ func (b *Browser) loadUrl(url *url.URL) {
 }
 
 func (b *Browser) render(buf []byte) {
-	log.Printf("Empty cache...")
-	cache = make(map[string]struct {
-		opossum.ContentType
-		buf []byte
-	})
+	log.Printf("Empty some cache...")
+	cache.Tidy()
 	imageCache = make(map[string]*draw.Image)
 
 	b.Website.html = string(buf) // TODO: correctly interpret UTF8
@@ -1479,17 +1473,18 @@ func (b *Browser) render(buf []byte) {
 }
 
 func (b *Browser) Get(uri *url.URL) (buf []byte, contentType opossum.ContentType, err error) {
-	c, ok := cache[uri.String()]
+	c, ok := cache.Get(uri.String())
 	if ok {
 		log.Printf("use %v from cache", uri)
 	} else {
-		c.buf, c.ContentType, err = b.get(uri, false)
+		c.Addr = uri.String()
+		c.Buf, c.ContentType, err = b.get(uri, false)
 		if err == nil {
-			cache[uri.String()] = c
+			cache.Set(c)
 		}
 	}
 
-	return c.buf, c.ContentType, err
+	return c.Buf, c.ContentType, err
 }
 
 func (b *Browser) statusBarMsg(msg string, emptyBody bool) {
