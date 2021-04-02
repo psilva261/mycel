@@ -13,6 +13,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"github.com/psilva261/opossum"
+	"github.com/psilva261/opossum/browser/history"
 	"github.com/psilva261/opossum/img"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
@@ -1266,37 +1267,8 @@ func printTree(r int, ui duit.UI) {
 	}
 }
 
-type History struct {
-	urls []*url.URL
-}
-
-func (h History) URL() *url.URL {
-	return h.urls[len(h.urls)-1]
-}
-
-func (h *History) Push(u *url.URL) {
-	if len(h.urls) > 0 && h.urls[len(h.urls)-1].String() == u.String() {
-		return
-	}
-	h.urls = append(h.urls, u)
-}
-
-func (h *History) Back() {
-	if len(h.urls) > 1 {
-		h.urls = h.urls[:len(h.urls)-1]
-	}
-}
-
-func (h *History) String() string {
-	addrs := make([]string, len(h.urls))
-	for i, u := range h.urls {
-		addrs[i] = u.String()
-	}
-	return strings.Join(addrs, ", ")
-}
-
 type Browser struct {
-	History
+	history.History
 	dui       *duit.DUI
 	Website   *Website
 	StatusBar *duit.Label
@@ -1348,7 +1320,7 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	if err != nil {
 		log.Fatalf("parse: %v", err)
 	}
-	b.History.Push(u)
+	b.History.Push(u, 0)
 
 	buf, _, err := b.get(u, true)
 	if err != nil {
@@ -1399,7 +1371,7 @@ func (b *Browser) Origin() *url.URL {
 }
 
 func (b *Browser) Back() (e duit.Event) {
-	if len(b.History.urls) > 0 && !b.loading {
+	if !b.loading {
 		b.loading = true
 		b.History.Back()
 		b.LocationField.Text = b.History.URL().String()
@@ -1497,6 +1469,7 @@ func (b *Browser) render(buf []byte) {
 			}
 		})
 		PrintTree(b.Website.UI)
+		scroller.Offset = b.History.Scroll()
 		dui.MarkLayout(dui.Top.UI)
 		dui.MarkDraw(dui.Top.UI)
 		dui.Render()
@@ -1564,7 +1537,11 @@ func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType o
 		buf = contentType.Utf8(buf)
 	}
 	if isNewOrigin {
-		b.History.Push(resp.Request.URL)
+		of := 0
+		if scroller != nil {
+			of = scroller.Offset
+		}
+		b.History.Push(resp.Request.URL, of)
 		log.Printf("b.History is now %s", b.History.String())
 		b.LocationField.Text = b.URL().String()
 	}
@@ -1587,7 +1564,7 @@ func (b *Browser) PostForm(uri *url.URL, data url.Values) (buf []byte, contentTy
 		return nil, opossum.ContentType{}, fmt.Errorf("error loading %v: %w", uri, err)
 	}
 	defer resp.Body.Close()
-	b.History.Push(resp.Request.URL)
+	b.History.Push(resp.Request.URL, scroller.Offset)
 	buf, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, opossum.ContentType{}, fmt.Errorf("error reading")

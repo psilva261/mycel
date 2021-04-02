@@ -127,7 +127,7 @@ func TestLinkedUrl(t *testing.T) {
 		if err != nil {
 			panic(err.Error())
 		}
-		b.History.Push(origin)
+		b.History.Push(origin, 0)
 		res, err := b.LinkedUrl(i.href)
 		if err != nil {
 			panic(err.Error())
@@ -171,7 +171,7 @@ func TestNodeToBoxNoscript(t *testing.T) {
 	if err != nil {
 		log.Fatalf("parse: %v", err)
 	}
-	b.History.Push(u)
+	b.History.Push(u, 0)
 	nt := nodes.NewNodeTree(body, style.Map{}, nodeMap, nil)
 	boxed := NodeToBox(0, b, nt)
 	numInputs := 0
@@ -201,7 +201,7 @@ func digestHtm(htm string) (nt *nodes.Node, boxed *Element, err error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse url: %w", err)
 	}
-	b.History.Push(u)
+	b.History.Push(u, 0)
 	nm, err := style.FetchNodeMap(doc, style.AddOnCSS, 1280)
 	if err != nil {
 		return nil, nil, fmt.Errorf("FetchNodeMap: %w", err)
@@ -387,27 +387,6 @@ func TestTextArea(t *testing.T) {
 	el := NewTextArea(ta)
 	// Trigger key press to trigger call to changed
 	el.Key(nil, nil, 'a', draw.Mouse{}, image.Point{})
-}
-
-func TestHistoryNoDup(t *testing.T) {
-	h := History{}
-	uris := []string{
-		"https://example.com",
-		"https://example.com/a",
-		"https://example.com/a",
-		"https://example.com/b",
-		"https://example.com/b",
-	}
-	for _, uri := range uris {
-		u, err := url.Parse(uri)
-		if err != nil {
-			t.Error()
-		}
-		h.Push(u)
-	}
-	if len(h.urls) != 3 {
-		t.Error()
-	}
 }
 
 func TestNewPicture(t *testing.T) {
