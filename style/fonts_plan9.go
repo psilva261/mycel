@@ -4,7 +4,6 @@ package style
 
 import (
 	"fmt"
-	"math"
 )
 
 func initFontserver() {}
