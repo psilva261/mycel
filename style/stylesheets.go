@@ -10,6 +10,7 @@ import (
 	"golang.org/x/image/colornames"
 	"golang.org/x/net/html"
 	"github.com/psilva261/opossum/logger"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -210,7 +211,11 @@ func NewMap(n *html.Node) Map {
 
 	for _, a := range n.Attr {
 		if a.Key == "style" {
-			decls, err := parser.ParseDeclarations(a.Val)
+			v := strings.TrimSpace(a.Val)
+			if !strings.HasSuffix(v, ";") {
+				v += ";"
+			}
+			decls, err := parser.ParseDeclarations(v)
 
 			if err != nil {
 				log.Printf("could not parse '%v'", a.Val)
@@ -302,6 +307,15 @@ func (cs Map) preferedFontName(preferences []string) string {
 	}
 
 	return avails[0]
+}
+
+func matchClosestFontSize(desired float64, available []int) (closest int) {
+	for _, a := range available {
+		if closest == 0 || math.Abs(float64(a)-desired) < math.Abs(float64(closest)-desired) {
+			closest = a
+		}
+	}
+	return
 }
 
 func (cs Map) FontSize() float64 {

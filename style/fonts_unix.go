@@ -4,10 +4,13 @@ package style
 
 import (
 	"fmt"
-	"math"
 	"os/exec"
+	"regexp"
+	"strconv"
 	"strings"
 )
+
+var availableFontSizes = make(map[string][]int)
 
 func initFontserver() {
 	buf, err := exec.Command("fontsrv", "-p", ".").Output()
@@ -18,9 +21,40 @@ func initFontserver() {
 	}
 }
 
-func (cs Map) FontFilename() string {
-	pref := cs.preferedFontName([]string{"HelveticaNeue", "Helvetica"})
-	fontSize := 2 * /*dui.Scale(*/int(math.RoundToEven(cs.FontSize()))/*)*/
+func fontSizes(fontName string) (fss []int, err error) {
+	re := regexp.MustCompile(`^(\d+)$`)
+	fss = make([]int, 0, 20)
 
-	return fmt.Sprintf("/mnt/font/"+pref+"%va/font", fontSize)
+	buf, err := exec.Command("fontsrv", "-p", fontName).Output()
+	if err != nil {
+		return
+	}
+	for _, s := range strings.Split(string(buf), "\n") {
+		s = strings.TrimSpace(s)
+		s = strings.TrimSuffix(s, "/")
+		if !re.MatchString(s) {
+			continue
+		}
+		fs, err := strconv.Atoi(s)
+		if err != nil {
+			log.Errorf("%v: %v", fs, err)
+		}
+		fss = append(fss, fs)
+	}
+
+	return
+}
+
+func (cs Map) FontFilename() string {
+	f := cs.preferedFontName([]string{"HelveticaNeue", "Helvetica"})
+	if _, ok := availableFontSizes[f]; !ok {
+		fss, err := fontSizes(f)
+		if err != nil {
+			log.Errorf("font sizes %v: %v", f, err)
+		}
+		availableFontSizes[f] = fss
+	}
+	s := matchClosestFontSize(2*cs.FontSize(), availableFontSizes[f])
+
+	return fmt.Sprintf("/mnt/font/"+f+"%va/font", s)
 }

@@ -10,8 +10,8 @@ import (
 )
 
 func init() {
-	quiet := true
-	logger.Quiet = &quiet
+	f := false
+	logger.Quiet = &f
 	logger.Init()
 	log = &logger.Logger{Debug: true}
 }
@@ -183,6 +183,42 @@ func TestFetchNodeMap(t *testing.T) {
 		t.Fail()
 	}
 	t.Logf("m=%+v", m)
+}
+
+func TestNewMapStyle(t *testing.T) {
+	htms := []string{
+		`<h2 style="color: green;">a header</h2>`,
+		`<h2 style="color: green">a header</h2>`,
+	}
+	for _, htm := range htms {
+		doc, err := html.Parse(strings.NewReader(htm))
+		if err != nil {
+			t.Fail()
+		}
+
+		h2 := grep(doc, "h2")
+		m := NewMap(h2)
+
+		if m.Declarations["color"].Value != "green" {
+			t.Errorf("%+v", m)
+		}
+	}
+}
+
+func grep(nn *html.Node, tag string) *html.Node {
+	var f func(n *html.Node) *html.Node
+	f = func(n *html.Node) *html.Node {
+		if n.Data == tag {
+			return n
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if m := f(c); m != nil {
+				return m
+			}
+		}
+		return nil
+	}
+	return f(nn)
 }
 
 func TestSmaller(t *testing.T) {

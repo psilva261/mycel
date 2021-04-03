@@ -820,8 +820,6 @@ func horizontalSeq(wrap bool, es []*Element) duit.UI {
 		}
 
 		return &Box{
-			Padding: duit.SpaceXY(6, 4),
-			Margin:  duit.SpaceXY(6, 4),
 			Kids:    duit.NewKids(finalUis...),
 		}
 	} else {
