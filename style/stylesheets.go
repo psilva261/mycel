@@ -263,6 +263,9 @@ func (cs Map) ApplyChildStyle(ccs Map, copyAll bool) (res Map) {
 	}
 	// overwrite with higher prio child props
 	for k, v := range ccs.Declarations {
+		if v.Value == "inherit" {
+			continue
+		}
 		res.Declarations[k] = v
 	}
 

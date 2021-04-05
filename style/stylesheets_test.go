@@ -251,6 +251,28 @@ func TestApplyChildStyleInherit(t *testing.T) {
 	}
 }
 
+func TestApplyChildStyleInherit2(t *testing.T) {
+	parent := Map{
+		Declarations: make(map[string]css.Declaration),
+	}
+	child := Map{
+		Declarations: make(map[string]css.Declaration),
+	}
+	parent.Declarations["font-size"] = css.Declaration{
+		Property: "font-size",
+		Value:    "12pt",
+	}
+	child.Declarations["font-size"] = css.Declaration{
+		Property: "font-size",
+		Value:    "inherit",
+	}
+
+	res := parent.ApplyChildStyle(child, true)
+	if v := res.Declarations["font-size"].Value; v != "12pt" {
+		t.Fatalf(v)
+	}
+}
+
 func TestLength(t *testing.T) {
 	lpx := map[string]float64{
 		"auto": 0.0,
