@@ -1,6 +1,8 @@
 package nodes
 
 import (
+	"bytes"
+	"encoding/json"
 	"golang.org/x/net/html"
 	"github.com/psilva261/opossum/style"
 	"strings"
@@ -80,3 +82,26 @@ func TestNewNodeTree(t *testing.T) {
 		t.Fatalf("%+v", text)
 	}
 }
+
+func TestJsonCycles(t *testing.T) {
+	buf := strings.NewReader(`
+	<html>
+		<body style="width: 900px; height: 700px; font-size: 12px;">
+			<p>
+				<b style="height: 100px;">bold stuff</b>
+			</p>
+		</body>
+	</html>`)
+	doc, err := html.Parse(buf)
+	if err != nil { t.Fatalf(err.Error()) }
+	n := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
+	body := n.Find("body")
+	_=body
+	
+	b := bytes.NewBufferString("")
+	enc := json.NewEncoder(b)
+	if err := enc.Encode(n); err != nil {
+		t.Fatalf("%+v", err)
+	}
+}
+

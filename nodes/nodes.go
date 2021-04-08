@@ -18,13 +18,13 @@ func SetLogger(l *logger.Logger) {
 // Node represents a node at the render stage. It
 // represents a subTree or just a single html node.
 type Node struct {
-	DomSubtree *html.Node
+	DomSubtree *html.Node `json:"-"`
 	Text string
 	Wrappable bool
 	Attrs []html.Attribute
 	style.Map
 	Children []*Node
-	Parent *Node
+	Parent *Node `json:"-"`
 }
 
 // NewNodeTree propagates the cascading styles to the leaves
