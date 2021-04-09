@@ -2,7 +2,7 @@ module github.com/psilva261/opossum
 
 go 1.16
 
-replace 9fans.net/go v0.0.0-00010101000000-000000000000 => github.com/knusbaum/go v0.0.0-20200413212707-848f58a0ec6e
+replace 9fans.net/go v0.0.0-00010101000000-000000000000 => github.com/psilva261/go v0.0.0-20210409105224-1f229ca22d72
 
 exclude github.com/aymerick/douceur v0.1.0
 
