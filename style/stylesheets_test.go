@@ -46,6 +46,19 @@ func TestColorHex(t *testing.T) {
 	}
 }
 
+func TestColorHex3(t *testing.T) {
+	m := d("#fff")
+
+	c, ok := m.colorHex("color")
+	if !ok {
+		t.Fail()
+	}
+
+	if uint32(c) != 0xffffffff {
+		t.Errorf("c=%x", c)
+	}
+}
+
 func TestFetchNodeRules(t *testing.T) {
 	data := `<body>
       		<h2 id="foo">a header</h2>

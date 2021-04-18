@@ -397,9 +397,9 @@ func (cs Map) colorHex(cssPropName string) (c draw.Color, ok bool) {
 				if err != nil {
 					goto default_value
 				}
-				r = uint32(rr) * 256 * 16
-				g = uint32(gg) * 256 * 16
-				b = uint32(bb) * 256 * 16
+				r = uint32(rr) * 256 * 0x11
+				g = uint32(gg) * 256 * 0x11
+				b = uint32(bb) * 256 * 0x11
 			} else if len(hexColor) == 6 {
 				rr, err := strconv.ParseInt(hexColor[0:2], 16, 32)
 				if err != nil {
