@@ -2,7 +2,7 @@ package opossum
 
 import (
 	"bytes"
-	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/encoding/ianaindex"
 	"io/ioutil"
 	"mime"
 	"github.com/psilva261/opossum/logger"
@@ -89,16 +89,20 @@ func (c ContentType) Utf8(buf []byte) []byte {
 	if !ok || charset == "utf8" || charset == "utf-8" {
 		return buf
 	}
-	if strings.ToLower(charset) == "iso-8859-1" {
-		r := bytes.NewReader(buf)
-		cr := charmap.ISO8859_1.NewDecoder().Reader(r)
-
-		updated, err := ioutil.ReadAll(cr)
-		if err == nil {
-			buf = updated
-		} else {
-			log.Errorf("utf8: unable to decode to %v: %v", charset, err)
-		}
+	e, err := ianaindex.IANA.Encoding(charset)
+	if err != nil {
+		log.Errorf("get encoding %v: %v", charset, err)
+		return buf
 	}
+	r := bytes.NewReader(buf)
+	cr := e.NewDecoder().Reader(r)
+
+	updated, err := ioutil.ReadAll(cr)
+	if err == nil {
+		buf = updated
+	} else {
+		log.Errorf("utf8: unable to decode to %v: %v", charset, err)
+	}
+
 	return buf
 }
