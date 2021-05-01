@@ -52,6 +52,8 @@ or all messages:
 go run . '-quiet=false' '-debug=true'
 ```
 
+`$font` is used to select the font.
+
 ## macOS
 
 Requirements:

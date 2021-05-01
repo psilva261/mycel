@@ -273,8 +273,8 @@ func (cs Map) ApplyChildStyle(ccs Map, copyAll bool) (res Map) {
 }
 
 func (cs Map) Font() *draw.Font {
-	fn := cs.FontFilename()
-	if dui == nil {
+	fn, ok := cs.FontFilename()
+	if !ok || dui == nil {
 		return nil
 	}
 	font, ok := fontCache[fn]

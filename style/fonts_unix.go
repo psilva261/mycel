@@ -45,7 +45,7 @@ func fontSizes(fontName string) (fss []int, err error) {
 	return
 }
 
-func (cs Map) FontFilename() string {
+func (cs Map) FontFilename() (string, bool) {
 	f := cs.preferedFontName([]string{"HelveticaNeue", "Helvetica"})
 	if _, ok := availableFontSizes[f]; !ok {
 		fss, err := fontSizes(f)
@@ -56,5 +56,5 @@ func (cs Map) FontFilename() string {
 	}
 	s := matchClosestFontSize(2*cs.FontSize(), availableFontSizes[f])
 
-	return fmt.Sprintf("/mnt/font/"+f+"%va/font", s)
+	return fmt.Sprintf("/mnt/font/"+f+"%va/font", s), true
 }

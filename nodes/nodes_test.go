@@ -17,14 +17,6 @@ func TestFilterText(t *testing.T) {
 	}
 }
 
-func TestFilterTextFw(t *testing.T) {
-	const s = "（1999）"
-	f := filterText(s)
-	if f != "(1999)" {
-		t.Errorf("%v", f)
-	}
-}
-
 func TestQueryRef(t *testing.T) {
 	buf := strings.NewReader(`
 	<html>

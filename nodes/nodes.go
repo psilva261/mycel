@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"golang.org/x/net/html"
-	"golang.org/x/text/width"
 	"github.com/chris-ramon/douceur/css"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/style"
@@ -81,7 +80,7 @@ func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map,
 // filterText removes line break runes (TODO: add this later but handle properly) and maps runes to canonical widths
 func filterText(t string) string {
 	t = strings.ReplaceAll(t, "­", "")
-	return width.Fold.String(t)
+	return t
 }
 
 func (n Node) Type() html.NodeType {
