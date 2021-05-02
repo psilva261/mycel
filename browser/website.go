@@ -73,27 +73,7 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 
 	log.Printf("2nd pass")
 	log.Printf("Download style...")
-	cssHrefs := style.Hrefs(doc)
-	csss := make([]string, 0, len(cssHrefs))
-	for _, href := range cssHrefs {
-		url, err := f.LinkedUrl(href)
-		if err != nil {
-			log.Printf("error parsing %v", href)
-			continue
-		}
-		log.Printf("Download %v", url)
-		buf, contentType, err := f.Get(url)
-		if err != nil {
-			log.Printf("error downloading %v", url)
-			continue
-		}
-		if contentType.IsCSS() {
-			csss = append(csss, string(buf))
-		} else {
-			log.Printf("css: unexpected %v", contentType)
-		}
-	}
-	csss = append([]string{style.AddOnCSS}, csss...)
+	csss := cssSrcs(f, doc)
 	doc, nodeMap := pass(w.html, csss...)
 
 	// 3rd pass is only needed initially to load the scripts and set the goja VM
@@ -167,6 +147,40 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 		w.UI = scroller
 	}
 	log.Flush()
+}
+
+func cssSrcs(f opossum.Fetcher, doc *html.Node) (csss []string) {
+	cssHrefs := style.Hrefs(doc)
+	inlines := make([]string, 0, 3)
+	ntAll := nodes.NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
+	inls := ntAll.FindAll("style")
+
+	for _, inl := range inls {
+		inlines = append(inlines, inl.ContentString(true))
+	}
+	csss = make([]string, 0, len(inlines)+len(cssHrefs))
+	csss = append(csss, style.AddOnCSS)
+	csss = append(csss, inlines...)
+	for _, href := range cssHrefs {
+		url, err := f.LinkedUrl(href)
+		if err != nil {
+			log.Printf("error parsing %v", href)
+			continue
+		}
+		log.Printf("Download %v", url)
+		buf, contentType, err := f.Get(url)
+		if err != nil {
+			log.Printf("error downloading %v", url)
+			continue
+		}
+		if contentType.IsCSS() {
+			csss = append(csss, string(buf))
+		} else {
+			log.Printf("css: unexpected %v", contentType)
+		}
+	}
+
+	return
 }
 
 func formData(n, submitBtn *html.Node) (data url.Values) {
