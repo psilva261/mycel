@@ -1102,10 +1102,6 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 			href := n.Attr("href")
 			el = InnerNodesToBox(r+1, b, n)
 			el.makeLink(href)
-		case "br":
-			ui := NewLabel("", n)
-
-			return NewElement(ui, n)
 		case "noscript":
 			if *ExperimentalJsInsecure || !*EnableNoScriptTag {
 				return
