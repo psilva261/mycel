@@ -350,6 +350,11 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *Box, ok bool) {
 		p.Bottom = 0
 	}
 
+	// TODO: make sure input fields can be put into a box
+	if n.Data() =="input" {
+		return nil, false
+	}
+
 	if w == 0 && h == 0 && mw == 0 && i == nil && m == zs && p == zs {
 		return nil, false
 	}
@@ -392,6 +397,13 @@ func (el *Element) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, 
 	if el == nil {
 		return
 	}
+
+	// TODO: constrain field width as long as boxing them is deactivated
+	_, ok := el.UI.(*duit.Field)
+	if ok && sizeAvail.X > dui.Scale(300) {
+		sizeAvail.X = dui.Scale(300)
+	}
+
 	// Make boxes use full size for image backgrounds
 	box, ok := el.UI.(*Box)
 	if ok && box.Width > 0 && box.Height > 0 {
@@ -1090,6 +1102,10 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 			href := n.Attr("href")
 			el = InnerNodesToBox(r+1, b, n)
 			el.makeLink(href)
+		case "br":
+			ui := NewLabel("", n)
+
+			return NewElement(ui, n)
 		case "noscript":
 			if *ExperimentalJsInsecure || !*EnableNoScriptTag {
 				return
