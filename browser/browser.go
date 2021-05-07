@@ -1320,6 +1320,8 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	if err != nil {
 		log.Fatalf("get: %v", err)
 	}
+	b.Website.ContentType = ct
+	htm := string(ct.Utf8(buf))
 
 	browser = b
 	style.SetFetcher(b)
@@ -1330,7 +1332,7 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	}
 	display = dui.Display
 
-	b.render(ct, buf)
+	b.Website.layout(b, htm, InitialLayout)
 
 	return
 }
