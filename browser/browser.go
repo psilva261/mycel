@@ -174,7 +174,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 	var cached bool
 	src := attr(*n.DomSubtree, "src")
 	log.Printf("newImage: src: %v", src)
- 
+
 	if src == img.SrcZero {
 		return
 	}
@@ -646,8 +646,7 @@ func (el *Element) click() (consumed bool) {
 	log.Infof("click processed")
 
 	offset := scroller.Offset
-	browser.Website.html = res
-	browser.Website.layout(browser, ClickRelayout)
+	browser.Website.layout(browser, res, ClickRelayout)
 	scroller.Offset = offset
 	dui.MarkLayout(dui.Top.UI)
 	dui.MarkDraw(dui.Top.UI)
@@ -1317,11 +1316,10 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	}
 	b.History.Push(u, 0)
 
-	buf, _, err := b.get(u, true)
+	buf, ct, err := b.get(u, true)
 	if err != nil {
 		log.Fatalf("get: %v", err)
 	}
-	b.Website.html = string(buf)
 
 	browser = b
 	style.SetFetcher(b)
@@ -1332,7 +1330,7 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	}
 	display = dui.Display
 
-	b.Website.layout(b, InitialLayout)
+	b.render(ct, buf)
 
 	return
 }
@@ -1420,7 +1418,7 @@ func (b *Browser) loadUrl(url *url.URL) {
 		return
 	}
 	if contentType.IsHTML() || contentType.IsPlain() || contentType.IsEmpty() {
-		b.render(buf)
+		b.render(contentType, buf)
 	} else {
 		done := make(chan int)
 		res := b.Download(done)
@@ -1442,13 +1440,14 @@ func (b *Browser) loadUrl(url *url.URL) {
 	}
 }
 
-func (b *Browser) render(buf []byte) {
+func (b *Browser) render(ct opossum.ContentType, buf []byte) {
 	log.Printf("Empty some cache...")
 	cache.Tidy()
 	imageCache = make(map[string]*draw.Image)
 
-	b.Website.html = string(buf) // TODO: correctly interpret UTF8
-	b.Website.layout(b, InitialLayout)
+	b.Website.ContentType = ct
+	htm := ct.Utf8(buf)
+	b.Website.layout(b, htm, InitialLayout)
 
 	log.Printf("Render...")
 	dui.Call <- func() {
@@ -1525,10 +1524,6 @@ func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType o
 		return nil, opossum.ContentType{}, fmt.Errorf("error reading")
 	}
 	contentType, err = opossum.NewContentType(resp.Header.Get("Content-Type"), resp.Request.URL)
-	log.Printf("%v\n", resp.Header)
-	if err == nil && (contentType.IsHTML() || contentType.IsCSS() || contentType.IsPlain()) {
-		buf = contentType.Utf8(buf)
-	}
 	if isNewOrigin {
 		of := 0
 		if scroller != nil {
@@ -1546,12 +1541,13 @@ func (b *Browser) PostForm(uri *url.URL, data url.Values) (buf []byte, contentTy
 	dui.MarkLayout(dui.Top.UI)
 	dui.MarkDraw(dui.Top.UI)
 	dui.Render()
-	req, err := http.NewRequest("POST", uri.String(), strings.NewReader(data.Encode()))
+	fb := strings.NewReader(escapeValues(b.Website.ContentType, data).Encode())
+	req, err := http.NewRequest("POST", uri.String(), fb)
 	if err != nil {
 		return
 	}
 	req.Header.Add("User-Agent", "opossum")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", fmt.Sprintf("application/x-www-form-urlencoded; charset=%v", b.Website.Charset()))
 	resp, err := b.client.Do(req)
 	if err != nil {
 		return nil, opossum.ContentType{}, fmt.Errorf("error loading %v: %w", uri, err)

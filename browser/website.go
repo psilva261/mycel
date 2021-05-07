@@ -3,6 +3,7 @@ package browser
 import (
 	"github.com/mjl-/duit"
 	"golang.org/x/net/html"
+	"golang.org/x/text/encoding"
 	"io/ioutil"
 	"net/url"
 	"github.com/psilva261/opossum"
@@ -19,11 +20,11 @@ const (
 
 type Website struct {
 	duit.UI
-	html      string
+	opossum.ContentType
 	d *domino.Domino
 }
 
-func (w *Website) layout(f opossum.Fetcher, layouting int) {
+func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 	defer func() {
 		browser.statusBarMsg("", false)
 	}()
@@ -69,12 +70,12 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 	}
 
 	log.Printf("1st pass")
-	doc, _ := pass(w.html)
+	doc, _ := pass(htm)
 
 	log.Printf("2nd pass")
 	log.Printf("Download style...")
 	csss := cssSrcs(f, doc)
-	doc, nodeMap := pass(w.html, csss...)
+	doc, nodeMap := pass(htm, csss...)
 
 	// 3rd pass is only needed initially to load the scripts and set the goja VM
 	// state. During subsequent calls from click handlers that state is kept.
@@ -103,15 +104,15 @@ func (w *Website) layout(f opossum.Fetcher, layouting int) {
 			log.Infof("Stop existing JS instance")
 			w.d.Stop()
 		}
-		w.d = domino.NewDomino(w.html, browser, nt)
+		w.d = domino.NewDomino(htm, browser, nt)
 		w.d.Start()
 		jsProcessed, changed, err := processJS2(w.d, codes)
 		if changed && err == nil {
-			w.html = jsProcessed
+			htm = jsProcessed
 			if debugPrintHtml {
 				log.Printf("%v\n", jsProcessed)
 			}
-			doc, nodeMap = pass(w.html, csss...)
+			doc, nodeMap = pass(htm, csss...)
 		} else if err != nil {
 			log.Errorf("JS error: %v", err)
 		}
@@ -205,7 +206,32 @@ func formData(n, submitBtn *html.Node) (data url.Values) {
 
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		for k, vs := range formData(c, submitBtn) {
-			data.Set(k, vs[0]) // TODO: what aboot the rest?
+			for _, v := range vs {
+				data.Add(k, v)
+			}
+		}
+	}
+
+	return
+}
+
+func escapeValues(ct opossum.ContentType, q url.Values) (qe url.Values) {
+	qe = make(url.Values)
+	enc := encoding.HTMLEscapeUnsupported(ct.Encoding().NewEncoder())
+
+	for k, vs := range q {
+		ke, err := enc.String(k)
+		if err != nil {
+			log.Errorf("string: %v", err)
+			ke = k
+		}
+		for _, v := range vs {
+			ve, err := enc.String(v)
+			if err != nil {
+				log.Errorf("string: %v", err)
+				ve = v
+			}
+			qe.Add(ke, ve)
 		}
 	}
 
@@ -235,7 +261,7 @@ func (b *Browser) submit(form *html.Node, submitBtn *html.Node) {
 		for k, vs := range formData(form, submitBtn) {
 			q.Set(k, vs[0]) // TODO: what is with the rest?
 		}
-		uri.RawQuery = q.Encode()
+		uri.RawQuery = escapeValues(b.Website.ContentType, q).Encode()
 		buf, contentType, err = b.get(uri, true)
 	} else {
 		buf, contentType, err = b.PostForm(uri, formData(form, submitBtn))
@@ -251,5 +277,5 @@ func (b *Browser) submit(form *html.Node, submitBtn *html.Node) {
 		return
 	}
 
-	b.render(buf)
+	b.render(contentType, buf)
 }

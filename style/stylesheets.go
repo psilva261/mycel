@@ -281,6 +281,7 @@ func (cs Map) Font() *draw.Font {
 	if ok {
 		return font
 	}
+	log.Infof("call dui.Display.OpenFont(%v)", fn)
 	font, err := dui.Display.OpenFont(fn)
 	if err != nil {
 		log.Printf("%v is not avail", fn)

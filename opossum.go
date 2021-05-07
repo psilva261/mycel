@@ -2,7 +2,9 @@ package opossum
 
 import (
 	"bytes"
-	"golang.org/x/text/encoding/ianaindex"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/htmlindex"
+	"golang.org/x/text/encoding/unicode"
 	"io/ioutil"
 	"mime"
 	"github.com/psilva261/opossum/logger"
@@ -84,16 +86,34 @@ func (c ContentType) IsSvg() bool {
 	return c.MediaType == "image/svg+xml"
 }
 
-func (c ContentType) Utf8(buf []byte) []byte {
+func (c ContentType) Charset() (cs string) {
+	cs, ok := c.Params["charset"]
+	if !ok {
+		return "UTF-8"
+	}
+	return
+}
+
+func (c ContentType) Encoding() (e encoding.Encoding) {
 	charset, ok := c.Params["charset"]
 	if !ok || charset == "utf8" || charset == "utf-8" {
-		return buf
+		return unicode.UTF8
 	}
-	e, err := ianaindex.IANA.Encoding(charset)
-	if err != nil {
-		log.Errorf("get encoding %v: %v", charset, err)
-		return buf
+	e, err := htmlindex.Get(charset)
+	if err != nil || e == nil {
+		log.Errorf("encoding %v: %v", charset, err)
+		return unicode.UTF8
 	}
+	return
+}
+
+func (c ContentType) Utf8(buf []byte) string {
+	e := c.Encoding()
+
+	if e == unicode.UTF8 {
+		return string(buf)
+	}
+
 	r := bytes.NewReader(buf)
 	cr := e.NewDecoder().Reader(r)
 
@@ -101,8 +121,8 @@ func (c ContentType) Utf8(buf []byte) []byte {
 	if err == nil {
 		buf = updated
 	} else {
-		log.Errorf("utf8: unable to decode to %v: %v", charset, err)
+		log.Errorf("utf8: unable to decode to %v: %v", e, err)
 	}
 
-	return buf
+	return string(buf)
 }
