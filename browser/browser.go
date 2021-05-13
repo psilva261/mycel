@@ -205,6 +205,11 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 		} else {
 			return nil, fmt.Errorf("img svg %v: %v", xml, err)
 		}
+	} else if n.Data() == "img" {
+		_, s := srcSet(n)
+		if s != "" {
+			src = s
+		}
 	}
 
 	if src == "" {
@@ -240,38 +245,51 @@ img_elem:
 func newPicture(n *nodes.Node) string {
 	smallestImg := ""
 	smallestW := 0
+
+	for _, source := range n.FindAll("source") {
+		w, src := srcSet(source)
+		if src != "" && (smallestImg == "" || smallestW > w) {
+			smallestImg = src
+			smallestW = w
+		}
+	}
+
+	return smallestImg
+}
+
+func srcSet(n *nodes.Node) (w int, src string) {
+	smallestImg := ""
+	smallestW := 0
 	scale := 1
 
 	if dui != nil {
 		scale = int(dui.Scale(1))
 	}
 
-	for _, source := range n.FindAll("source") {
-		for _, s := range strings.Split(source.Attr("srcset"), ",") {
-			s = strings.TrimSpace(s)
-			tmp := strings.Split(s, " ")
-			src := ""
-			s := ""
-			src = tmp[0]
-			if len(tmp) == 2 {
-				s = tmp[1]
-			}
-			if s == "" || s == fmt.Sprintf("%vx", scale) {
-				return src
-			}
-			s = strings.TrimSuffix(s, "w")
-			w, err := strconv.Atoi(s)
-			if err != nil {
-				continue
-			}
-			if smallestImg == "" || smallestW > w {
-				smallestImg = src
-				smallestW = w
-			}
+	for _, s := range strings.Split(n.Attr("srcset"), ",") {
+		s = strings.TrimSpace(s)
+		tmp := strings.Split(s, " ")
+		src := ""
+		s := ""
+		src = tmp[0]
+		if len(tmp) == 2 {
+			s = tmp[1]
+		}
+		if s == "" || s == fmt.Sprintf("%vx", scale) {
+			return 0, src
+		}
+		s = strings.TrimSuffix(s, "w")
+		w, err := strconv.Atoi(s)
+		if err != nil {
+			continue
+		}
+		if smallestImg == "" || smallestW > w {
+			smallestImg = src
+			smallestW = w
 		}
 	}
 
-	return smallestImg
+	return smallestW, smallestImg
 }
 
 type Element struct {
