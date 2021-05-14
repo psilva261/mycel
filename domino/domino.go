@@ -1,6 +1,7 @@
 package domino
 
 import (
+	"bytes"
 	"embed"
 	"errors"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/eventloop"
 	"github.com/dop251/goja_nodejs/require"
-	"github.com/jvatic/goja-babel"
 	"golang.org/x/net/html"
 	"io/ioutil"
 	"github.com/psilva261/opossum"
@@ -17,6 +17,7 @@ import (
 	"github.com/psilva261/opossum/nodes"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -258,23 +259,14 @@ cleanup:
 }
 
 func (d *Domino) Exec6(script string, initial bool) (res string, err error) {
-	babel.Init(2) // Setup 4 transformers (can be any number > 0)
-	r, err := babel.Transform(strings.NewReader(script), map[string]interface{}{
-		"plugins": []string{
-			"transform-block-scoping",
-			"transform-destructuring",
-			"transform-spread",
-			"transform-parameters",
-		},
-	})
-	if err != nil {
-		return "", fmt.Errorf("babel: %v", err)
+	cmd := exec.Command("6to5")
+	cmd.Stdin = strings.NewReader(script)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err = cmd.Run(); err != nil {
+		return "", fmt.Errorf("6to5: %w", err)
 	}
-	buf, err := ioutil.ReadAll(r)
-	if err != nil {
-		return "", fmt.Errorf("read all: %v", err)
-	}
-	return d.Exec(string(buf), initial)
+	return d.Exec(out.String(), initial)
 }
 
 // CloseDoc fires DOMContentLoaded to trigger $(document).ready(..)

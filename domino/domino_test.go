@@ -73,7 +73,6 @@ func TestJQuery(t *testing.T) {
 	script := `
 	$(document).ready(function() {
 		gfgf
-		console.log('yolo');
 	});
 	setTimeout(function() {
 		console.log("ok");
@@ -239,26 +238,17 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	//t.Parallel()
 	SCRIPT := string(jQuery) + `
     ;;;
 	setTimeout(function() {
-		console.log("ok :-)");
-		console.log(s.buf);
 		var h = document.querySelector('html');
     	console.log(h.innerHTML);
 	}, 1000);
-	console.log("Started");
 	Object.assign(this, window);
     $(document).ready(function() {
     	console.log('READDDYYYYY!!!!!!!');
     });
-    console.log('$:');
-    console.log($);
-    console.log('$h1:');
-    console.log($('h1').html());
 
-    //elem.dispatchEvent(event);
     console.log(window.location.href);
 	`
 	d := NewDomino(simpleHTML, nil, nil)
@@ -338,23 +328,13 @@ func TestDomChanged(t *testing.T) {
 	SCRIPT := string(jQuery) + `
     ;;;
 	setTimeout(function() {
-		console.log("ok :-)");
-		console.log(s.buf);
 		var h = document.querySelector('html');
     	console.log(h.innerHTML);
 	}, 1000);
-	console.log("Started");
 	Object.assign(this, window);
     $(document).ready(function() {
     	console.log('READDDYYYYY!!!!!!!');
     });
-    console.log('$:');
-    console.log($);
-    console.log('$h1:');
-    console.log($('h1').html());
-
-    //elem.dispatchEvent(event);
-    console.log(window.location.href);
 	`
 	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
@@ -367,9 +347,6 @@ func TestDomChanged(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	/*if res != "Hello" {
-		t.Fatalf(res)
-	}*/
 	_=res
 	res, err = d.Exec("$('h1').html('minor updates :-)'); $('h1').html();", false)
 	if err != nil {
@@ -587,15 +564,10 @@ func TestXMLHttpRequest(t *testing.T) {
 		var oReq = new XMLHttpRequest();
 		var loaded = false;
 		oReq.addEventListener("load", function() {
-			console.log('loaded!!!!! !!! 11!!!1!!elf!!!1!');
 			loaded = true;
 		});
-		console.log(oReq.open);
-		console.log('open:');
 		oReq.open("GET", "http://www.example.org/example.txt");
-		console.log('send:');
 		oReq.send();
-		console.log('return:');
 	`
 	_, err := d.Exec(script, true)
 	if err != nil {
@@ -628,11 +600,9 @@ func TestJQueryAjax(t *testing.T) {
 	$.ajax({
 		url: '/',
 		success: function() {
-			console.log('success!!!');
 			res = 'success';
 		},
 		error: function() {
-			console.log('error!!!');
 			res = 'err';
 		}
 	});
@@ -671,11 +641,9 @@ func TestJQueryAjax182(t *testing.T) {
 	$.ajax({
 		url: '/',
 		success: function() {
-			console.log('success!!!');
 			res = 'success';
 		},
 		error: function() {
-			console.log('error!!!');
 			res = 'err';
 		}
 	});

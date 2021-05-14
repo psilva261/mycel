@@ -15,7 +15,9 @@ func Main() (err error) {
 	babel.Init(1) // Setup 1 transformer (can be any number > 0)
 	r, err := babel.Transform(os.Stdin, map[string]interface{}{
 		"plugins": []string{
+			"transform-arrow-functions",
 			"transform-block-scoping",
+			"transform-classes",
 			"transform-destructuring",
 			"transform-spread",
 			"transform-parameters",
