@@ -80,6 +80,7 @@ is needed, also AJAX functions, `getComputedStyle` etc. are either missing or st
 Very simple jQuery based code works though, e.g. jQuery UI Tab view
 https://jqueryui.com/resources/demos/tabs/default.html or the toggle buttons on
 https://golang.org/pkg There is also highly experimental ES6 support with Babel.
+(Needs also https://github.com/psilva261/6to5)
 
 Try on Plan 9 with e.g.:
 
