@@ -16,7 +16,7 @@ cd ../..
 mv cmd/browse/$name.bin .
 mv $name.bin ./$name/
 cp README.md ./$name/
-cp possum-655x493.jpg ./$name/
+cp opossum.jpg ./$name/
 tarball=`{pwd} ^ '/packages/' ^ $name ^ '-v0.0.1-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
 tar czf $tarball $name
 chmod +t $tarball

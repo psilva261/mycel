@@ -148,6 +148,7 @@ func Main() (err error) {
 		return confirm(b, fmt.Sprintf("Download %v", b.URL()), "/download.file")
 	}
 	render(b, mainView(b))
+	go Srv9p(b)
 
 	for {
 		select {

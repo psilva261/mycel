@@ -11,6 +11,7 @@ import (
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
 	"strings"
+	"sync"
 )
 
 const (
@@ -22,6 +23,24 @@ type Website struct {
 	duit.UI
 	opossum.ContentType
 	d *domino.Domino
+
+	mu sync.Mutex
+	html string
+	js []string
+}
+
+func (w *Website) Html() string {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	return w.html
+}
+
+func (w *Website) Js() []string {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	return append([]string{}, w.js...)
 }
 
 func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
@@ -147,6 +166,11 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 		)
 		w.UI = scroller
 	}
+
+	w.mu.Lock()
+	w.html = htm
+	w.mu.Unlock()
+
 	log.Flush()
 }
 
