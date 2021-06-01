@@ -1,6 +1,6 @@
 // +build !plan9
 
-package main
+package fs
 
 import (
 	"fmt"

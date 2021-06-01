@@ -8,6 +8,7 @@ import (
 	"os"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser"
+	"github.com/psilva261/opossum/browser/fs"
 	"github.com/psilva261/opossum/domino"
 	"github.com/psilva261/opossum/img"
 	"github.com/psilva261/opossum/logger"
@@ -132,6 +133,7 @@ func Main() (err error) {
 
 	style.Init(dui, log)
 	browser.SetLogger(log)
+	fs.SetLogger(log)
 	domino.SetLogger(log)
 	img.SetLogger(log)
 	opossum.SetLogger(log)
@@ -148,7 +150,6 @@ func Main() (err error) {
 		return confirm(b, fmt.Sprintf("Download %v", b.URL()), "/download.file")
 	}
 	render(b, mainView(b))
-	go Srv9p(b)
 
 	for {
 		select {

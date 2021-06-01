@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"github.com/psilva261/opossum"
+	"github.com/psilva261/opossum/browser/fs"
 	"github.com/psilva261/opossum/domino"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
@@ -118,6 +119,9 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 			downloads[src] = string(buf)
 		}
 		codes := domino.Scripts(nt, downloads)
+		w.mu.Lock()
+		w.js = append([]string{}, codes...)
+		w.mu.Unlock()
 		log.Infof("JS pipeline start")
 		if w.d != nil {
 			log.Infof("Stop existing JS instance")
@@ -170,6 +174,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 	w.mu.Lock()
 	w.html = htm
 	w.mu.Unlock()
+	fs.Update(w.html, w.js)
 
 	log.Flush()
 }

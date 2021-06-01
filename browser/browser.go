@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser/cache"
+	"github.com/psilva261/opossum/browser/fs"
 	"github.com/psilva261/opossum/browser/history"
 	"github.com/psilva261/opossum/img"
 	"github.com/psilva261/opossum/logger"
@@ -1361,6 +1362,8 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 		log.Fatalf("%v", err)
 	}
 	display = dui.Display
+
+	go fs.Srv9p()
 
 	b.Website.layout(b, htm, InitialLayout)
 
