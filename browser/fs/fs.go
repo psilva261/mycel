@@ -15,6 +15,7 @@ var (
 	oFS *fs.FS
 	un string
 	gn string
+	cssDir *fs.StaticDir
 	jsDir *fs.StaticDir
 	html string
 )
@@ -48,7 +49,14 @@ func init() {
 		},
 	)
 	root.AddChild(h)
-	d, err := fs.CreateStaticDir(oFS, root, un, "js", 0500|proto.DMDIR, 0)
+	d, err := fs.CreateStaticDir(oFS, root, un, "css", 0500|proto.DMDIR, 0)
+	if err != nil {
+		log.Errorf("create static dir: %w", err)
+		return
+	}
+	cssDir = d.(*fs.StaticDir)
+	root.AddChild(cssDir)
+	d, err = fs.CreateStaticDir(oFS, root, un, "js", 0500|proto.DMDIR, 0)
 	if err != nil {
 		log.Errorf("create static dir: %w", err)
 		return
@@ -57,12 +65,22 @@ func init() {
 	root.AddChild(jsDir)
 }
 
-func Update(htm string, js []string) {
+func Update(htm string, css []string, js []string) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	html = htm
-
+	for name := range cssDir.Children() {
+		cssDir.DeleteChild(name)
+	}
+	for i, s := range css {
+		fn := fmt.Sprintf("%d.css", i)
+		f := fs.NewStaticFile(
+			oFS.NewStat(fn, un, gn, 0400),
+			[]byte(s),
+		)
+		cssDir.AddChild(f)
+	}
 	for name := range jsDir.Children() {
 		jsDir.DeleteChild(name)
 	}

@@ -150,7 +150,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 		w.UI = scroller
 	}
 
-	fs.Update(htm, js)
+	fs.Update(htm, csss, js)
 
 	log.Flush()
 }
