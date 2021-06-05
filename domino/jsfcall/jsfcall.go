@@ -7,8 +7,6 @@ const (
 	Rinit
 	Tclick
 	Rclick
-	Tquery
-	Rquery
 )
 
 type Msg struct {

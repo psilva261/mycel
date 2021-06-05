@@ -21,7 +21,7 @@ func post(srv go9p.Srv) (err error) {
 	go func() {
 		err = go9p.ServeReadWriter(f1, f1, srv)
 		if err != nil {
-			log.Fatalf("serve rw: %v", err)
+			log.Errorf("serve rw: %v", err)
 		}
 	}()
 

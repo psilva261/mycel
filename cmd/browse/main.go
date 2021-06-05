@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"os"
+	"github.com/knusbaum/go9p"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser"
 	"github.com/psilva261/opossum/browser/fs"
@@ -184,6 +185,7 @@ func main() {
 
 	log = logger.Log
 	log.Debug = *dbg
+	go9p.Verbose = log.Debug
 
 	if err := Main(); err != nil {
 		log.Fatalf("Main: %v", err)
