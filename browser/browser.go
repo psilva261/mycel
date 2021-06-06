@@ -32,8 +32,10 @@ import (
 )
 
 const debugPrintHtml = false
-
 const EnterKey = 10
+// alwaysForceDraw to prevent blurry text after mouse
+// hovering
+const alwaysForceDraw = true
 
 var cursor = [16*2]uint8{
 	0b11111111, 0b11111110,
@@ -396,6 +398,7 @@ func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig ima
 	if el == nil {
 		return
 	}
+	force = alwaysForceDraw
 	// It would be possible to avoid flickers under certain circumstances
 	// of overlapping elements but the load for this is high:
 	// if self.Draw == duit.DirtyKid {
