@@ -37,28 +37,30 @@ const EnterKey = 10
 // hovering
 const alwaysForceDraw = true
 
+// cursor based on Clipart from Francesco 'Architetto' Rollandin
+// OpenClipart SVG ID: 163773 from OCAL 0.18 release 16/11/2019
+// https://freesvg.org/topo-architetto-francesc-01
+// (Public Domain)
 var cursor = [16*2]uint8{
-	0b11111111, 0b11111110,
-	0b11111111, 0b11111100,
-	0b11111111, 0b11111000,
-	0b11111111, 0b11110000,
-	0b11111111, 0b11100000,
-	0b11111111, 0b11000000,
-	0b11111111, 0b10000000,
-	0b11111111, 0b10000000,
+	0b00000001, 0b11111100,
+	0b00000111, 0b11111110,
+	0b00001111, 0b11111111,
+	0b00111111, 0b11111111,
+	0b00111111, 0b11111111,
 	0b11111111, 0b11111111,
-	0b11111111, 0b11111110,
-	0b11110111, 0b11111110,
-	0b11100011, 0b11110000,
+	0b11110111, 0b01111111,
+	0b00111011, 0b11111111,
+	0b00010011, 0b00111011,
+	0b00000111, 0b00110110,
+	0b00000111, 0b11111100,
+	0b00001100, 0b01111000,
 }
 
 var DebugDumpCSS *bool
 var ExperimentalJsInsecure *bool
 var EnableNoScriptTag *bool
 
-var browser *Browser // TODO: limit global objects;
-//       at least put them in separate pkgs
-//       with well chosen private/public
+var browser *Browser
 var Style = style.Map{}
 var dui *duit.DUI
 var colorCache = make(map[draw.Color]*draw.Image)
