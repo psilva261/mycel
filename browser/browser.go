@@ -853,7 +853,7 @@ func horizontalSeq(wrap bool, es []*Element) duit.UI {
 			Kids:    duit.NewKids(finalUis...),
 		}
 	} else {
-		return &duit.Grid{
+		return &Grid{
 			Columns: len(es),
 			Padding: duit.NSpace(len(es), duit.SpaceXY(0, 3)),
 			Halign:  halign,
@@ -875,7 +875,7 @@ func verticalSeq(es []*Element) duit.UI {
 		uis = append(uis, e)
 	}
 
-	return &duit.Grid{
+	return &Grid{
 		Columns: 1,
 		Padding: duit.NSpace(1, duit.SpaceXY(0, 3)),
 		Halign:  []duit.Halign{duit.HalignLeft},
@@ -976,7 +976,7 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 		}
 
 		return NewElement(
-			&duit.Grid{
+			&Grid{
 				Columns: numCols,
 				Padding: duit.NSpace(numCols, duit.SpaceXY(0, 3)),
 				Halign:  halign,
@@ -1214,7 +1214,7 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 			return
 		}
 		traverseTree(r+1, v.UI, f)
-	case *duit.Grid:
+	case *Grid:
 		for _, kid := range v.Kids {
 			traverseTree(r+1, kid.UI, f)
 		}
@@ -1268,8 +1268,8 @@ func printTree(r int, ui duit.UI) {
 		}
 		fmt.Printf("Element\n")
 		printTree(r+1, v.UI)
-	case *duit.Grid:
-		fmt.Printf("duit.Grid %vx%v\n", len(v.Kids)/v.Columns, v.Columns)
+	case *Grid:
+		fmt.Printf("Grid %vx%v\n", len(v.Kids)/v.Columns, v.Columns)
 		for _, kid := range v.Kids {
 			printTree(r+1, kid.UI)
 		}

@@ -95,7 +95,7 @@ func TestArrange(t *testing.T) {
 				t.Fatalf("%+v", b)
 			}
 		} else {
-			if g := v.UI.(*duit.Grid); g.Columns != 1 || len(g.Kids) != 3 {
+			if g := v.UI.(*Grid); g.Columns != 1 || len(g.Kids) != 3 {
 				t.Fatalf("%+v", g)
 			}
 		}

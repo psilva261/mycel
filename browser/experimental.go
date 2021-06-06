@@ -66,7 +66,7 @@ func isLeaf(ui duit.UI) bool {
 		return false
 	case *Element:
 		return false
-	case *duit.Grid:
+	case *Grid:
 		return false
 	case *duit.Image:
 		return true
