@@ -1,31 +1,42 @@
-name='opossum-plan9-amd64'
+name64='opossum-plan9-amd64'
+name32='opossum-plan9-386'
+tarball64=`{pwd} ^ '/packages/' ^ $name64 ^ '-v0.0.1-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
+tarball32=`{pwd} ^ '/packages/' ^ $name32 ^ '-v0.0.1-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
 
-rm -rf ./$name
-mkdir ./$name
-mkdir -p ./packages
-chmod +t ./$name
+fn build {
+	tarball=$1
+	name=$2
+	GOARCH=$3
+
+	rm -rf ./$name
+	mkdir ./$name
+	mkdir -p ./packages
+	chmod +t ./$name
+
+	echo Compiling $GOARCH...
+	cd cmd/browse
+	go build -ldflags '-s -w' -o $name.bin
+	cd ../..
+	mv cmd/browse/$name.bin .
+	mv $name.bin ./$name/
+	cp README.md ./$name/
+	cp opossum.jpg ./$name/
+	tar czf $tarball $name
+	chmod +t $tarball
+	echo Created $tarball
+}
 
 echo Testing...
 go vet ./...
 go test -cover ./...
 
-echo Compiling...
-cd cmd/browse
-go build -ldflags '-s -w' -o $name.bin
-cd ../..
-mv cmd/browse/$name.bin .
-mv $name.bin ./$name/
-cp README.md ./$name/
-cp opossum.jpg ./$name/
-tarball=`{pwd} ^ '/packages/' ^ $name ^ '-v0.0.1-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
-tar czf $tarball $name
-chmod +t $tarball
-echo Created $tarball
+build $tarball64 $name64 amd64
+build $tarball32 $name32 386
 
-echo Verifying $tarball ...
+echo Verifying $tarball64 ...
 mkdir -p /tmp/`{date -n}
 cd /tmp/`{date -n}
-tar xf $tarball
-cd $name
-./$name.bin '-quiet=false'
-./$name.bin '-experimentalJsInsecure=true' '-quiet=false'
+tar xf $tarball64
+cd $name64
+./$name64.bin '-quiet=false'
+./$name64.bin '-experimentalJsInsecure=true' '-quiet=false'

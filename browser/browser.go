@@ -33,9 +33,6 @@ import (
 
 const debugPrintHtml = false
 const EnterKey = 10
-// alwaysForceDraw to prevent blurry text after mouse
-// hovering
-const alwaysForceDraw = true
 
 // cursor based on Clipart from Francesco 'Architetto' Rollandin
 // OpenClipart SVG ID: 163773 from OCAL 0.18 release 16/11/2019
@@ -400,7 +397,7 @@ func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig ima
 	if el == nil {
 		return
 	}
-	force = alwaysForceDraw
+
 	// It would be possible to avoid flickers under certain circumstances
 	// of overlapping elements but the load for this is high:
 	// if self.Draw == duit.DirtyKid {
@@ -636,9 +633,9 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 	maxX := self.R.Dx()
 	maxY := self.R.Dy()
 	if 5 <= x && x <= (maxX-5) && 5 <= y && y <= (maxY-5) && el.IsLink {
-		dui.Display.SetCursor(&draw.Cursor{
-			Set: cursor,
-		})
+		//dui.Display.SetCursor(&draw.Cursor{
+		//	Set: cursor,
+		//})
 		if m.Buttons == 0 {
 			r.Consumed = true
 			return r

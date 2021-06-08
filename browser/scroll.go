@@ -99,7 +99,7 @@ func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig imag
 		return
 	}
 
-	ui.scroll(0)
+	// ui.scroll(0)
 	barHover := m.In(ui.barR)
 
 	bg := dui.ScrollBGNormal
@@ -184,7 +184,7 @@ func (ui *Scroll) drawRect() image.Rectangle {
 	return r
 }
 
-func (ui *Scroll) scroll(delta int) bool {
+func (ui *Scroll) scroll(delta int) (changed bool) {
 	o := ui.Offset
 	ui.Offset += delta
 	ui.Offset = maximum(0, ui.Offset)
@@ -245,34 +245,26 @@ func (ui *Scroll) result(dui *duit.DUI, self *duit.Kid, r *duit.Result, scrolled
 }
 
 func (ui *Scroll) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (r duit.Result) {
+	if m.Buttons == 0 { return }
 	if m.Point.In(ui.barR) {
 		r.Hit = ui
 		r.Consumed = ui.scrollMouse(m, false)
 		self.Draw = duit.Dirty
 		return
-	}
-	if m.Point.In(ui.childR) {
+	} else if m.Point.In(ui.childR) {
+		r.Consumed = ui.scrollMouse(m, true)
+		if r.Consumed {
+			self.Draw = duit.Dirty
+			return
+		}
 		nOrigM := origM
 		nOrigM.Point = nOrigM.Point.Add(image.Pt(-ui.scrollbarSize, ui.Offset))
 		nm := m
 		nm.Point = nm.Point.Add(image.Pt(-ui.scrollbarSize, ui.Offset))
 		r = ui.Kid.UI.Mouse(dui, &ui.Kid, nm, nOrigM, image.ZP)
-		ui.warpScroll(dui, self, r.Warp, orig)
-		scrolled := false
-		if !r.Consumed {
-			scrolled = ui.scrollMouse(m, true)
-			r.Consumed = scrolled
+		if r.Consumed {
+			self.Draw = duit.Dirty
 		}
-		ui.result(dui, self, &r, scrolled)
-		if r.Hit != ui.lastMouseUI {
-			if r.Hit != nil {
-				ui.Mark(self, r.Hit, false)
-			}
-			if ui.lastMouseUI != nil {
-				ui.Mark(self, ui.lastMouseUI, false)
-			}
-		}
-		ui.lastMouseUI = r.Hit
 	}
 	return
 }

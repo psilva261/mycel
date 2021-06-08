@@ -177,7 +177,6 @@ func (ui *Grid) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, for
 }
 
 func (ui *Grid) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
-	force = alwaysForceDraw
 	duit.KidsDraw(dui, self, ui.Kids, ui.size, ui.Background, img, orig, m, force)
 }
 
