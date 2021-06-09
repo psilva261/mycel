@@ -245,7 +245,15 @@ func (ui *Scroll) result(dui *duit.DUI, self *duit.Kid, r *duit.Result, scrolled
 }
 
 func (ui *Scroll) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (r duit.Result) {
-	if m.Buttons == 0 { return }
+	nOrigM := origM
+	nOrigM.Point = nOrigM.Point.Add(image.Pt(-ui.scrollbarSize, ui.Offset))
+	nm := m
+	nm.Point = nm.Point.Add(image.Pt(-ui.scrollbarSize, ui.Offset))
+
+	if m.Buttons == 0 {
+		ui.Kid.UI.Mouse(dui, &ui.Kid, nm, nOrigM, image.ZP)
+		return
+	}
 	if m.Point.In(ui.barR) {
 		r.Hit = ui
 		r.Consumed = ui.scrollMouse(m, false)
@@ -257,10 +265,6 @@ func (ui *Scroll) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.
 			self.Draw = duit.Dirty
 			return
 		}
-		nOrigM := origM
-		nOrigM.Point = nOrigM.Point.Add(image.Pt(-ui.scrollbarSize, ui.Offset))
-		nm := m
-		nm.Point = nm.Point.Add(image.Pt(-ui.scrollbarSize, ui.Offset))
 		r = ui.Kid.UI.Mouse(dui, &ui.Kid, nm, nOrigM, image.ZP)
 		if r.Consumed {
 			self.Draw = duit.Dirty
