@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/knusbaum/go9p/fs"
 	"github.com/knusbaum/go9p/proto"
+	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"net"
@@ -43,7 +44,7 @@ func init() {
 		return
 	}
 	un = u.Username
-	gn, err = group(u)
+	gn, err = opossum.Group(u)
 	if err != nil {
 		log.Errorf("get group: %v", err)
 		return

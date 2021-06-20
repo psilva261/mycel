@@ -9,4 +9,5 @@
 ~*
 .DS_Store
 /cmd/browse/browse
+/cmd/jsfs/jsfs
 main.js
