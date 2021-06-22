@@ -121,6 +121,23 @@ func ctl(conn net.Conn) {
 			d.Stop()
 			d = nil
 		}
+	case "click":
+		sel, err := r.ReadString('\n')
+		if err != nil {
+			log.Errorf("jsfs: click: read string: %v", err)
+			return
+		}
+		sel = strings.TrimSpace(sel)
+		resHtm, changed, err := d.TriggerClick(sel)
+		if err != nil {
+			log.Errorf("track changes: %v", err)
+			return
+		}
+		log.Printf("jsfs: processJS: changed = %v", changed)
+		if changed {
+			w.WriteString(resHtm)
+			w.Flush()
+		}
 	default:
 		log.Errorf("unknown cmd")
 	}

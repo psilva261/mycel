@@ -4,6 +4,7 @@ import (
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
 	"bytes"
+	"fmt"
 	"io"
 	"bufio"
 	"net"
@@ -12,25 +13,53 @@ import (
 	"testing"
 )
 
-func TestMain(t *testing.T) {
+func connect() (fsys *client.Fsys, c io.Closer, err error) {
 	u, err := user.Current()
 	if err != nil {
-		t.Fatalf("%v", err)
+		return
 	}
 	un := u.Username
 	c1, c2 := net.Pipe()
 	err = Main(c1, c1)
 	if err != nil {
-		t.Fatalf("%v", err)
+		return
 	}
 	conn, err := client.NewConn(c2)
 	if err != nil {
-		t.Fatalf("%v", err)
+		return
 	}
-	fsys, err := conn.Attach(nil, un, "")
+	fsys, err = conn.Attach(nil, un, "")
+	if err != nil {
+		return
+	}
+	return fsys, conn, nil
+}
+
+func call(fsys *client.Fsys, fn, cmd string, args... string) (resp string, err error) {
+	fid, err := fsys.Open(fn, plan9.ORDWR)
+	if err != nil {
+		return
+	}
+	defer fid.Close()
+	fid.Write([]byte(cmd+"\n"))
+	for _, arg := range args {
+		fid.Write([]byte(arg+"\n"))
+	}
+	r := bufio.NewReader(fid)
+	b := bytes.NewBuffer([]byte{})
+	_, err = io.Copy(b, r)
+	if !strings.Contains(err.Error(), io.ErrClosedPipe.Error()) {
+		return "", fmt.Errorf("unexpected error: %v", err)
+	}
+	return b.String(), nil
+}
+
+func TestMain(t *testing.T) {
+	fsys, c, err := connect()
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
+	defer c.Close()
 	d, err := fsys.Stat("ctl")
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -42,20 +71,44 @@ func TestMain(t *testing.T) {
 	js = []string{
 		"document.getElementById('title').innerHTML='world'",
 	}
-	fid, err := fsys.Open("ctl", plan9.ORDWR)
+	resp, err := call(fsys, "ctl", "start")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	defer fid.Close()
-	fid.Write([]byte("start\n"))
-	r := bufio.NewReader(fid)
-	b := bytes.NewBuffer([]byte{})
-	_, err = io.Copy(b, r)
-	if !strings.Contains(err.Error(), io.ErrClosedPipe.Error()) {
-		t.Fatalf("%+v", err)
+	t.Logf("%v", resp)
+	if !strings.Contains(resp, `<h1 id="title">world</h1>`) {
+		t.Fail()
 	}
-	t.Logf("%v", b.String())
-	if !strings.Contains(b.String(), `<h1 id="title">world</h1>`) {
+}
+
+
+func TestClick(t *testing.T) {
+	fsys, c, err := connect()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	defer c.Close()
+	htm = "<html><h1 id=title>hello</h1></html>"
+	js = []string{
+		`var c = 1;
+		document.getElementById('title').addEventListener('click', function(event) {
+			c = 3;
+		});`,
+	}
+	_, err = call(fsys, "ctl", "start")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	_, err = call(fsys, "ctl", "click", "#title")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	resp, err := d.Exec("c", false)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	t.Logf("%v", resp)
+	if resp != "3" {
 		t.Fail()
 	}
 }
