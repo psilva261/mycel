@@ -6,6 +6,8 @@ replace 9fans.net/go v0.0.0-00010101000000-000000000000 => github.com/psilva261/
 
 replace 9fans.net/go v0.0.2 => github.com/psilva261/go v0.0.0-20210409105224-1f229ca22d72
 
+replace github.com/mjl-/duit v0.0.0-20200330125617-580cb0b2843f => github.com/knusbaum/duit v0.0.0-20200413214450-5cc3648b5133
+
 replace github.com/knusbaum/go9p v1.17.0 => github.com/psilva261/go9p-1 v1.17.1-0.20210620075710-0428cf31f72f
 
 exclude github.com/aymerick/douceur v0.1.0

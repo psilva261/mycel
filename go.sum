@@ -20,6 +20,8 @@ github.com/go-sourcemap/sourcemap v2.1.3+incompatible h1:W1iEw64niKVGogNgBN3ePyL
 github.com/go-sourcemap/sourcemap v2.1.3+incompatible/go.mod h1:F8jJfvm2KbVjc5NqelyYJmf/v5J0dwNLS2mL4sNA1Jg=
 github.com/gorilla/css v1.0.0 h1:BQqNyPTi50JCFMTw/b67hByjMVXZRwGha6wxVGkeihY=
 github.com/gorilla/css v1.0.0/go.mod h1:Dn721qIggHpt4+EFCcTLTU/vk5ySda2ReITrtgBl60c=
+github.com/knusbaum/duit v0.0.0-20200413214450-5cc3648b5133 h1:/PPvy1SKUjIFemUVKhSNkWCesORZvOag65FioCvRPH4=
+github.com/knusbaum/duit v0.0.0-20200413214450-5cc3648b5133/go.mod h1:bCuFm7lhAl9wLyLCC6E4RVLDpAv7bWfnTMeDd+C4OQ8=
 github.com/mjl-/duit v0.0.0-20200330125617-580cb0b2843f h1:eGFou1VfXmiti7EMQED6BIzfALMYi6/fBMIRL4usKfw=
 github.com/mjl-/duit v0.0.0-20200330125617-580cb0b2843f/go.mod h1:OlRagobzQ97GoM+WaQ5kyzdyts952BFYsuY5bMyv9tw=
 github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 h1:zYyBkD/k9seD2A7fsi6Oo2LfFZAehjjQMERAvZLEDnQ=
