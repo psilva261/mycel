@@ -20,10 +20,11 @@ func connect() (fsys *client.Fsys, c io.Closer, err error) {
 	}
 	un := u.Username
 	c1, c2 := net.Pipe()
-	err = Main(c1, c1)
-	if err != nil {
-		return
-	}
+	go func() {
+		if err = Main(c1, c1); err != nil && err != io.EOF {
+			panic(err.Error())
+		}
+	}()
 	conn, err := client.NewConn(c2)
 	if err != nil {
 		return

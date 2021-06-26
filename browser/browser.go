@@ -1526,20 +1526,22 @@ func (b *Browser) statusBarMsg(msg string, emptyBody bool) {
 		return
 	}
 
-	dui.Call <- func() {
-		if msg == "" {
-			b.StatusBar.Text = ""
-		} else {
-			b.StatusBar.Text += msg + "\n"
-		}
-		if emptyBody {
-			b.Website.UI = &duit.Label{}
-		}
+	go func() {
+		dui.Call <- func() {
+			if msg == "" {
+				b.StatusBar.Text = ""
+			} else {
+				b.StatusBar.Text += msg + "\n"
+			}
+			if emptyBody {
+				b.Website.UI = &duit.Label{}
+			}
 
-		dui.MarkLayout(dui.Top.UI)
-		dui.MarkDraw(dui.Top.UI)
-		dui.Render()
-	}
+			dui.MarkLayout(dui.Top.UI)
+			dui.MarkDraw(dui.Top.UI)
+			dui.Render()
+		}
+	}()
 }
 
 func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType opossum.ContentType, err error) {

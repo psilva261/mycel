@@ -5,6 +5,7 @@ import (
 	"io"
 	goLog "log"
 	"os"
+	"sync"
 )
 
 // Sink for Go's log pkg
@@ -31,6 +32,8 @@ func (w *NullWriter) Write(p []byte) (n int, err error) {
 
 type Logger struct {
 	Debug    bool
+
+	mu       sync.Mutex
 	last     string
 	lastSev  int
 	repeated int
@@ -71,6 +74,9 @@ func (l *Logger) Flush() {
 }
 
 func (l *Logger) emit(severity int, format string, v ...interface{}) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	if severity == debug && !l.Debug {
 		return
 	}

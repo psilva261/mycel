@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/user"
 	"strings"
+	"sync"
 )
 
 var (
@@ -21,6 +22,7 @@ var (
 	log *logger.Logger
 	htm string
 	js []string
+	mu sync.Mutex
 )
 
 func init() {
@@ -54,14 +56,7 @@ func Main(r io.Reader, w io.Writer) (err error) {
 	root.AddChild(c)
 	lctl := (*fs.ListenFileListener)(c)
 	go Ctl(lctl)
-	go func() {
-		err := go9p.ServeReadWriter(r, w, jsFS.Server())
-		if err != nil {
-			log.Errorf("jsfs: serve rw: %v", err)
-		}
-	}()
-
-	return
+	return go9p.ServeReadWriter(r, w, jsFS.Server())
 }
 
 func Ctl(lctl *fs.ListenFileListener) {
@@ -86,6 +81,9 @@ func ctl(conn net.Conn) {
 		return
 	}
 	l = strings.TrimSpace(l)
+
+	mu.Lock()
+	defer mu.Unlock()
 
 	switch l {
 	case "start":
