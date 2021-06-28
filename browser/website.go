@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"github.com/psilva261/opossum"
+	"github.com/psilva261/opossum/browser/duitx"
 	"github.com/psilva261/opossum/browser/fs"
 	"github.com/psilva261/opossum/domino"
 	"github.com/psilva261/opossum/nodes"
@@ -134,7 +135,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 
 	log.Printf("Layout website...")
 	nt := nodes.NewNodeTree(body, style.Map{}, nodeMap, &nodes.Node{})
-	scroller = NewScroll(
+	scroller = duitx.NewScroll(
 		NodeToBox(0, browser, nt),
 	)
 	numElements := 0
@@ -146,7 +147,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 	if numElements < 10 {
 		log.Errorf("Less than 10 elements layouted, seems css processing failed. Will layout without css")
 		nt = nodes.NewNodeTree(body, style.Map{}, make(map[*html.Node]style.Map), nil)
-		scroller = NewScroll(
+		scroller = duitx.NewScroll(
 			NodeToBox(0, browser, nt),
 		)
 		w.UI = scroller

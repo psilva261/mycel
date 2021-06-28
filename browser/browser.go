@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser/cache"
+	"github.com/psilva261/opossum/browser/duitx"
 	"github.com/psilva261/opossum/browser/fs"
 	"github.com/psilva261/opossum/browser/history"
 	"github.com/psilva261/opossum/img"
@@ -63,7 +64,7 @@ var dui *duit.DUI
 var colorCache = make(map[draw.Color]*draw.Image)
 var imageCache = make(map[string]*draw.Image)
 var log *logger.Logger
-var scroller *Scroll
+var scroller *duitx.Scroll
 var display *draw.Display
 
 func SetLogger(l *logger.Logger) {
@@ -71,14 +72,14 @@ func SetLogger(l *logger.Logger) {
 }
 
 type Label struct {
-	*duit.Label
+	*duitx.Label
 
 	n *nodes.Node
 }
 
 func NewLabel(t string, n *nodes.Node) *Label {
 	return &Label{
-		Label: &duit.Label{
+		Label: &duitx.Label{
 			Text: t + " ",
 			Font: n.Font(),
 		},
@@ -141,7 +142,7 @@ func NewCodeView(s string, n style.Map) (cv *CodeView) {
 	}
 	lines := len(strings.Split(s, "\n"))
 	edit.Append([]byte(s))
-	cv.UI = &Box{
+	cv.UI = &duitx.Box{
 		Kids:   duit.NewKids(edit),
 		Height: int(n.FontHeight()) * (lines+2),
 	}
@@ -326,7 +327,7 @@ func NewElement(ui duit.UI, n *nodes.Node) *Element {
 	}
 }
 
-func newBoxElement(ui duit.UI, n *nodes.Node) (box *Box, ok bool) {
+func newBoxElement(ui duit.UI, n *nodes.Node) (box *duitx.Box, ok bool) {
 	if ui == nil {
 		return nil, false
 	}
@@ -379,7 +380,7 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *Box, ok bool) {
 		return nil, false
 	}
 
-	box = &Box{
+	box = &duitx.Box{
 		Kids:       duit.NewKids(ui),
 		Width:      w,
 		Height:     h,
@@ -405,7 +406,7 @@ func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig ima
 	// }
 	//
 	// Make boxes use full size for image backgrounds
-	box, ok := el.UI.(*Box)
+	box, ok := el.UI.(*duitx.Box)
 	if ok && box.Width > 0 && box.Height > 0 {
 		uiSize := image.Point{X: box.Width, Y: box.Height}
 		duit.KidsDraw(dui, self, box.Kids, uiSize, box.Background, img, orig, m, force)
@@ -426,7 +427,7 @@ func (el *Element) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, 
 	}
 
 	// Make boxes use full size for image backgrounds
-	box, ok := el.UI.(*Box)
+	box, ok := el.UI.(*duitx.Box)
 	if ok && box.Width > 0 && box.Height > 0 {
 		//dui.debugLayout(self)
 		//if ui.Image == nil {
@@ -563,7 +564,7 @@ func NewSelect(n *nodes.Node) *Element {
 	if n.Css("height") == "" {
 		n.SetCss("height", fmt.Sprintf("%vpx", 4 * n.Font().Height))
 	}
-	return NewElement(NewScroll(l), n)
+	return NewElement(duitx.NewScroll(l), n)
 }
 
 func NewTextArea(n *nodes.Node) *Element {
@@ -584,7 +585,7 @@ func NewTextArea(n *nodes.Node) *Element {
 
 	el := NewElement(edit, n)
 	el.Changed = func(e *Element) {
-		ed := e.UI.(*Box).Kids[0].UI.(*duit.Edit)
+		ed := e.UI.(*duitx.Box).Kids[0].UI.(*duit.Edit)
 
 		tt, err := ed.Text()
 		if err != nil {
@@ -851,11 +852,11 @@ func horizontalSeq(wrap bool, es []*Element) duit.UI {
 			}
 		}
 
-		return &Box{
+		return &duitx.Box{
 			Kids:    duit.NewKids(finalUis...),
 		}
 	} else {
-		return &Grid{
+		return &duitx.Grid{
 			Columns: len(es),
 			Padding: duit.NSpace(len(es), duit.SpaceXY(0, 3)),
 			Halign:  halign,
@@ -877,7 +878,7 @@ func verticalSeq(es []*Element) duit.UI {
 		uis = append(uis, e)
 	}
 
-	return &Grid{
+	return &duitx.Grid{
 		Columns: 1,
 		Padding: duit.NSpace(1, duit.SpaceXY(0, 3)),
 		Halign:  []duit.Halign{duit.HalignLeft},
@@ -978,7 +979,7 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 		}
 
 		return NewElement(
-			&Grid{
+			&duitx.Grid{
 				Columns: numCols,
 				Padding: duit.NSpace(numCols, duit.SpaceXY(0, 3)),
 				Halign:  halign,
@@ -1203,9 +1204,9 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 	switch v := ui.(type) {
 	case nil:
 		panic("null")
-	case *Scroll:
+	case *duitx.Scroll:
 		traverseTree(r+1, v.Kid.UI, f)
-	case *Box:
+	case *duitx.Box:
 		for _, kid := range v.Kids {
 			traverseTree(r+1, kid.UI, f)
 		}
@@ -1216,12 +1217,12 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 			return
 		}
 		traverseTree(r+1, v.UI, f)
-	case *Grid:
+	case *duitx.Grid:
 		for _, kid := range v.Kids {
 			traverseTree(r+1, kid.UI, f)
 		}
 	case *duit.Image:
-	case *duit.Label:
+	case *duitx.Label:
 	case *Label:
 		traverseTree(r+1, v.Label, f)
 	case *Image:
@@ -1258,7 +1259,7 @@ func printTree(r int, ui duit.UI) {
 	case *duit.Scroll:
 		fmt.Printf("duit.Scroll\n")
 		printTree(r+1, v.Kid.UI)
-	case *Box:
+	case *duitx.Box:
 		fmt.Printf("Box\n")
 		for _, kid := range v.Kids {
 			printTree(r+1, kid.UI)
@@ -1270,7 +1271,7 @@ func printTree(r int, ui duit.UI) {
 		}
 		fmt.Printf("Element\n")
 		printTree(r+1, v.UI)
-	case *Grid:
+	case *duitx.Grid:
 		fmt.Printf("Grid %vx%v\n", len(v.Kids)/v.Columns, v.Columns)
 		for _, kid := range v.Kids {
 			printTree(r+1, kid.UI)

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"github.com/chris-ramon/douceur/css"
+	"github.com/psilva261/opossum/browser/duitx"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
@@ -90,12 +91,12 @@ func TestArrange(t *testing.T) {
 			}
 		}
 		if d == "inline" {
-			b := v.UI.(*Box)
+			b := v.UI.(*duitx.Box)
 			if len(b.Kids) != 3 {
 				t.Fatalf("%+v", b)
 			}
 		} else {
-			if g := v.UI.(*Grid); g.Columns != 1 || len(g.Kids) != 3 {
+			if g := v.UI.(*duitx.Grid); g.Columns != 1 || len(g.Kids) != 3 {
 				t.Fatalf("%+v", g)
 			}
 		}
@@ -222,7 +223,7 @@ func explodeRow(e *Element) (cols []*duit.Kid, ok bool) {
 			break
 		}
 	}
-	el := e.UI.(*Box)
+	el := e.UI.(*duitx.Box)
 	return el.Kids, true
 }
 

@@ -3,6 +3,7 @@ package browser
 import (
 	"fmt"
 	"image"
+	"github.com/psilva261/opossum/browser/duitx"
 	"github.com/psilva261/opossum/domino"
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
@@ -66,7 +67,7 @@ func isLeaf(ui duit.UI) bool {
 		return false
 	case *Element:
 		return false
-	case *Grid:
+	case *duitx.Grid:
 		return false
 	case *duit.Image:
 		return true

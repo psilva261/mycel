@@ -1,4 +1,4 @@
-package browser
+package duitx
 
 // Original code from github.com/mjl-/duit
 //
