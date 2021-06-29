@@ -22,6 +22,7 @@ package duitx
 
 import (
 	"image"
+	"math"
 
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
@@ -78,8 +79,12 @@ func (ui *Label) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, fo
 		ui.lines = append(ui.lines, ui.Text[s:])
 		xmax = maximum(xmax, x)
 	}
-	ui.size = image.Pt(xmax, len(ui.lines)*font.Height*12/10)
+	ui.size = image.Pt(xmax, len(ui.lines)*ui.lineHeight(font))
 	self.R = rect(ui.size)
+}
+
+func (ui *Label) lineHeight(font *draw.Font) int {
+	return int(math.Ceil(float64(font.Height)*1.2))
 }
 
 func (ui *Label) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
@@ -89,7 +94,7 @@ func (ui *Label) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image
 	font := ui.font(dui)
 	for _, line := range ui.lines {
 		img.String(p, dui.Regular.Normal.Text, image.ZP, font, line)
-		p.Y += font.Height*12/10
+		p.Y += ui.lineHeight(font)
 	}
 }
 
