@@ -1222,7 +1222,7 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 			traverseTree(r+1, kid.UI, f)
 		}
 	case *duit.Image:
-	case *duitx.Label:
+	case *duit.Label, *duitx.Label:
 	case *Label:
 		traverseTree(r+1, v.Label, f)
 	case *Image:
