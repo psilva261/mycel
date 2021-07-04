@@ -10,21 +10,23 @@ import (
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"net"
+	"net/http"
 	"os/user"
 	"strings"
 	"sync"
 )
 
 var (
-	log *logger.Logger
-	mu sync.RWMutex
-	oFS *fs.FS
-	un string
-	gn string
-	cssDir *fs.StaticDir
-	jsDir *fs.StaticDir
-	html string
-	DOM Queryable
+	log     *logger.Logger
+	mu      sync.RWMutex
+	oFS     *fs.FS
+	un      string
+	gn      string
+	cssDir  *fs.StaticDir
+	jsDir   *fs.StaticDir
+	html    string
+	DOM     Queryable
+	Client  *http.Client
 )
 
 type Queryable interface {
@@ -35,7 +37,7 @@ func SetLogger(l *logger.Logger) {
 	log = l
 }
 
-func init() {
+func Srv9p() {
 	var root *fs.StaticDir
 
 	u, err := user.Current()
@@ -78,13 +80,22 @@ func init() {
 	root.AddChild(q)
 	lq := (*fs.ListenFileListener)(q)
 	go Query(lq)
+	if Client != nil {
+		xhr := fs.NewListenFile(oFS.NewStat("xhr", un, gn, 0600))
+		root.AddChild(xhr)
+		lxhr := (*fs.ListenFileListener)(xhr)
+		go Xhr(lxhr)
+	}
+	if err := post(oFS.Server()); err != nil {
+		log.Errorf("srv9p: %v", err)
+	}
 }
 
 func Query(lq *fs.ListenFileListener) {
 	for {
 		conn, err := lq.Accept()
 		if err != nil {
-			log.Errorf("accept: %v", err)
+			log.Errorf("query: accept: %v", err)
 			continue
 		}
 		go query(conn)
@@ -117,6 +128,51 @@ func query(conn net.Conn) {
 	}
 }
 
+func Xhr(lxhr *fs.ListenFileListener) {
+	for {
+		conn, err := lxhr.Accept()
+		if err != nil {
+			log.Errorf("xhr: accept: %v", err)
+			continue
+		}
+		go xhr(conn)
+	}
+}
+
+func xhr(conn net.Conn) {
+	r := bufio.NewReader(conn)
+	defer conn.Close()
+
+	req, err := http.ReadRequest(r)
+	if err != nil {
+		log.Errorf("read request: %v", err)
+		return
+	}
+	url := req.URL
+	url.Host = req.Host
+	url.Scheme = "https"
+	proxyReq, err := http.NewRequest(req.Method, url.String(), req.Body)
+	if err != nil {
+		log.Errorf("new request: %v", err)
+		return
+	}
+	proxyReq.Header.Set("Host", req.Host)
+	for header, values := range req.Header {
+		for _, value := range values {
+			proxyReq.Header.Add(header, value)
+		}
+	}
+	resp, err := Client.Do(proxyReq)
+	if err != nil {
+		log.Errorf("do request: %v", err)
+		return
+	}
+	if err := resp.Write(conn); err != nil {
+		log.Errorf("write response: %v", err)
+		return
+	}
+}
+
 func Update(htm string, css []string, js []string) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -143,11 +199,5 @@ func Update(htm string, css []string, js []string) {
 			[]byte(s),
 		)
 		jsDir.AddChild(f)
-	}
-}
-
-func Srv9p() {
-	if err := post(oFS.Server()); err != nil {
-		log.Errorf("srv9p: %v", err)
 	}
 }

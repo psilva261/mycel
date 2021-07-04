@@ -1366,6 +1366,9 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	}
 	display = dui.Display
 
+	if *ExperimentalJsInsecure {
+		fs.Client = &http.Client{}
+	}
 	go fs.Srv9p()
 
 	b.Website.layout(b, htm, InitialLayout)
