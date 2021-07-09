@@ -20,11 +20,13 @@ func connect() (fsys *client.Fsys, c io.Closer, err error) {
 	}
 	un := u.Username
 	c1, c2 := net.Pipe()
+
 	go func() {
 		if err = Main(c1, c1); err != nil && err != io.EOF {
 			panic(err.Error())
 		}
 	}()
+
 	conn, err := client.NewConn(c2)
 	if err != nil {
 		return
@@ -56,11 +58,13 @@ func call(fsys *client.Fsys, fn, cmd string, args... string) (resp string, err e
 }
 
 func TestMain(t *testing.T) {
+	t.Logf("connect...")
 	fsys, c, err := connect()
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 	defer c.Close()
+	t.Logf("stat...")
 	d, err := fsys.Stat("ctl")
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -72,6 +76,7 @@ func TestMain(t *testing.T) {
 	js = []string{
 		"document.getElementById('title').innerHTML='world'",
 	}
+	t.Logf("call start...")
 	resp, err := call(fsys, "ctl", "start")
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -81,7 +86,6 @@ func TestMain(t *testing.T) {
 		t.Fail()
 	}
 }
-
 
 func TestClick(t *testing.T) {
 	fsys, c, err := connect()

@@ -18,6 +18,7 @@ import (
 	"github.com/psilva261/opossum/browser/fs"
 	"github.com/psilva261/opossum/browser/history"
 	"github.com/psilva261/opossum/img"
+	"github.com/psilva261/opossum/js"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
@@ -668,7 +669,7 @@ func (el *Element) click() (consumed bool) {
 	}
 
 	q := el.n.QueryRef()
-	res, consumed, err := browser.Website.d.TriggerClick(q)
+	res, consumed, err := js.TriggerClick(q)
 	if err != nil {
 		log.Errorf("trigger click %v: %v", q, err)
 		return
@@ -677,7 +678,6 @@ func (el *Element) click() (consumed bool) {
 	if !consumed {
 		return
 	}
-	log.Infof("click processed")
 
 	offset := scroller.Offset
 	browser.Website.layout(browser, res, ClickRelayout)
@@ -1368,6 +1368,7 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 
 	if *ExperimentalJsInsecure {
 		fs.Client = &http.Client{}
+		fs.Fetcher = browser
 	}
 	go fs.Srv9p()
 

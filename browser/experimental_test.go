@@ -3,7 +3,8 @@ package browser
 import (
 	"golang.org/x/net/html"
 	//"github.com/mjl-/duit"
-	"github.com/psilva261/opossum/domino"
+	"github.com/psilva261/opossum/browser/fs"
+	"github.com/psilva261/opossum/js"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
@@ -16,11 +17,13 @@ func init() {
 	quiet := false
 	logger.Quiet = &quiet
 	f := false
-	domino.DebugDumpJS = &f
-	domino.SetLogger(&logger.Logger{})
+	js.DebugDumpJS = &f
+	js.SetLogger(&logger.Logger{})
 	logger.Init()
 	SetLogger(&logger.Logger{})
 	style.Init(nil, &logger.Logger{})
+	fs.SetLogger(log)
+	go fs.Srv9p()
 }
 
 func TestAtom(t *testing.T) {
@@ -40,9 +43,7 @@ func TestProcessJS2SkipFailure(t *testing.T) {
 	doc, err := html.Parse(buf)
 	if err != nil { t.Fatalf(err.Error()) }
 	nt := nodes.NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
-	d := domino.NewDomino(h, nil, nt)
-	d.Start()
-	jq, err := ioutil.ReadFile("../domino/jquery-3.5.1.js")
+	jq, err := ioutil.ReadFile("../js/jquery-3.5.1.js")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -53,11 +54,15 @@ func TestProcessJS2SkipFailure(t *testing.T) {
 		`$('body').hide()`,
 		`throw 'fail';`,
 	}
-	h, _, err = processJS2(d, scripts)
+	fs.DOM = nt
+	fs.Update(h, nil, scripts)
+	js.NewJS(h, nil, nt)
+	js.Start()
+	h, _, err = processJS2()
 	if err != nil { t.Errorf(err.Error()) }
 	t.Logf("h = %+v", h)
 	if !strings.Contains(h, `<body style="display: none;">`) {
 		t.Fail()
 	}
-	d.Stop()
+	js.Stop()
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser/duitx"
 	"github.com/psilva261/opossum/browser/fs"
-	"github.com/psilva261/opossum/domino"
+	"github.com/psilva261/opossum/js"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
 	"strings"
@@ -23,7 +23,6 @@ const (
 type Website struct {
 	duit.UI
 	opossum.ContentType
-	d *domino.Domino
 }
 
 func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
@@ -81,11 +80,11 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 
 	// 3rd pass is only needed initially to load the scripts and set the goja VM
 	// state. During subsequent calls from click handlers that state is kept.
-	var js []string
+	var scripts []string
 	if *ExperimentalJsInsecure && layouting != ClickRelayout {
 		log.Printf("3rd pass")
 		nt := nodes.NewNodeTree(doc, style.Map{}, nodeMap, nil)
-		jsSrcs := domino.Srcs(nt)
+		jsSrcs := js.Srcs(nt)
 		downloads := make(map[string]string)
 		for _, src := range jsSrcs {
 			url, err := f.LinkedUrl(src)
@@ -101,15 +100,12 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 			}
 			downloads[src] = string(buf)
 		}
-		js = domino.Scripts(nt, downloads)
+		scripts = js.Scripts(nt, downloads)
+		fs.Update(htm, csss, scripts)
+		fs.DOM = nt
 		log.Infof("JS pipeline start")
-		if w.d != nil {
-			log.Infof("Stop existing JS instance")
-			w.d.Stop()
-		}
-		w.d = domino.NewDomino(htm, browser, nt)
-		w.d.Start()
-		jsProcessed, changed, err := processJS2(w.d, js)
+		js.Stop()
+		jsProcessed, changed, err := processJS2()
 		if changed && err == nil {
 			htm = jsProcessed
 			if debugPrintHtml {
@@ -153,7 +149,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 		w.UI = scroller
 	}
 
-	fs.Update(htm, csss, js)
+	fs.Update(htm, csss, scripts)
 	fs.DOM = nt
 
 	log.Flush()

@@ -2,9 +2,9 @@ module github.com/psilva261/opossum
 
 go 1.16
 
-replace 9fans.net/go v0.0.0-00010101000000-000000000000 => github.com/psilva261/go v0.0.0-20210409105224-1f229ca22d72
+replace 9fans.net/go v0.0.0-00010101000000-000000000000 => github.com/psilva261/go v0.0.0-20210627170947-30c070af4b5f
 
-replace 9fans.net/go v0.0.2 => github.com/psilva261/go v0.0.0-20210409105224-1f229ca22d72
+replace 9fans.net/go v0.0.2 => github.com/psilva261/go v0.0.0-20210627170947-30c070af4b5f
 
 replace github.com/mjl-/duit v0.0.0-20200330125617-580cb0b2843f => github.com/psilva261/duit v0.0.0-20210627123547-8bc19650d4a2
 

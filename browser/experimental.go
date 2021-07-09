@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"image"
 	"github.com/psilva261/opossum/browser/duitx"
-	"github.com/psilva261/opossum/domino"
+	"github.com/psilva261/opossum/js"
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
-	"strings"
 )
 
 type AtomBox struct {
@@ -88,25 +87,10 @@ func isLeaf(ui duit.UI) bool {
 	}
 }
 
-func processJS2(d *domino.Domino, scripts []string) (resHtm string, changed bool, err error) {
-	initialized := false
-	for _, script := range scripts {
-		if _, err := d.Exec/*6*/(script, !initialized); err != nil {
-			if strings.Contains(err.Error(), "halt at") {
-				return "", false, fmt.Errorf("execution halted: %w", err)
-			}
-			log.Errorf("exec <script>: %v", err)
-		}
-		initialized = true
-	}
-
-	if err = d.CloseDoc(); err != nil {
-		return "", false, fmt.Errorf("close doc: %w", err)
-	}
-
-	resHtm, changed, err = d.TrackChanges()
+func processJS2() (resHtm string, changed bool, err error) {
+	resHtm, changed, err = js.Start()
 	if err != nil {
-		return "", false, fmt.Errorf("track changes: %w", err)
+		return "", false, fmt.Errorf("start: %w", err)
 	}
 	log.Printf("processJS: changed = %v", changed)
 	return

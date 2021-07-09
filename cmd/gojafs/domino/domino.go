@@ -10,11 +10,8 @@ import (
 	"github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/eventloop"
 	"github.com/dop251/goja_nodejs/require"
-	"golang.org/x/net/html"
 	"io/ioutil"
-	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
-	"github.com/psilva261/opossum/nodes"
 	"net/http"
 	"os"
 	"os/exec"
@@ -57,20 +54,24 @@ type Mutation struct {
 }
 
 type Domino struct {
-	fetcher   opossum.Fetcher
 	loop       *eventloop.EventLoop
 	html       string
-	nt           *nodes.Node
 	outputHtml string
 	domChange chan Mutation
+	query func(sel, prop string) (val string, err error)
+	xhrq func(req *http.Request) (resp *http.Response, err error)
 }
 
-func NewDomino(html string, fetcher opossum.Fetcher, nt *nodes.Node) (d *Domino) {
+func NewDomino(
+	html string,
+	xhr func(req *http.Request) (resp *http.Response, err error),
+	query func(sel, prop string) (val string, err error),
+) (d *Domino) {
 	d = &Domino{
 		html: html,
-		fetcher: fetcher,
-		nt: nt,
+		xhrq: xhr,
 		domChange: make(chan Mutation, 100),
+		query: query,
 	}
 	return
 }
@@ -198,16 +199,12 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 					Buf:  "yolo",
 					Referrer: func() string { return "https://example.com" },
 					Style: func(sel, pseudo, prop, prop2 string) string {
-						res, err := d.nt.Query(sel)
+						v, err := d.query(sel, prop)
 						if err != nil {
-							log.Errorf("query %v: %v", sel, err)
+							log.Errorf("devjs: domino: query %v: %v", sel, err)
 							return ""
 						}
-						if len(res) != 1 {
-							log.Errorf("query %v: %v", res, err)
-							return ""
-						}
-						return res[0].Css(prop)
+						return v
 					},
 					XHR: d.xhr,
 					Mutated: d.mutated,
@@ -287,6 +284,8 @@ func (d *Domino) TriggerClick(selector string) (newHTML string, ok bool, err err
 
 		if (!el) {
 			console.log('el is null/undefined');
+			//console.log('html:');
+			//console.log(document.documentElement.innerHTML)
 			null;
 		} else if (el._listeners && el._listeners.click) {
 			var fn = el.click.bind(el);
@@ -346,110 +345,8 @@ func (d *Domino) TrackChanges() (html string, changed bool, err error) {
 	return
 }
 
-func Srcs(doc *nodes.Node) (srcs []string) {
-	srcs = make([]string, 0, 3)
-
-	iterateJsElements(doc, func(src, inlineCode string) {
-		if src = strings.TrimSpace(src); src != "" && !blocked(src) {
-			srcs = append(srcs, src)
-		}
-	})
-
-	return
-}
-
-func blocked(src string) bool {
-	for _, s := range []string{
-		"adsense",
-		"adsystem",
-		"adservice",
-		"googletagservice",
-		"googletagmanager",
-		"script.ioam.de",
-		"googlesyndication",
-		"adserver",
-		"nativeads",
-		"prebid",
-		".ads.",
-		"google-analytics.com",
-	} {
-		if strings.Contains(src, s) {
-			return true
-		}
-	}
-	return false
-}
-
-func Scripts(doc *nodes.Node, downloads map[string]string) (codes []string) {
-	codes = make([]string, 0, 3)
-
-	iterateJsElements(doc, func(src, inlineCode string) {
-		if strings.TrimSpace(inlineCode) != "" {
-			log.Infof("domino.Scripts: inline code:")
-			printCode(inlineCode, 20)
-			codes = append(codes, inlineCode)
-		} else if c, ok := downloads[src]; ok {
-			log.Infof("domino.Scripts: referenced code (%v)", src)
-			codes = append(codes, c)
-		}
-	})
-
-	return
-}
-
-func iterateJsElements(doc *nodes.Node, fn func(src string, inlineCode string)) {
-	var f func(n *nodes.Node)
-	f = func(n *nodes.Node) {
-		if n.Type() == html.ElementNode && n.Data() == "script" {
-			isJS := true
-			src := ""
-
-			for _, a := range n.Attrs {
-				switch strings.ToLower(a.Key) {
-				case "type":
-					t, err := opossum.NewContentType(a.Val, nil)
-					if err != nil {
-						log.Printf("t: %v", err)
-					}
-					if a.Val == "" || t.IsJS() {
-						isJS = true
-					} else {
-						isJS = false
-					}
-				case "src":
-					src = a.Val
-				}
-			}
-
-			if isJS {
-				fn(src, n.ContentString(true))
-			}
-		}
-		for _, c := range n.Children {
-			f(c)
-		}
-	}
-
-	f(doc)
-
-	return
-}
-
 func (d *Domino) xhr(method, uri string, h map[string]string, data string, cb func(data string, err string)) {
-	c := &http.Client{}
-	u, err := d.fetcher.LinkedUrl(uri)
-	if err != nil {
-		cb("", err.Error())
-		return
-	}
-	if u.Host != d.fetcher.Origin().Host {
-		log.Infof("origin: %v", d.fetcher.Origin())
-		log.Infof("uri: %v", uri)
-		cb("", "cannot do crossorigin request to " + u.String())
-		return
-	}
-
-	req, err := http.NewRequest(method, u.String(), strings.NewReader(data))
+	req, err := http.NewRequest(method, /*u.String()*/uri, strings.NewReader(data))
 	if err != nil {
 		cb("", err.Error())
 		return
@@ -457,14 +354,13 @@ func (d *Domino) xhr(method, uri string, h map[string]string, data string, cb fu
 	for k, v := range h {
 		req.Header.Add(k, v)
 	}
-	// TODO: timeout? context? http timeout?
 	go func() {
-		resp, err := c.Do(req)
+		resp, err := d.xhrq(req)
 		if err != nil {
 			cb("", err.Error())
 			return
 		}
-		defer resp.Body.Close()
+		//defer resp.Body.Close()
 		bs, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			cb("", err.Error())

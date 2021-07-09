@@ -27,6 +27,7 @@ var (
 	html    string
 	DOM     Queryable
 	Client  *http.Client
+	Fetcher opossum.Fetcher
 )
 
 type Queryable interface {
@@ -115,6 +116,7 @@ func query(conn net.Conn) {
 	l = strings.TrimSpace(l)
 
 	if DOM == nil {
+		log.Infof("DOM is nil")
 		return
 	}
 	nodes, err := DOM.Query(l)
@@ -123,7 +125,6 @@ func query(conn net.Conn) {
 		return
 	}
 	if err := enc.Encode(nodes); err != nil {
-		log.Errorf("encode: %v", err)
 		return
 	}
 }
@@ -150,6 +151,12 @@ func xhr(conn net.Conn) {
 	}
 	url := req.URL
 	url.Host = req.Host
+	if h := url.Host; h == "" {
+		url.Host = Fetcher.Origin().Host
+	} else if h != Fetcher.Origin().Host {
+		log.Errorf("no cross-origin request: %v", h)
+		return
+	}
 	url.Scheme = "https"
 	proxyReq, err := http.NewRequest(req.Method, url.String(), req.Body)
 	if err != nil {
@@ -178,26 +185,30 @@ func Update(htm string, css []string, js []string) {
 	defer mu.Unlock()
 
 	html = htm
-	for name := range cssDir.Children() {
-		cssDir.DeleteChild(name)
+	if cssDir != nil {
+		for name := range cssDir.Children() {
+			cssDir.DeleteChild(name)
+		}
+		for i, s := range css {
+			fn := fmt.Sprintf("%d.css", i)
+			f := fs.NewStaticFile(
+				oFS.NewStat(fn, un, gn, 0400),
+				[]byte(s),
+			)
+			cssDir.AddChild(f)
+		}
 	}
-	for i, s := range css {
-		fn := fmt.Sprintf("%d.css", i)
-		f := fs.NewStaticFile(
-			oFS.NewStat(fn, un, gn, 0400),
-			[]byte(s),
-		)
-		cssDir.AddChild(f)
-	}
-	for name := range jsDir.Children() {
-		jsDir.DeleteChild(name)
-	}
-	for i, s := range js {
-		fn := fmt.Sprintf("%d.js", i)
-		f := fs.NewStaticFile(
-			oFS.NewStat(fn, un, gn, 0400),
-			[]byte(s),
-		)
-		jsDir.AddChild(f)
+	if jsDir != nil {
+		for name := range jsDir.Children() {
+			jsDir.DeleteChild(name)
+		}
+		for i, s := range js {
+			fn := fmt.Sprintf("%d.js", i)
+			f := fs.NewStaticFile(
+				oFS.NewStat(fn, un, gn, 0400),
+				[]byte(s),
+			)
+			jsDir.AddChild(f)
+		}
 	}
 }

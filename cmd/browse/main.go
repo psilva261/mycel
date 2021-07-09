@@ -10,11 +10,12 @@ import (
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser"
 	"github.com/psilva261/opossum/browser/fs"
-	"github.com/psilva261/opossum/domino"
 	"github.com/psilva261/opossum/img"
+	"github.com/psilva261/opossum/js"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/style"
 	"github.com/psilva261/opossum/nodes"
+	"os/signal"
 	"runtime/pprof"
 	"time"
 	"github.com/mjl-/duit"
@@ -31,7 +32,7 @@ var dbg = flag.Bool("debug", false, "show debug logs")
 
 func init() {
 	browser.DebugDumpCSS = flag.Bool("debugDumpCSS", false, "write css to info.css")
-	domino.DebugDumpJS = flag.Bool("debugDumpJS", false, "write js to main.js")
+	js.DebugDumpJS = flag.Bool("debugDumpJS", false, "write js to main.js")
 	browser.ExperimentalJsInsecure = flag.Bool("experimentalJsInsecure", false, "DO NOT ACTIVATE UNLESS INSTRUCTED OTHERWISE")
 	browser.EnableNoScriptTag = flag.Bool("enableNoScriptTag", false, "enable noscript tag")
 	logger.Quiet = flag.Bool("quiet", defaultQuietActive, "don't print info messages and non-fatal errors")
@@ -135,8 +136,8 @@ func Main() (err error) {
 	style.Init(dui, log)
 	browser.SetLogger(log)
 	fs.SetLogger(log)
-	domino.SetLogger(log)
 	img.SetLogger(log)
+	js.SetLogger(log)
 	opossum.SetLogger(log)
 	nodes.SetLogger(log)
 
@@ -186,6 +187,14 @@ func main() {
 	log = logger.Log
 	log.Debug = *dbg
 	go9p.Verbose = log.Debug
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, os.Kill)
+
+	go func() {
+		<-done
+		js.Stop()
+	}()
 
 	if err := Main(); err != nil {
 		log.Fatalf("Main: %v", err)
