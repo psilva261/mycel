@@ -2,7 +2,6 @@ package main
 
 import (
 	"9fans.net/go/draw"
-	"flag"
 	"fmt"
 	"image"
 	"os"
@@ -21,21 +20,15 @@ import (
 	"github.com/mjl-/duit"
 )
 
-const debugPrintHtml = false
-
 var dui *duit.DUI
 var log *logger.Logger
 
-var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-var startPage = flag.String("startPage", "http://9p.io", "")
-var dbg = flag.Bool("debug", false, "show debug logs")
+var cpuprofile string
+var startPage string = "http://9p.io"
+var dbg bool
 
 func init() {
-	browser.DebugDumpCSS = flag.Bool("debugDumpCSS", false, "write css to info.css")
-	js.DebugDumpJS = flag.Bool("debugDumpJS", false, "write js to main.js")
-	browser.ExperimentalJsInsecure = flag.Bool("experimentalJsInsecure", false, "DO NOT ACTIVATE UNLESS INSTRUCTED OTHERWISE")
-	browser.EnableNoScriptTag = flag.Bool("enableNoScriptTag", false, "enable noscript tag")
-	logger.Quiet = flag.Bool("quiet", defaultQuietActive, "don't print info messages and non-fatal errors")
+	browser.EnableNoScriptTag = false
 }
 
 func mainView(b *browser.Browser) []*duit.Kid {
@@ -132,6 +125,7 @@ func Main() (err error) {
 	if err != nil {
 		return fmt.Errorf("new dui: %w", err)
 	}
+	dui.Debug = dbg
 
 	style.Init(dui, log)
 	browser.SetLogger(log)
@@ -141,7 +135,7 @@ func Main() (err error) {
 	opossum.SetLogger(log)
 	nodes.SetLogger(log)
 
-	b := browser.NewBrowser(dui, *startPage)
+	b := browser.NewBrowser(dui, startPage)
 	b.Download = func(done chan int) chan string {
 		go func() {
 			<-done
@@ -167,12 +161,42 @@ func Main() (err error) {
 	}
 }
 
+func usage() {
+	fmt.Printf("usage: opossum [-v|-vv] [-h] [-jsinsecure] [-cpuprofile fn] [startPage]\n")
+	os.Exit(1)
+}
+
 func main() {
-	flag.Parse()
+	logger.Quiet = true
+	args := os.Args[1:]
+	for len(args) > 0 {
+		switch args[0] {
+		case "-vv":
+			logger.Quiet = false
+			dbg = true
+			args = args[1:]
+		case "-v":
+			logger.Quiet = false
+			args = args[1:]
+		case "-h":
+			usage()
+			args = args[1:]
+		case "-jsinsecure":
+			browser.ExperimentalJsInsecure = true
+			args = args[1:]
+		case "-cpuprofile":
+			cpuprofile, args = args[0], args[2:]
+		default:
+			if len(args) > 1 {
+				usage()
+			}
+			startPage, args = args[0], args[1:]
+		}
+	}
 	logger.Init()
 
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
+	if cpuprofile != "" {
+		f, err := os.Create(cpuprofile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -185,7 +209,7 @@ func main() {
 	}
 
 	log = logger.Log
-	log.Debug = *dbg
+	log.Debug = dbg
 	go9p.Verbose = log.Debug
 
 	done := make(chan os.Signal, 1)

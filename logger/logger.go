@@ -10,14 +10,14 @@ import (
 
 // Sink for Go's log pkg
 var Sink io.Writer
-var Quiet *bool
+var Quiet bool
 var Log *Logger
 var gl *goLog.Logger
 
 func Init() {
 	gl = goLog.New(os.Stderr, "", goLog.LstdFlags)
 	Log = &Logger{}
-	if *Quiet {
+	if Quiet {
 		Sink = &NullWriter{}
 		goLog.SetOutput(Sink)
 	}
@@ -80,7 +80,7 @@ func (l *Logger) emit(severity int, format string, v ...interface{}) {
 	if severity == debug && !l.Debug {
 		return
 	}
-	if (severity != fatal && severity != flush) && *Quiet {
+	if (severity != fatal && severity != flush) && Quiet {
 		return
 	}
 

@@ -19,7 +19,6 @@ import (
 	"time"
 )
 
-var DebugDumpJS *bool
 var log *logger.Logger
 var timeout = 60*time.Second
 

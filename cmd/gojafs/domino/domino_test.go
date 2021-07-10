@@ -20,10 +20,6 @@ const simpleHTML = `
 `
 
 func init() {
-	f := false
-	t := true
-	DebugDumpJS = &t
-	logger.Quiet = &f
 	logger.Init()
 	log = &logger.Logger{Debug: true}
 }

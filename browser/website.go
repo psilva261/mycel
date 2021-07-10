@@ -4,7 +4,6 @@ import (
 	"github.com/mjl-/duit"
 	"golang.org/x/net/html"
 	"golang.org/x/text/encoding"
-	"io/ioutil"
 	"net/url"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser/duitx"
@@ -39,7 +38,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 		var err error
 		doc, err = html.ParseWithOptions(
 			strings.NewReader(htm),
-			html.ParseOptionEnableScripting(*ExperimentalJsInsecure),
+			html.ParseOptionEnableScripting(ExperimentalJsInsecure),
 		)
 		if err != nil {
 			panic(err.Error())
@@ -61,9 +60,6 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 				style.MergeNodeMaps(nodeMap, nm)
 			} else {
 				log.Errorf("Fetch CSS Rules failed: %v", err)
-				if *DebugDumpCSS {
-					ioutil.WriteFile("info.css", []byte(css), 0644)
-				}
 			}
 		}
 
@@ -81,7 +77,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 	// 3rd pass is only needed initially to load the scripts and set the goja VM
 	// state. During subsequent calls from click handlers that state is kept.
 	var scripts []string
-	if *ExperimentalJsInsecure && layouting != ClickRelayout {
+	if ExperimentalJsInsecure && layouting != ClickRelayout {
 		log.Printf("3rd pass")
 		nt := nodes.NewNodeTree(doc, style.Map{}, nodeMap, nil)
 		jsSrcs := js.Srcs(nt)

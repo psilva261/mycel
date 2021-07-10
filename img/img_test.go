@@ -6,8 +6,6 @@ import (
 )
 
 func init() {
-	f := false
-	logger.Quiet = &f
 	logger.Init()
 	log = &logger.Logger{Debug: true}
 	SetLogger(&logger.Logger{})

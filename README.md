@@ -25,29 +25,31 @@ Setup TLS:
 hget https://curl.haxx.se/ca/cacert.pem > /sys/lib/tls/ca.pem
 ```
 
+Create mountpoint (only needed on 9legacy):
+
+```
+mkdir /mnt/opossum
+```
+
 ### Binary
 
-A recent binary for amd64 and 386 can be downloaded from http://psilva.sdf.org/opossum.html
+A binary for amd64 and 386 can be downloaded from http://psilva.sdf.org/opossum.html
 
 ### Compile from Source
 
-```
-go install ./cmd/opossum
-```
+    go install ./cmd/opossum
 
-There are various command line options, visible with `-h`, most importantly to see errors:
+Command line options:
 
-```
-opossum '-quiet=false'
-```
+    -h                   help
+    -v                   verbose
+    -vv                  print debug messages
+    -jsinsecure          activate js
+    -cpuprofile filename create cpuprofile
 
-(`-quiet=false` produces a lot of output, consider turning on scroll since processing waits for that...)
-
-or all messages:
-
-```
-opossum '-quiet=false' '-debug=true'
-```
+(-v and -vv produce a lot of output,
+consider turning on scroll since processing
+waits for that...)
 
 `$font` is used to select the font.
 
@@ -87,18 +89,11 @@ On 9legacy also the folder `/mnt/opossum` needs to exist.
 
 ```
 
-Then try on Plan 9 with e.g.:
+Then it can be tested with:
 
 ```
-opossum '-experimentalJsInsecure=true' -startPage https://jqueryui.com/resources/demos/tabs/default.html
+opossum -jsinsecure https://jqueryui.com/resources/demos/tabs/default.html
 ```
-
-or macOS etc.:
-
-```
-opossum -experimentalJsInsecure=true -startPage https://jqueryui.com/resources/demos/tabs/default.html
-```
-
 
 # TODO
 

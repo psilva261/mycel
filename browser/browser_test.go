@@ -18,10 +18,6 @@ import (
 )
 
 func init() {
-	quiet := false
-	logger.Quiet = &quiet
-	js := false
-	ExperimentalJsInsecure = &js
 	logger.Init()
 	SetLogger(&logger.Logger{})
 	style.Init(nil, &logger.Logger{})
@@ -141,12 +137,11 @@ func TestLinkedUrl(t *testing.T) {
 }
 
 func TestNilPanic(t *testing.T) {
-	//f, err := os.Open()
 }
 
 func TestNodeToBoxNoscript(t *testing.T) {
 	enable := true
-	EnableNoScriptTag = &enable
+	EnableNoScriptTag = enable
 	htm := `
 		<body>
 			<noscript>

@@ -23,7 +23,6 @@ import (
 	"time"
 )
 
-var DebugDumpJS *bool
 var log *logger.Logger
 var timeout = 60*time.Second
 
@@ -157,10 +156,6 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 	SCRIPT := domIntf + script
 	if !initial {
 		SCRIPT = script
-	}
-
-	if *DebugDumpJS {
-		ioutil.WriteFile("main.js", []byte(SCRIPT), 0644)
 	}
 
 	ready := make(chan goja.Value)

@@ -6,8 +6,9 @@
 *.prof
 *.swp
 *.tgz
+*.gz
+*.bz2
 ~*
 .DS_Store
-/cmd/browse/browse
-/cmd/jsfs/jsfs
-main.js
+/cmd/opossum/opossum
+/cmd/gojafs/gojafs

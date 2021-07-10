@@ -14,10 +14,6 @@ import (
 )
 
 func init() {
-	quiet := false
-	logger.Quiet = &quiet
-	f := false
-	js.DebugDumpJS = &f
 	js.SetLogger(&logger.Logger{})
 	logger.Init()
 	SetLogger(&logger.Logger{})
@@ -27,8 +23,6 @@ func init() {
 }
 
 func TestAtom(t *testing.T) {
-	//var ui duit.UI
-	//ui = &Atom{}
 }
 
 func TestProcessJS2SkipFailure(t *testing.T) {

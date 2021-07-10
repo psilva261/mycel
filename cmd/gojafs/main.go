@@ -31,10 +31,7 @@ var (
 )
 
 func init() {
-	f := false
-	t := true
-	domino.DebugDumpJS = &f
-	logger.Quiet = &t
+	logger.Quiet = true
 	logger.Init()
 	log = &logger.Logger{Debug: true}
 	domino.SetLogger(log)
@@ -46,7 +43,6 @@ func usage() {
 }
 
 func Main(r io.Reader, w io.Writer) (err error) {
-	log.Infof("Main...\n")
 	u, err := user.Current()
 	if err != nil {
 		return fmt.Errorf("get user: %v", err)

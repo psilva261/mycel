@@ -55,9 +55,8 @@ var cursor = [16*2]uint8{
 	0b00001100, 0b01111000,
 }
 
-var DebugDumpCSS *bool
-var ExperimentalJsInsecure *bool
-var EnableNoScriptTag *bool
+var ExperimentalJsInsecure bool
+var EnableNoScriptTag bool
 
 var browser *Browser
 var Style = style.Map{}
@@ -664,7 +663,7 @@ func (el *Element) click() (consumed bool) {
 		return e.Consumed
 	}
 
-	if !*ExperimentalJsInsecure {
+	if !ExperimentalJsInsecure {
 		return
 	}
 
@@ -1125,7 +1124,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 			el = InnerNodesToBox(r+1, b, n)
 			el.makeLink(href)
 		case "noscript":
-			if *ExperimentalJsInsecure || !*EnableNoScriptTag {
+			if ExperimentalJsInsecure || !EnableNoScriptTag {
 				return
 			}
 			fallthrough
@@ -1366,7 +1365,7 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	}
 	display = dui.Display
 
-	if *ExperimentalJsInsecure {
+	if ExperimentalJsInsecure {
 		fs.Client = &http.Client{}
 		fs.Fetcher = browser
 	}
