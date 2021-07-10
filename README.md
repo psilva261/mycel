@@ -32,14 +32,13 @@ A recent binary for amd64 and 386 can be downloaded from http://psilva.sdf.org/o
 ### Compile from Source
 
 ```
-cd cmd/browse
-go run .
+go install ./cmd/opossum
 ```
 
 There are various command line options, visible with `-h`, most importantly to see errors:
 
 ```
-go run . '-quiet=false'
+opossum '-quiet=false'
 ```
 
 (`-quiet=false` produces a lot of output, consider turning on scroll since processing waits for that...)
@@ -47,7 +46,7 @@ go run . '-quiet=false'
 or all messages:
 
 ```
-go run . '-quiet=false' '-debug=true'
+opossum '-quiet=false' '-debug=true'
 ```
 
 `$font` is used to select the font.
@@ -60,8 +59,7 @@ Requirements:
 - Plan9Port
 
 ```
-cd cmd/browse
-go run .
+go install ./cmd/opossum
 ```
 
 # JS support
@@ -82,9 +80,7 @@ https://golang.org/pkg There is also highly experimental ES6 support with Babel.
 Build the js engine:
 
 ```
-cd cmd/gojafs
-go build
-cp gojafs /bin/gojafs
+go install ./cmd/gojafs
 ```
 
 On 9legacy also the folder `/mnt/opossum` needs to exist.
@@ -94,13 +90,13 @@ On 9legacy also the folder `/mnt/opossum` needs to exist.
 Then try on Plan 9 with e.g.:
 
 ```
-go run . '-experimentalJsInsecure=true' -startPage https://jqueryui.com/resources/demos/tabs/default.html
+opossum '-experimentalJsInsecure=true' -startPage https://jqueryui.com/resources/demos/tabs/default.html
 ```
 
 or macOS etc.:
 
 ```
-go run . -experimentalJsInsecure=true -startPage https://jqueryui.com/resources/demos/tabs/default.html
+opossum -experimentalJsInsecure=true -startPage https://jqueryui.com/resources/demos/tabs/default.html
 ```
 
 

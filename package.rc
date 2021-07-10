@@ -14,10 +14,10 @@ fn build {
 	chmod +t ./$name
 
 	echo Compiling $GOARCH...
-	cd cmd/browse
+	cd cmd/opossum
 	go build -ldflags '-s -w' -o $name.bin
 	cd ../..
-	mv cmd/browse/$name.bin .
+	mv cmd/opossum/$name.bin .
 	mv $name.bin ./$name/
 	cp README.md ./$name/
 	cp opossum.jpg ./$name/
