@@ -218,6 +218,7 @@ func main() {
 	go func() {
 		<-done
 		js.Stop()
+		os.Exit(1)
 	}()
 
 	if err := Main(); err != nil {
