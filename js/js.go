@@ -46,6 +46,9 @@ func NewJS(html string, fetcher opossum.Fetcher, nn *nodes.Node) {
 }
 
 func call(fn, cmd string, args... string) (resp string, err error) {
+	if fsys == nil {
+		return "", fmt.Errorf("fsys nil")
+	}
 	fid, err := fsys.Open(fn, plan9.ORDWR)
 	if err != nil {
 		return

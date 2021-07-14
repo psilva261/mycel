@@ -1,7 +1,7 @@
-name64='opossum-plan9-amd64'
-name32='opossum-plan9-386'
-tarball64=`{pwd} ^ '/packages/' ^ $name64 ^ '-v0.0.1-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
-tarball32=`{pwd} ^ '/packages/' ^ $name32 ^ '-v0.0.1-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
+name64='opossum-amd64'
+name32='opossum-386'
+tarball64=`{pwd} ^ '/packages/' ^ $name64 ^ '-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
+tarball32=`{pwd} ^ '/packages/' ^ $name32 ^ '-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
 
 fn build {
 	tarball=$1
@@ -15,10 +15,12 @@ fn build {
 
 	echo Compiling $GOARCH...
 	cd cmd/opossum
-	go build -ldflags '-s -w' -o $name.bin
+	go build -ldflags '-s -w' -o $name
 	cd ../..
-	mv cmd/opossum/$name.bin .
-	mv $name.bin ./$name/
+	cd cmd/gojafs
+	go build -ldflags '-s -w' -o gojafs
+	cd ../..
+	mv cmd/opossum/$name cmd/gojafs/gojafs ./$name/
 	cp README.md ./$name/
 	cp opossum.jpg ./$name/
 	tar czf $tarball $name
@@ -38,5 +40,5 @@ mkdir -p /tmp/`{date -n}
 cd /tmp/`{date -n}
 tar xf $tarball64
 cd $name64
-./$name64.bin '-quiet=false'
-./$name64.bin '-experimentalJsInsecure=true' '-quiet=false'
+./$name64 -v
+./$name64 -v -jsinsecure
