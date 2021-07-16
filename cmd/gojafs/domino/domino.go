@@ -152,7 +152,9 @@ func srcLoader(fn string) ([]byte, error) {
 
 func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 	r := regexp.MustCompile(`^\s*<!--`)
+	rr := regexp.MustCompile(`-->\s*$`)
 	script = r.ReplaceAllString(script, "//")
+	script = rr.ReplaceAllString(script, "//")
 	SCRIPT := domIntf + script
 	if !initial {
 		SCRIPT = script

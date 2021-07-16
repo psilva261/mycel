@@ -336,7 +336,7 @@ func TestNoJsCompatComment(t *testing.T) {
 	''.replace(/^\s*<!--/g, '');
 	const a = 1;
 	a + 7;
-// -->
+-->
 	`
 	res, err := d.Exec(script, true)
 	if err != nil {

@@ -690,7 +690,7 @@ func (el *Element) click() (consumed bool) {
 
 // makeLink of el and its children
 func (el *Element) makeLink(href string) {
-	if href == "" || strings.HasPrefix(href, "#") || strings.Contains(href, "javascript:void(0)") {
+	if href == "" || strings.HasPrefix(href, "#") || strings.HasPrefix(href, "javascript:") {
 		return
 	}
 

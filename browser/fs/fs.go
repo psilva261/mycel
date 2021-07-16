@@ -17,8 +17,10 @@ import (
 )
 
 var (
-	log     *logger.Logger
-	mu      sync.RWMutex
+	log *logger.Logger
+	mu  *sync.RWMutex
+	c   *sync.Cond
+
 	oFS     *fs.FS
 	un      string
 	gn      string
@@ -34,22 +36,30 @@ type Queryable interface {
 	Query(q string) ([]*nodes.Node, error)
 }
 
+func init() {
+	mu = &sync.RWMutex{}
+	c = sync.NewCond(mu)
+}
+
 func SetLogger(l *logger.Logger) {
 	log = l
 }
 
 func Srv9p() {
+	c.L.Lock()
 	var root *fs.StaticDir
 
 	u, err := user.Current()
 	if err != nil {
 		log.Errorf("get user: %v", err)
+		c.L.Unlock()
 		return
 	}
 	un = u.Username
 	gn, err = opossum.Group(u)
 	if err != nil {
 		log.Errorf("get group: %v", err)
+		c.L.Unlock()
 		return
 	}
 	oFS, root = fs.NewFS(un, gn, 0500)
@@ -66,6 +76,7 @@ func Srv9p() {
 	d, err := fs.CreateStaticDir(oFS, root, un, "css", 0500|proto.DMDIR, 0)
 	if err != nil {
 		log.Errorf("create static dir: %v", err)
+		c.L.Unlock()
 		return
 	}
 	cssDir = d.(*fs.StaticDir)
@@ -73,6 +84,7 @@ func Srv9p() {
 	d, err = fs.CreateStaticDir(oFS, root, un, "js", 0500|proto.DMDIR, 0)
 	if err != nil {
 		log.Errorf("create static dir: %v", err)
+		c.L.Unlock()
 		return
 	}
 	jsDir = d.(*fs.StaticDir)
@@ -87,6 +99,9 @@ func Srv9p() {
 		lxhr := (*fs.ListenFileListener)(xhr)
 		go Xhr(lxhr)
 	}
+	c.Broadcast()
+	c.L.Unlock()
+
 	if err := post(oFS.Server()); err != nil {
 		log.Errorf("srv9p: %v", err)
 	}
@@ -181,8 +196,12 @@ func xhr(conn net.Conn) {
 }
 
 func Update(htm string, css []string, js []string) {
-	mu.Lock()
-	defer mu.Unlock()
+	c.L.Lock()
+	defer c.L.Unlock()
+
+	if cssDir == nil && jsDir == nil {
+		c.Wait()
+	}
 
 	html = htm
 	if cssDir != nil {
