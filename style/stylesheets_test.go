@@ -116,13 +116,13 @@ b {
 
 		if w == 400 {
 			_ =m[body][0]
-			if m[body][0].Declarations[0].Value != "lightblue" {
-				t.Fail()
+			if v := m[body][0].Declarations[0].Value; v != "lightblue" {
+				t.Fatalf("%v", v)
 			}
 			t.Logf("%v", m[body][0].Name)
 		} else {
 			if _, ok := m[body]; ok {
-				t.Fail()
+				t.Fatalf("body ok")
 			}
 		}
 	}
@@ -295,7 +295,7 @@ func TestLength(t *testing.T) {
 		"10%": 0,
 	}
 	for l, px := range lpx {
-		f, _, err := length(l)
+		f, _, err := length(nil, l)
 		if err != nil {
 			t.Fatalf("%v: %v", l, err)
 		}

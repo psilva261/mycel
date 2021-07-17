@@ -24,7 +24,7 @@ type Node struct {
 	Attrs []html.Attribute
 	style.Map
 	Children []*Node
-	Parent *Node `json:"-"`
+	parent *Node `json:"-"`
 }
 
 // NewNodeTree propagates the cascading styles to the leaves
@@ -52,11 +52,11 @@ func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map,
 		data = strings.ToLower(data)
 	}
 	n = &Node{
-		DomSubtree:   doc,
-		Attrs:           doc.Attr,
-		Map: ncs,
-		Children:       make([]*Node, 0, 2),
-		Parent: parent,
+		DomSubtree: doc,
+		Attrs:      doc.Attr,
+		Map:        ncs,
+		Children:   make([]*Node, 0, 2),
+		parent:     parent,
 	}
 	n.Wrappable = doc.Type == html.TextNode || doc.Data == "span" // TODO: probably this list needs to be extended
 	if doc.Type == html.TextNode {
@@ -69,10 +69,12 @@ func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map,
 	i := 0
 	for c := doc.FirstChild; c != nil; c = c.NextSibling {
 		if c.Type != html.CommentNode {
-			n.Children = append(n.Children, NewNodeTree(c, ncs, nodeMap, n))
+			cnt := NewNodeTree(c, ncs, nodeMap, n)
+			n.Children = append(n.Children, cnt)
 			i++
 		}
 	}
+	n.Map.DomTree = n
 
 	return
 }
@@ -95,6 +97,21 @@ func (n Node) Data() string {
 	return n.DomSubtree.Data
 }
 
+func (n *Node) Parent() (p style.DomTree, ok bool) {
+	ok = n.parent != nil && n.Data() != "html" && n.Data() != "body"
+	if n.parent == nil && n.Data() != "html" && n.Data() != "body" {
+		log.Errorf("n.Data() = %v but n.parent=nil", n.parent)
+	}
+	if ok {
+		p = n.parent
+	}
+	return
+}
+
+func (n *Node) Style() style.Map {
+	return n.Map
+}
+
 // Ancestor of tag
 func (n *Node) Ancestor(tag string) *Node {
 	if n.DomSubtree == nil {
@@ -105,9 +122,9 @@ func (n *Node) Ancestor(tag string) *Node {
 		log.Printf("  I'm a %v :-)", tag)
 		return n
 	}
-	if n.Parent != nil {
+	if n.parent != nil {
 		log.Printf("  go to my parent")
-		return n.Parent.Ancestor(tag)
+		return n.parent.Ancestor(tag)
 	}
 	return nil
 }
@@ -167,7 +184,7 @@ func (n *Node) QueryRef() string {
 			path = append(path, nRef)
 		}
 	}
-	for p := n.Parent; p != nil; p = p.Parent {
+	for p := n.parent; p != nil; p = p.parent {
 		if part := p.Data(); part != "html" && part != "body" {
 			if pRef, ok := p.queryRef(); ok {
 				path = append([]string{pRef}, path...)
@@ -194,12 +211,12 @@ func (n *Node) queryRef() (ref string, ok bool) {
 
 	ref = n.Data()
 
-	if n.Parent == nil {
+	if n.parent == nil {
 		return ref, true
 	}
 
 	i := 1
-	for _, c := range n.Parent.Children {
+	for _, c := range n.parent.Children {
 		if c == n {
 			break
 		}
@@ -285,7 +302,7 @@ func (n *Node) SetText(t string) {
 			&Node{
 				DomSubtree: c,
 				Wrappable: true,
-				Parent: n,
+				parent: n,
 			},
 		}
 	}

@@ -2,18 +2,18 @@ package img
 
 import (
 	"bytes"
-	"github.com/nfnt/resize"
 	"encoding/base64"
 	"fmt"
-	"github.com/srwiley/oksvg"
-	"github.com/srwiley/rasterx"
-	"image"
-	"image/png"
-	"io"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
-	"strings"
+	"github.com/srwiley/oksvg"
+	"github.com/srwiley/rasterx"
+	"golang.org/x/image/draw"
+	"image/png"
+	"image"
+	"io"
 	"net/url"
+	"strings"
 
 	_ "image/gif"
 	_ "image/jpeg"
@@ -209,20 +209,53 @@ func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
 			return nil, fmt.Errorf("svg: %v", err)
 		}
 	} else if w != 0 || h != 0 {
-		image, _, err := image.Decode(bytes.NewReader(data))
+		img, _, err := image.Decode(bytes.NewReader(data))
 		if err != nil {
 			return nil, fmt.Errorf("decode %v: %w", imgUrl, err)
 		}
 
-		newImage := resize.Resize(uint(w), uint(h), image, resize.Lanczos3)
+		dx := img.Bounds().Max.X
+		dy := img.Bounds().Max.Y
 
-		// Encode uses a Writer, use a Buffer if you need the raw []byte
-		buf := bytes.NewBufferString("")
-		if err = png.Encode(buf, newImage); err != nil {
-			return nil, fmt.Errorf("encode: %w", err)
+		newX, newY, skip := newSizes(dx, dy, w, h)
+
+		if !skip {
+			dst := image.NewRGBA(image.Rect(0, 0, newX, newY))
+			draw.NearestNeighbor.Scale(dst, dst.Rect, img, img.Bounds(), draw.Over, nil)
+			buf := bytes.NewBufferString("")
+			if err = png.Encode(buf, dst); err != nil {
+				return nil, fmt.Errorf("encode: %w", err)
+			}
+			data = buf.Bytes()
 		}
-		data = buf.Bytes()
 	}
 
 	return bytes.NewReader(data), nil
+}
+
+func newSizes(oldX, oldY, wantedX, wantedY int) (newX, newY int, skip bool) {
+	if oldX == 0 || oldY == 0 {
+		return oldX, oldY, true
+	}
+	if wantedX == 0 {
+		newX = int(float64(oldX) * float64(wantedY)/float64(oldY))
+		newY = wantedY
+	} else if wantedY == 0 {
+		newX = wantedX
+		newY = int(float64(oldY) * float64(wantedX)/float64(oldX))
+	} else {
+		newX = wantedX
+		newY = wantedY
+	}
+
+	if newX > 2000 || newY > 2000 {
+		return oldX, oldY, true
+	}
+
+	r := float64(newX) / float64(oldX)
+	if 0.8 <= r && r <= 1.2 {
+		return oldX, oldY, true
+	}
+
+	return
 }

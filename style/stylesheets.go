@@ -113,7 +113,6 @@ func FetchNodeMap(doc *html.Node, cssText string, windowWidth int) (m map[*html.
 	if err != nil {
 		return nil, fmt.Errorf("fetch rules: %w", err)
 	}
-	//fmt.Printf("mr=%+v", mr)
 	m = make(map[*html.Node]Map)
 	for n, rs := range mr {
 		ds := make(map[string]css.Declaration)
@@ -125,7 +124,7 @@ func FetchNodeMap(doc *html.Node, cssText string, windowWidth int) (m map[*html.
 				ds[d.Property] = *d
 			}
 		}
-		m[n] = Map{ds}
+		m[n] = Map{Declarations: ds}
 	}
 	return
 }
@@ -147,9 +146,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 				log.Printf("cssSel compile %v: %v", sel.Value, err)
 				continue
 			}
-			//fmt.Printf("cs=%+v\n", cs)
 			for _, el := range cascadia.QueryAll(doc, cs) {
-				//fmt.Printf("el==%+v\n", el)
 				existing, ok := m[el]
 				if !ok {
 					existing = make([]*css.Rule, 0, 3)
@@ -172,7 +169,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 		if rMaxWidth.MatchString(r.Prelude) {
 			m := rMaxWidth.FindStringSubmatch(r.Prelude)
 			l := m[1]+m[2]
-			maxWidth, _, err := length(l)
+			maxWidth, _, err := length(nil, l)
 			if err != nil {
 				return nil, fmt.Errorf("atoi: %w", err)
 			}
@@ -183,7 +180,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 		if rMinWidth.MatchString(r.Prelude) {
 			m := rMinWidth.FindStringSubmatch(r.Prelude)
 			l := m[1]+m[2]
-			minWidth, _, err := length(l)
+			minWidth, _, err := length(nil, l)
 			if err != nil {
 				return nil, fmt.Errorf("atoi: %w", err)
 			}
@@ -200,8 +197,14 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 	return
 }
 
+type DomTree interface {
+	Parent() (p DomTree, ok bool)
+	Style()  Map
+}
+
 type Map struct {
 	Declarations map[string]css.Declaration
+	DomTree      `json:"-"`
 }
 
 func NewMap(n *html.Node) Map {
@@ -509,7 +512,7 @@ func (cs *Map) Tlbr(key string) (s duit.Space, err error) {
 		parts := strings.Split(all.Value, " ")
 		nums := make([]int, len(parts))
 		for i, p := range parts {
-			if f, _, err := length(p); err == nil {
+			if f, _, err := length(cs, p); err == nil {
 				nums[i] = int(f)
 			} else {
 				return s, fmt.Errorf("length: %w", err)
@@ -547,7 +550,7 @@ func (cs *Map) Tlbr(key string) (s duit.Space, err error) {
 	return
 }
 
-func length(l string) (f float64, unit string, err error) {
+func length(cs *Map, l string) (f float64, unit string, err error) {
 	var s string
 
 	if l == "auto" || l == "inherit" || l == "0" {
@@ -577,22 +580,27 @@ func length(l string) (f float64, unit string, err error) {
 	case "vh":
 		f *= float64(WindowHeight) / 100.0
 	case "%":
-		f = 0
+		if cs == nil {
+			return 0.0, "%", nil
+		}
+		var wp int
+		if p, ok := cs.DomTree.Parent(); ok {
+			wp = p.Style().baseWidth()
+		} else {
+			log.Errorf("%% unit used in root element")
+		}
+		f *= 0.01 * float64(wp)
 	default:
 		return f, unit, fmt.Errorf("unknown suffix: %v", l)
-	}
-
-	if dui != nil {
-		f = float64(dui.Scale(int(f)))
 	}
 
 	return
 }
 
-func (cs Map) Height() int {
+func (cs *Map) Height() int {
 	d, ok := cs.Declarations["height"]
 	if ok {
-		f, _, err := length(d.Value)
+		f, _, err := length(cs, d.Value)
 		if err != nil {
 			log.Errorf("cannot parse height: %v", err)
 		}
@@ -604,11 +612,27 @@ func (cs Map) Height() int {
 func (cs Map) Width() int {
 	d, ok := cs.Declarations["width"]
 	if ok {
-		f, _, err := length(d.Value)
+		f, _, err := length(&cs, d.Value)
 		if err != nil {
 			log.Errorf("cannot parse width: %v", err)
 		}
 		return int(f)
+	}
+	if _, ok := cs.DomTree.Parent(); !ok {
+		return WindowWidth
+	}
+	return 0
+}
+
+// baseWidth to calculate relative widths
+func (cs Map) baseWidth() int {
+	if w := cs.Width(); w != 0 {
+		return w
+	}
+	if p, ok := cs.DomTree.Parent(); !ok {
+		return WindowWidth
+	} else {
+		return p.Style().baseWidth()
 	}
 	return 0
 }
@@ -621,12 +645,12 @@ func (cs Map) Css(propName string) string {
 	return d.Value
 }
 
-func (cs Map) CssPx(propName string) (l int, err error) {
+func (cs *Map) CssPx(propName string) (l int, err error) {
 	d, ok := cs.Declarations[propName]
 	if !ok {
 		return 0, fmt.Errorf("property doesn't exist")
 	}
-	f, _, err := length(d.Value)
+	f, _, err := length(cs, d.Value)
 	if err != nil {
 		return 0, err
 	}

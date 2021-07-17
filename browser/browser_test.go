@@ -20,7 +20,8 @@ import (
 func init() {
 	logger.Init()
 	SetLogger(&logger.Logger{})
-	style.Init(nil, &logger.Logger{})
+	nodes.SetLogger(log)
+	style.Init(nil, log)
 }
 
 type item struct {
@@ -86,13 +87,14 @@ func TestArrange(t *testing.T) {
 				t.Fatalf("%+v", e)
 			}
 		}
+		body := v.UI.(*duitx.Box).Kids[0]
 		if d == "inline" {
-			b := v.UI.(*duitx.Box)
+			b := body.UI.(*duitx.Box)
 			if len(b.Kids) != 3 {
-				t.Fatalf("%+v", b)
+				t.Fatalf("%v %+v", len(b.Kids), b)
 			}
 		} else {
-			if g := v.UI.(*duitx.Grid); g.Columns != 1 || len(g.Kids) != 3 {
+			if g := body.UI.(*duitx.Grid); g.Columns != 1 || len(g.Kids) != 3 {
 				t.Fatalf("%+v", g)
 			}
 		}
