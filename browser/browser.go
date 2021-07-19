@@ -22,6 +22,7 @@ import (
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -33,8 +34,10 @@ import (
 	_ "image/png"
 )
 
-const debugPrintHtml = false
-const EnterKey = 10
+const (
+	debugPrintHtml = false
+	EnterKey = 10
+)
 
 // cursor based on Clipart from Francesco 'Architetto' Rollandin
 // OpenClipart SVG ID: 163773 from OCAL 0.18 release 16/11/2019
@@ -55,16 +58,21 @@ var cursor = [16*2]uint8{
 	0b00001100, 0b01111000,
 }
 
-var ExperimentalJsInsecure bool
-var EnableNoScriptTag bool
+var (
+	ExperimentalJsInsecure bool
+	EnableNoScriptTag bool
+)
 
-var browser *Browser
-var Style = style.Map{}
-var dui *duit.DUI
-var colorCache = make(map[draw.Color]*draw.Image)
-var imageCache = make(map[string]*draw.Image)
-var scroller *duitx.Scroll
-var display *draw.Display
+var (
+	browser *Browser
+	Style = style.Map{}
+	dui *duit.DUI
+	scroller *duitx.Scroll
+	display *draw.Display
+
+	colorCache = make(map[draw.Color]*draw.Image)
+	imageCache = make(map[string]*draw.Image)
+)
 
 type Label struct {
 	*duitx.Label
@@ -259,9 +267,14 @@ func newPicture(n *nodes.Node) string {
 }
 
 func srcSet(n *nodes.Node) (w int, src string) {
-	smallestImg := ""
-	smallestW := 0
+	bestImg := ""
+	bestW := 0
+	idealW := n.Width()
 	scale := 1
+	
+	u := func(wd int) int {
+		return int(math.Abs(float64(wd)-float64(idealW)))
+	}
 
 	if dui != nil {
 		scale = int(dui.Scale(1))
@@ -284,13 +297,13 @@ func srcSet(n *nodes.Node) (w int, src string) {
 		if err != nil {
 			continue
 		}
-		if smallestImg == "" || smallestW > w {
-			smallestImg = src
-			smallestW = w
+		if bestImg == "" || u(bestW) > u(w) {
+			bestImg = src
+			bestW = w
 		}
 	}
 
-	return smallestW, smallestImg
+	return bestW, bestImg
 }
 
 type Element struct {

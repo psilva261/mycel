@@ -387,8 +387,8 @@ func TestTextArea(t *testing.T) {
 
 func TestNewPicture(t *testing.T) {
 	htm := `
-		<picture itemprop="contentUrl">
-			<source srcset="https://example.com/2040 2040w,https://example.com/1880 1880w,https://example.com/1400 1400w" media="(-webkit-min-device-pixel-ratio: 1.25), (min-resolution: 120dpi)">
+	<picture itemprop="contentUrl">
+		<source srcset="https://example.com/2040 2040w,https://example.com/1880 1880w,https://example.com/1400 1400w" media="(-webkit-min-device-pixel-ratio: 1.25), (min-resolution: 120dpi)">
     		<source srcset="https://example.com/1020 1020w,https://example.com/940 940w,https://example.com/700 700w">
     		<img src="https://example.com/465" height="5000" width="7000" loading="lazy">
     	</picture>
@@ -401,6 +401,22 @@ func TestNewPicture(t *testing.T) {
 	p := nt.Find("picture")
 	src := newPicture(p)
 	if src != "https://example.com/700" {
+		t.Error()
+	}
+}
+
+func TestSrcSet(t *testing.T) {
+	htm := `
+		<img width="800" height="429" style="width: 600px" src="/t.jpg" srcset="/t.jpg 800w, /t-300x165.jpg 300w, /t-768x421.jpg 768w, /t-561x308.jpg 561w, /t-364x200.jpg 364w, /t-728x399.jpg 728w, /t-608x334.jpg 608w, /t-758x416.jpg 758w, /t-87x48.jpg 87w, /t-175x96.jpg 175w, /t-313x172.jpg 313w" sizes="(max-width: 800px) 100vw, 800px">
+	`
+	nt, _, err := digestHtm(htm)
+	if err != nil {
+		t.Fatalf("digest: %v", err)
+	}
+	img := nt.Find("img")
+	w, src := srcSet(img)
+	t.Logf("%v, %v, %v", nt.Data(), w, src)
+	if w != 608 || src != "/t-608x334.jpg" {
 		t.Error()
 	}
 }
