@@ -10,11 +10,6 @@ import (
 	"strings"
 )
 
-var log *logger.Logger
-func SetLogger(l *logger.Logger) {
-	log = l
-}
-
 // Node represents a node at the render stage. It
 // represents a subTree or just a single html node.
 type Node struct {

@@ -9,6 +9,7 @@ import (
 	"github.com/psilva261/opossum/browser/duitx"
 	"github.com/psilva261/opossum/browser/fs"
 	"github.com/psilva261/opossum/js"
+	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
 	"strings"

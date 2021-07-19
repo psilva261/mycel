@@ -63,13 +63,8 @@ var Style = style.Map{}
 var dui *duit.DUI
 var colorCache = make(map[draw.Color]*draw.Image)
 var imageCache = make(map[string]*draw.Image)
-var log *logger.Logger
 var scroller *duitx.Scroll
 var display *draw.Display
-
-func SetLogger(l *logger.Logger) {
-	log = l
-}
 
 type Label struct {
 	*duitx.Label
@@ -220,7 +215,10 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 	}
 
 	if i, cached = imageCache[src]; !cached {
-		r, err := img.Load(browser, src, n.Width(), n.Height())
+		mw, _ := n.CssPx("max-width")
+		w := n.Width()
+		h := n.Height()
+		r, err := img.Load(browser, src, mw, w, h)
 		if err != nil {
 			return nil, fmt.Errorf("load draw image: %w", err)
 		}

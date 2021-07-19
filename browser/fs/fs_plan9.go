@@ -3,6 +3,7 @@ package fs
 import (
 	"fmt"
 	"github.com/knusbaum/go9p"
+	"github.com/psilva261/opossum/logger"
 	"os"
 	"syscall"
 )

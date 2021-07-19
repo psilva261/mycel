@@ -20,9 +20,7 @@ const simpleHTML = `
 `
 
 func init() {
-	logger.Init()
-	log = &logger.Logger{Debug: true}
-	fs.SetLogger(log)
+	log.Debug = true
 	go fs.Srv9p()
 }
 

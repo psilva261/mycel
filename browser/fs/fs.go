@@ -17,7 +17,6 @@ import (
 )
 
 var (
-	log *logger.Logger
 	mu  *sync.RWMutex
 	c   *sync.Cond
 
@@ -39,10 +38,6 @@ type Queryable interface {
 func init() {
 	mu = &sync.RWMutex{}
 	c = sync.NewCond(mu)
-}
-
-func SetLogger(l *logger.Logger) {
-	log = l
 }
 
 func Srv9p() {

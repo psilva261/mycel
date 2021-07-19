@@ -23,7 +23,6 @@ import (
 	"time"
 )
 
-var log *logger.Logger
 var timeout = 60*time.Second
 
 //go:embed domino-lib/*js
@@ -40,10 +39,6 @@ func init() {
 		panic(err.Error())
 	}
 	domIntf = string(data)
-}
-
-func SetLogger(l *logger.Logger) {
-	log = l
 }
 
 type Mutation struct {

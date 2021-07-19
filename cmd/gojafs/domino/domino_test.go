@@ -20,8 +20,7 @@ const simpleHTML = `
 `
 
 func init() {
-	logger.Init()
-	log = &logger.Logger{Debug: true}
+	log.Debug = true
 }
 
 func TestSimple(t *testing.T) {

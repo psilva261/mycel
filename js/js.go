@@ -19,12 +19,7 @@ import (
 	"time"
 )
 
-var log *logger.Logger
 var timeout = 60*time.Second
-
-func SetLogger(l *logger.Logger) {
-	log = l
-}
 
 type ReadWriteCloser struct {
 	io.Reader
@@ -128,17 +123,10 @@ func Start(scripts ...string) (resHtm string, changed bool, err error) {
 }
 
 func Stop() {
-	log.Infof("Stop devjs")
+	log.Infof("Stop gojafs")
 	if cancel != nil {
 		cancel()
 	}
-}
-
-func printCode(code string, maxWidth int) {
-	if maxWidth > len(code) {
-		maxWidth = len(code)
-	}
-	log.Infof("js code: %v", code[:maxWidth])
 }
 
 // TriggerClick, and return the result html
@@ -189,11 +177,8 @@ func Scripts(doc *nodes.Node, downloads map[string]string) (codes []string) {
 
 	iterateJsElements(doc, func(src, inlineCode string) {
 		if strings.TrimSpace(inlineCode) != "" {
-			log.Infof("JS.Scripts: inline code:")
-			printCode(inlineCode, 20)
 			codes = append(codes, inlineCode)
 		} else if c, ok := downloads[src]; ok {
-			log.Infof("JS.Scripts: referenced code (%v)", src)
 			codes = append(codes, c)
 		}
 	})

@@ -2,10 +2,8 @@ package browser
 
 import (
 	"golang.org/x/net/html"
-	//"github.com/mjl-/duit"
 	"github.com/psilva261/opossum/browser/fs"
 	"github.com/psilva261/opossum/js"
-	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
 	"io/ioutil"
@@ -14,11 +12,7 @@ import (
 )
 
 func init() {
-	js.SetLogger(&logger.Logger{})
-	logger.Init()
-	SetLogger(&logger.Logger{})
-	style.Init(nil, &logger.Logger{})
-	fs.SetLogger(log)
+	style.Init(nil)
 	go fs.Srv9p()
 }
 

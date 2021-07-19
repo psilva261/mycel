@@ -18,10 +18,8 @@ import (
 )
 
 func init() {
-	logger.Init()
-	SetLogger(&logger.Logger{})
-	nodes.SetLogger(log)
-	style.Init(nil, log)
+	log.Debug = true
+	style.Init(nil)
 }
 
 type item struct {
@@ -404,5 +402,42 @@ func TestNewPicture(t *testing.T) {
 	src := newPicture(p)
 	if src != "https://example.com/700" {
 		t.Error()
+	}
+}
+
+func TestWidths(t *testing.T) {
+	htm := `
+<html>
+	<body style="width: 100%">
+		<h1>
+			Info
+		</h1>
+		<main style="width: 50%">
+			<nav style="width: 33%">
+			</nav>
+			<article id="lo">
+				<h2>
+					General information
+				</h2>
+				<p style="width: 90%">
+					Supplementary information
+				</p>
+			</article>
+		</main>
+	</body>
+</html>
+	`
+	nt, _, err := digestHtm(htm)
+	if err != nil {
+		t.Fatalf("digest: %v", err)
+	}
+	if nt.Data() != "body" || nt.Width() != 1280 {
+		t.Fail()
+	}
+	if main := nt.Find("main"); main.Width() != 640 {
+		t.Fail()
+	}
+	if p := nt.Find("p"); p.Width() != 576 {
+		t.Fail()
 	}
 }

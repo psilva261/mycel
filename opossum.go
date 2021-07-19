@@ -12,12 +12,6 @@ import (
 	"strings"
 )
 
-var log *logger.Logger
-
-func SetLogger(l *logger.Logger) {
-	log = l
-}
-
 type Fetcher interface {
 	Origin() *url.URL
 

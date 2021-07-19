@@ -4,15 +4,9 @@ import (
 	"github.com/chris-ramon/douceur/css"
 	"golang.org/x/net/html"
 	"github.com/mjl-/duit"
-	"github.com/psilva261/opossum/logger"
 	"strings"
 	"testing"
 )
-
-func init() {
-	logger.Init()
-	log = &logger.Logger{Debug: true}
-}
 
 func d(c string) Map {
 	m := Map{

@@ -20,7 +20,6 @@ var fontCache = make(map[string]*draw.Font)
 
 var dui *duit.DUI
 var availableFontNames []string
-var log *logger.Logger
 
 var rMinWidth = regexp.MustCompile(`min-width: (\d+)(px|em|rem)`)
 var rMaxWidth = regexp.MustCompile(`max-width: (\d+)(px|em|rem)`)
@@ -55,9 +54,8 @@ a {
 }
 `
 
-func Init(d *duit.DUI, l *logger.Logger) {
+func Init(d *duit.DUI) {
 	dui = d
-	log = l
 
 	initFontserver()
 }
@@ -587,7 +585,7 @@ func length(cs *Map, l string) (f float64, unit string, err error) {
 		if p, ok := cs.DomTree.Parent(); ok {
 			wp = p.Style().baseWidth()
 		} else {
-			log.Errorf("%% unit used in root element")
+			log.Printf("%% unit used in root element")
 		}
 		f *= 0.01 * float64(wp)
 	default:
@@ -610,13 +608,31 @@ func (cs *Map) Height() int {
 }
 
 func (cs Map) Width() int {
+	w := cs.width()
+	if w > 0 {
+		if d, ok := cs.Declarations["max-width"]; ok {
+			f, _, err := length(&cs, d.Value)
+			if err != nil {
+				log.Errorf("cannot parse width: %v", err)
+			}
+			if mw := int(f); 0 < mw && mw < w {
+				return int(mw)
+			}
+		}
+	}
+	return w
+}
+
+func (cs Map) width() int {
 	d, ok := cs.Declarations["width"]
 	if ok {
 		f, _, err := length(&cs, d.Value)
 		if err != nil {
 			log.Errorf("cannot parse width: %v", err)
 		}
-		return int(f)
+		if f > 0 {
+			return int(f)
+		}
 	}
 	if _, ok := cs.DomTree.Parent(); !ok {
 		return WindowWidth

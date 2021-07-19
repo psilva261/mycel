@@ -22,7 +22,6 @@ import (
 
 var (
 	d *domino.Domino
-	log *logger.Logger
 	service string
 	mtpt    string
 	htm     string
@@ -31,10 +30,7 @@ var (
 )
 
 func init() {
-	logger.Quiet = true
-	logger.Init()
-	log = &logger.Logger{Debug: true}
-	domino.SetLogger(log)
+	log.SetQuiet()
 }
 
 func usage() {

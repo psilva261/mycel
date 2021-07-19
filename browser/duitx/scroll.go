@@ -27,6 +27,7 @@ import (
 
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
+	"github.com/psilva261/opossum/logger"
 )
 
 // Scroll shows a part of its single child, typically a box, and lets you scroll the content.

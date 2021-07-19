@@ -8,6 +8,7 @@ import (
 	"image"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/img"
+	"github.com/psilva261/opossum/logger"
 	"strings"
 )
 
@@ -113,7 +114,7 @@ func (cs Map) backgroundImage() (i *draw.Image) {
 		w := cs.Width()
 		h := cs.Height()
 
-		r, err := img.Load(fetcher, imgUrl, w, h)
+		r, err := img.Load(fetcher, imgUrl, 0, w, h)
 		if err != nil {
 			log.Errorf("bg img load %v: %v", imgUrl, err)
 			return nil

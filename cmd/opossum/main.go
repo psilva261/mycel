@@ -6,14 +6,10 @@ import (
 	"image"
 	"os"
 	"github.com/knusbaum/go9p"
-	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser"
-	"github.com/psilva261/opossum/browser/fs"
-	"github.com/psilva261/opossum/img"
 	"github.com/psilva261/opossum/js"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/style"
-	"github.com/psilva261/opossum/nodes"
 	"os/signal"
 	"runtime/pprof"
 	"time"
@@ -21,14 +17,13 @@ import (
 )
 
 var dui *duit.DUI
-var log *logger.Logger
 
 var cpuprofile string
 var startPage string = "http://9p.io"
 var dbg bool
 
 func init() {
-	browser.EnableNoScriptTag = false
+	browser.EnableNoScriptTag = true
 }
 
 func mainView(b *browser.Browser) []*duit.Kid {
@@ -127,13 +122,7 @@ func Main() (err error) {
 	}
 	dui.Debug = dbg
 
-	style.Init(dui, log)
-	browser.SetLogger(log)
-	fs.SetLogger(log)
-	img.SetLogger(log)
-	js.SetLogger(log)
-	opossum.SetLogger(log)
-	nodes.SetLogger(log)
+	style.Init(dui)
 
 	b := browser.NewBrowser(dui, startPage)
 	b.Download = func(done chan int) chan string {
@@ -167,16 +156,16 @@ func usage() {
 }
 
 func main() {
-	logger.Quiet = true
+	quiet := true
 	args := os.Args[1:]
 	for len(args) > 0 {
 		switch args[0] {
 		case "-vv":
-			logger.Quiet = false
+			quiet = false
 			dbg = true
 			args = args[1:]
 		case "-v":
-			logger.Quiet = false
+			quiet = false
 			args = args[1:]
 		case "-h":
 			usage()
@@ -193,7 +182,10 @@ func main() {
 			startPage, args = args[0], args[1:]
 		}
 	}
-	logger.Init()
+
+	if quiet {
+		log.SetQuiet()
+	}
 
 	if cpuprofile != "" {
 		f, err := os.Create(cpuprofile)
@@ -208,7 +200,6 @@ func main() {
 		}()
 	}
 
-	log = logger.Log
 	log.Debug = dbg
 	go9p.Verbose = log.Debug
 

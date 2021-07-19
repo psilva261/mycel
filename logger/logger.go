@@ -1,4 +1,4 @@
-package logger
+package log
 
 import (
 	"fmt"
@@ -9,18 +9,30 @@ import (
 )
 
 // Sink for Go's log pkg
-var Sink io.Writer
-var Quiet bool
-var Log *Logger
-var gl *goLog.Logger
+var (
+	Sink io.Writer
+	quiet bool
+	gl *goLog.Logger
 
-func Init() {
+	Debug    bool
+
+	mu       sync.Mutex
+	last     string
+	lastSev  int
+	repeated int
+)
+
+func init() {
 	gl = goLog.New(os.Stderr, "", goLog.LstdFlags)
-	Log = &Logger{}
-	if Quiet {
-		Sink = &NullWriter{}
-		goLog.SetOutput(Sink)
-	}
+}
+
+func SetQuiet() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	quiet = true
+	Sink = &NullWriter{}
+	goLog.SetOutput(Sink)
 }
 
 type NullWriter struct{}
@@ -30,32 +42,23 @@ func (w *NullWriter) Write(p []byte) (n int, err error) {
 	return
 }
 
-type Logger struct {
-	Debug    bool
-
-	mu       sync.Mutex
-	last     string
-	lastSev  int
-	repeated int
+func Printf(format string, v ...interface{}) {
+	emit(debug, format, v...)
 }
 
-func (l *Logger) Printf(format string, v ...interface{}) {
-	l.emit(debug, format, v...)
+func Infof(format string, v ...interface{}) {
+	emit(info, format, v...)
 }
 
-func (l *Logger) Infof(format string, v ...interface{}) {
-	l.emit(info, format, v...)
+func Errorf(format string, v ...interface{}) {
+	emit(er, format, v...)
 }
 
-func (l *Logger) Errorf(format string, v ...interface{}) {
-	l.emit(er, format, v...)
-}
-
-func (l *Logger) Fatal(v ...interface{}) {
+func Fatal(v ...interface{}) {
 	gl.Fatal(v...)
 }
 
-func (l *Logger) Fatalf(format string, v ...interface{}) {
+func Fatalf(format string, v ...interface{}) {
 	gl.Fatalf(format, v...)
 }
 
@@ -69,28 +72,28 @@ const (
 	flush
 )
 
-func (l *Logger) Flush() {
-	l.emit(flush, "")
+func Flush() {
+	emit(flush, "")
 }
 
-func (l *Logger) emit(severity int, format string, v ...interface{}) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+func emit(severity int, format string, v ...interface{}) {
+	mu.Lock()
+	defer mu.Unlock()
 
-	if severity == debug && !l.Debug {
+	if severity == debug && !Debug {
 		return
 	}
-	if (severity != fatal && severity != flush) && Quiet {
+	if (severity != fatal && severity != flush) && quiet {
 		return
 	}
 
 	msg := fmt.Sprintf(format, v...)
 	switch {
-	case l.last == msg && l.lastSev == severity:
-		l.repeated++
-	case l.repeated > 0:
-		goLog.Printf("...and %v more", l.repeated)
-		l.repeated = 0
+	case last == msg && lastSev == severity:
+		repeated++
+	case repeated > 0:
+		goLog.Printf("...and %v more", repeated)
+		repeated = 0
 		fallthrough
 	default:
 		switch severity {
@@ -105,6 +108,6 @@ func (l *Logger) emit(severity int, format string, v ...interface{}) {
 		case flush:
 		}
 	}
-	l.last = msg
-	l.lastSev = severity
+	last = msg
+	lastSev = severity
 }

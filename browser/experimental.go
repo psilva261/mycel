@@ -5,6 +5,7 @@ import (
 	"image"
 	"github.com/psilva261/opossum/browser/duitx"
 	"github.com/psilva261/opossum/js"
+	"github.com/psilva261/opossum/logger"
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
 )

@@ -22,12 +22,6 @@ import (
 
 const SrcZero = "//:0"
 
-var log *logger.Logger
-
-func SetLogger(l *logger.Logger) {
-	log = l
-}
-
 func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) {
 	addr = strings.TrimPrefix(addr, "data:")
 	if strings.Contains(addr, "charset=UTF-8") {
@@ -185,7 +179,7 @@ func Svg(data string, w, h int) (bs []byte, err error) {
 }
 
 // Load and resize to w and h if != 0
-func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
+func Load(f opossum.Fetcher, src string, maxW, w, h int) (r io.Reader, err error) {
 	var imgUrl *url.URL
 	var data []byte
 	var contentType opossum.ContentType
@@ -208,7 +202,7 @@ func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
 		if err != nil {
 			return nil, fmt.Errorf("svg: %v", err)
 		}
-	} else if w != 0 || h != 0 {
+	} else if maxW != 0 || w != 0 || h != 0 {
 		img, _, err := image.Decode(bytes.NewReader(data))
 		if err != nil {
 			return nil, fmt.Errorf("decode %v: %w", imgUrl, err)
@@ -216,17 +210,25 @@ func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
 
 		dx := img.Bounds().Max.X
 		dy := img.Bounds().Max.Y
+		log.Printf("dx,dy=%v,%v",dx,dy)
+		if w == 0 && h == 0 && 0 < maxW && maxW < dx {
+			w = maxW
+		}
 
 		newX, newY, skip := newSizes(dx, dy, w, h)
 
 		if !skip {
+			log.Printf("resize image to %v x %v", newX, newY)
 			dst := image.NewRGBA(image.Rect(0, 0, newX, newY))
 			draw.NearestNeighbor.Scale(dst, dst.Rect, img, img.Bounds(), draw.Over, nil)
 			buf := bytes.NewBufferString("")
+
 			if err = png.Encode(buf, dst); err != nil {
 				return nil, fmt.Errorf("encode: %w", err)
 			}
 			data = buf.Bytes()
+		} else {
+			log.Printf("skip resizing")
 		}
 	}
 
@@ -234,18 +236,15 @@ func Load(f opossum.Fetcher, src string, w, h int) (r io.Reader, err error) {
 }
 
 func newSizes(oldX, oldY, wantedX, wantedY int) (newX, newY int, skip bool) {
-	if oldX == 0 || oldY == 0 {
+	if oldX == 0 || oldY == 0 || (wantedX == 0 && wantedY == 0) {
 		return oldX, oldY, true
 	}
 	if wantedX == 0 {
 		newX = int(float64(oldX) * float64(wantedY)/float64(oldY))
 		newY = wantedY
-	} else if wantedY == 0 {
-		newX = wantedX
-		newY = int(float64(oldY) * float64(wantedX)/float64(oldX))
 	} else {
 		newX = wantedX
-		newY = wantedY
+		newY = int(float64(oldY) * float64(wantedX)/float64(oldX))
 	}
 
 	if newX > 2000 || newY > 2000 {

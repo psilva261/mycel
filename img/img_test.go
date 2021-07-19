@@ -1,14 +1,17 @@
 package img
 
 import (
+	"bytes"
+	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
+	"image"
+	"image/png"
+	"net/url"
 	"testing"
 )
 
 func init() {
-	logger.Init()
-	log = &logger.Logger{Debug: true}
-	SetLogger(&logger.Logger{})
+	log.Debug = true
 }
 
 func TestParseDataUri(t *testing.T) {
@@ -78,3 +81,68 @@ func TestQuoteAttrsInTag(t *testing.T) {
 	}
 }
 
+type MockBrowser struct {
+	data []byte
+}
+
+func (b *MockBrowser) Origin() *url.URL { return nil }
+
+func (b *MockBrowser) LinkedUrl(string) (*url.URL, error) { return nil, nil }
+
+func (b *MockBrowser) Get(*url.URL) ([]byte, opossum.ContentType, error) {
+	return b.data, opossum.ContentType{}, nil
+}
+
+func TestLoad(t *testing.T) {
+	rows := [][]int{
+		{1700, 0, 0, 1600, 900},
+		{160, 0, 0, 160, 90},
+		{0, 0, 45, 80, 45},
+		{0, 0, 0, 1600, 900},
+		{0, 800, 800, 800, 450},
+	}
+	for _, r := range rows {
+		t.Logf("test case %+v", r)
+		mw, w, h, xNew, yNew := r[0], r[1], r[2], r[3], r[4]
+		dst := image.NewRGBA(image.Rect(0, 0, 1600, 900))
+		buf := bytes.NewBufferString("")
+		if err := png.Encode(buf, dst); err != nil {
+			t.Fail()
+		}
+		b := &MockBrowser{buf.Bytes()}
+		r, err := Load(b, "", mw, w, h)
+		if err != nil {
+			t.Errorf("load: %v", err)
+		}
+		img, _, err := image.Decode(r)
+		if err != nil {
+			t.Errorf("decode")
+		}
+		dx := img.Bounds().Max.X
+		dy := img.Bounds().Max.Y
+		if dx != xNew || dy != yNew {
+			t.Errorf("unexpected size %v x %v", dx, dy)
+		}
+	}
+}
+
+func TestNewSizes(t *testing.T) {
+	x0 := 400
+	y0 := 300
+
+	x1, y1, _ := newSizes(x0, y0, 100, 0)
+	if x1 != 100 || y1 != 75 {
+		t.Fail()
+	}
+
+	x1, y1, _ = newSizes(x0, y0, 0, 100)
+	if x1 != 133 || y1 != 100 {
+		t.Fail()
+	}
+
+	// Enforce aspect ratio based on width
+	x1, y1, _ = newSizes(x0, y0, 800, 800)
+	if x1 != 800 || y1 != 600 {
+		t.Fail()
+	}
+}
