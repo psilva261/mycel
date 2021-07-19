@@ -6,6 +6,7 @@ import (
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
 	"fmt"
+	"github.com/psilva261/opossum/logger"
 	"io"
 	"os/user"
 )
