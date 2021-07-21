@@ -349,9 +349,12 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *duitx.Box, ok bool) {
 	var err error
 	var i *draw.Image
 	var m, p duit.Space
-	zs := duit.Space{}
+	var zs duit.Space
+	var h int
 	w := n.Width()
-	h := n.Height()
+	if n.Data() != "body" {
+		w = n.Height()
+	}
 	mw, err := n.CssPx("max-width")
 	if err != nil {
 		log.Printf("max-width: %v", err)
@@ -625,6 +628,7 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 		if el == nil {
 			log.Infof("inspect nil element")
 		} else {
+			log.Infof("%v:", el.n.Data())
 			log.Infof("inspect el %+v %+v %+v", el, el.n, el.UI)
 		}
 	}
