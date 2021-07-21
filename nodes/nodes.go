@@ -166,6 +166,69 @@ func (n *Node) HasAttr(k string) bool {
 	return false
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block#identifying_the_containing_block
+func (n *Node) IsContainingBlock(position string) bool {
+	if position == "absolute" {
+		return n.Css("position") == "fixed" || n.Css("position") == "absolute" ||
+		 n.Css("position") == "relative" || n.Css("position") == "sticky" || n.Data() == "body"
+	}
+	return false
+}
+
+var ContainingPositions = map[string]string{
+	"absolute": "relative",
+}
+
+func (n *Node) FindNextPositions(position string) (ps []*Node) {
+	for _, c := range n.Children {
+		if c.Css("position") == ContainingPositions[position] {
+			continue
+		}
+		if c.Css("position") == position {
+			ps = append(ps, c)
+		} else {
+			ps = append(ps, c.FindNextPositions(position)...)
+		}
+	}
+	return 
+}
+
+// CB returns the Containing Block.
+func (n *Node) CB() (blk *Node) {
+	if n.parent == nil || n.Data() == "body" {
+		return n
+	}
+	if n.Css("position") == "absolute" {
+		for p := n.parent; p != nil; p = p.parent {
+			if p.IsContainingBlock("absolute") {
+				return p
+			}
+		}
+	} else {
+		return n.parent
+	}
+	return nil
+}
+
+// CBItems returns items that are within this containing block
+func (n *Node) CBItems() (cbis []*Node) {
+	cbis = make([]*Node, 0, len(n.Children))
+
+	if n.IsContainingBlock("absolute") {
+		ps := n.FindNextPositions("absolute")
+		for _, p := range ps {
+			cbis = append(cbis, p)
+		}
+	}
+	for _, c := range n.Children {
+		if c.CB() == n && c.Css("position") != "absolute" {
+			cbis = append(cbis, c)
+		}
+	}
+
+	return
+}
+
 // QueryRef relative to html > body
 func (n *Node) QueryRef() string {
 	nRef, ok := n.queryRef()

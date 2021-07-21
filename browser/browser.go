@@ -353,7 +353,7 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *duitx.Box, ok bool) {
 	var h int
 	w := n.Width()
 	if n.Data() != "body" {
-		w = n.Height()
+		h = n.Height()
 	}
 	mw, err := n.CssPx("max-width")
 	if err != nil {
@@ -762,6 +762,71 @@ func setAttr(n *html.Node, key, val string) {
 	n.Attr = append(n.Attr, newAttr)
 }
 
+func placeFunc(name string, place *duit.Place) func(self *duit.Kid, sizeAvail image.Point) {
+	return func(self *duit.Kid, sizeAvail image.Point) {
+		for i, kid := range place.Kids {
+			el := kid.UI.(*Element)
+			if i == 0 {
+				kid.UI.Layout(dui, self, sizeAvail, true)
+				kid.R = self.R
+			} else {
+				kid.UI.Layout(dui, kid, sizeAvail, true)
+				if t, err := el.n.CssPx("top"); err == nil {
+					kid.R.Min.Y += t
+					kid.R.Max.Y += t
+				}
+				if l, err := el.n.CssPx("left"); err == nil {
+					kid.R.Max.X += l
+					kid.R.Min.X += l
+				}
+				if r, err := el.n.CssPx("right"); err == nil {
+					w := kid.R.Max.X
+					kid.R.Max.X = sizeAvail.X - r
+					kid.R.Min.X = sizeAvail.X - w
+				}
+			}
+		}
+	}
+}
+
+// arrangeAbsolute positioned elements, if any
+func arrangeAbsolute(n *nodes.Node, elements ...*Element) (ael *Element, ok bool) {
+	absolutes := make([]*Element, 0, 1)
+	other := make([]*Element, 0, len(elements))
+
+	for _, el := range elements {
+		if el.n.Css("position") == "absolute" {
+			absolutes = append(absolutes, el)
+		} else {
+			other = append(other, el)
+		}
+	}
+
+	if len(absolutes) == 0 {
+		return nil, false
+	}
+
+	bg, err := dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, 0x00000000)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	uis := make([]duit.UI, 0, len(other)+1)
+	na := Arrange(n, other...)
+	if na != nil {
+		uis = append(uis, na)
+	}
+	for _, a := range absolutes {
+		uis = append(uis, a)
+	}
+	pl := &duit.Place{
+		Kids: duit.NewKids(uis...),
+		Background: bg,
+	}
+	pl.Place = placeFunc(n.QueryRef(), pl)
+
+	return NewElement(pl, n), true
+}
+
 func Arrange(n *nodes.Node, elements ...*Element) *Element {
 	if n.IsFlex() {
 		if n.IsFlexDirectionRow() {
@@ -769,6 +834,10 @@ func Arrange(n *nodes.Node, elements ...*Element) *Element {
 		} else {
 			return NewElement(verticalSeq(elements), n)
 		}
+	}
+
+	if ael, ok := arrangeAbsolute(n, elements...); ok {
+		return ael
 	}
 
 	rows := make([][]*Element, 0, 10)
@@ -1135,9 +1204,22 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 
 			return NewElement(innerContent, n)
 		case "a":
-			href := n.Attr("href")
-			el = InnerNodesToBox(r+1, b, n)
+			var href = n.Attr("href")
+			var innerContent duit.UI
+			if nodes.IsPureTextContent(*n) {
+				innerContent = NewLabel(
+					n.ContentString(false),
+					n,
+				)
+			} else {
+				innerContent = InnerNodesToBox(r+1, b, n)
+			}
+			if innerContent == nil {
+				return nil
+			}
+			el := NewElement(innerContent, n)
 			el.makeLink(href)
+			return el
 		case "noscript":
 			if ExperimentalJsInsecure || !EnableNoScriptTag {
 				return
@@ -1172,9 +1254,10 @@ func isWrapped(n *nodes.Node) bool {
 }
 
 func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
-	els := make([]*Element, 0, len(n.Children))
+	items := n.CBItems()
+	els := make([]*Element, 0, len(items))
 
-	for _, c := range n.Children {
+	for _, c := range items {
 		if c.IsDisplayNone() {
 			continue
 		}
@@ -1183,7 +1266,7 @@ func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
 			els = append(els, ls...)
 		} else if nodes.IsPureTextContent(*n) {
 			// Handle text wrapped in unwrappable tags like p, div, ...
-			ls := NewText(c.Content(false), c.Children[0])
+			ls := NewText(c.Content(false), items[0])
 			if len(ls) == 0 {
 				continue
 			}
@@ -1245,6 +1328,10 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 	case *duit.Edit:
 	case *duit.Button:
 	case *duit.List:
+	case *duit.Place:
+		for _, kid := range v.Kids {
+			traverseTree(r+1, kid.UI, f)
+		}
 	case *duit.Scroll:
 	case *CodeView:
 	default:

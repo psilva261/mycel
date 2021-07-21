@@ -105,3 +105,114 @@ func TestJsonCycles(t *testing.T) {
 	}
 }
 
+func TestContainingBlock(t *testing.T) {
+	tests := map[string]string{
+		"body": `
+			<html>
+				<body>
+					<div>
+						<a style="position: absolute;">link</a>
+					</div>
+				</body>
+			</html>
+		`,
+		"div": `
+			<html>
+				<body>
+					<div style="position: relative;">
+						<a style="position: absolute;">link</a>
+					</div>
+				</body>
+			</html>
+		`,
+		"main": `
+			<html>
+				<body>
+					<main style="position: relative;">
+						<article>
+							<a style="position: absolute;">link</a>
+						</article>
+					</main>
+				</body>
+			</html>
+		`,
+	}
+	for cbTag, htm := range tests {
+		doc, err := html.Parse(strings.NewReader(htm))
+		if err != nil { t.Fatalf(err.Error()) }
+		nt := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
+		cb := nt.Find(cbTag)
+		a := nt.Find("a")
+		if a.CB() != cb {
+			t.Fail()
+		}
+	}
+}
+
+func TestCBItems(t *testing.T) {
+	tests := map[string]map[string][]string{
+		`
+			<html>
+				<body>
+					<div>
+						<a style="position: absolute;">link</a>
+					</div>
+				</body>
+			</html>
+		`: {
+			"body": {"a", "", "div", ""},
+			"div": {"", ""},
+			"a": {"link"},
+		},
+		`
+			<html>
+				<body>
+					<div style="position: relative;">
+						<a style="position: absolute;">link</a>
+					</div>
+				</body>
+			</html>
+		`: {
+			"body": {"", "div", ""},
+			"div": {"a", "", ""},
+			"a": {"link"},
+		},
+		`
+			<html>
+				<body>
+					<main style="position: relative;">
+						<article>
+							<a style="position: absolute;">link</a>
+						</article>
+					</main>
+				</body>
+			</html>
+		`: {
+			"body": {"", "main", ""},
+			"main": {"a", "", "article", ""},
+			"article": {"", ""},
+			"a": {"link"},
+		},
+	}
+	for htm, m := range tests {
+		doc, err := html.Parse(strings.NewReader(htm))
+		if err != nil { t.Fatalf(err.Error()) }
+		nt := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
+		for from, tos := range m {
+			t.Logf("from: %v", from)
+			f := nt.Find(from)
+			cbis := f.CBItems()
+			if len(cbis) != len(tos) {
+				t.Errorf("len(cbis)=%+v", cbis)
+			} else {
+				t.Logf("lengths match")
+			}
+			for i, cbi := range cbis {
+				t.Logf("%+v %v", cbi.Data(), cbi.Type())
+				if strings.TrimSpace(cbi.Data()) != tos[i] {
+					t.Fail()
+				}
+			}
+		}
+	}
+}
