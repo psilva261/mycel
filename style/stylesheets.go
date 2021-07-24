@@ -48,7 +48,7 @@ address, article, aside, blockquote, details, dialog, dd, div, dl, dt, fieldset,
   display: block;
 }
 
-a {
+a[href] {
   color: blue;
   margin-right: 2px;
 }
