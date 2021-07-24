@@ -35,9 +35,10 @@ import (
 )
 
 const (
-	debugPrintHtml = false
 	EnterKey = 10
 )
+
+var debugPrintHtml = false
 
 // cursor based on Clipart from Francesco 'Architetto' Rollandin
 // OpenClipart SVG ID: 163773 from OCAL 0.18 release 16/11/2019
@@ -1226,8 +1227,21 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 			}
 			fallthrough
 		default:
-			// Internal node object
-			return InnerNodesToBox(r+1, b, n)
+			if !n.IsInline() {
+				// Explicitly keep block elements to preserve rows from
+				// getting squashed
+				innerContent := InnerNodesToBox(r+1, b, n)
+				if innerContent == nil {
+					return nil
+				}
+				if innerContent.n == n {
+					return innerContent
+				}
+				return NewElement(innerContent, n)
+			} else {
+				// Internal node object
+				return InnerNodesToBox(r+1, b, n)
+			}
 		}
 	} else if n.Type() == html.TextNode {
 		// Leaf text object
@@ -1264,7 +1278,7 @@ func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
 		if isWrapped(c) {
 			ls := NewText(c.Content(false), c)
 			els = append(els, ls...)
-		} else if nodes.IsPureTextContent(*n) {
+		} else if nodes.IsPureTextContent(*n) && n.IsInline() {
 			// Handle text wrapped in unwrappable tags like p, div, ...
 			ls := NewText(c.Content(false), items[0])
 			if len(ls) == 0 {

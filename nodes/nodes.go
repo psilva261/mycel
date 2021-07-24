@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-// Node represents a node at the render stage. It
-// represents a subTree or just a single html node.
 type Node struct {
 	DomSubtree *html.Node `json:"-"`
 	Text string
@@ -369,4 +367,36 @@ func (n *Node) SetText(t string) {
 	n.Children[0].DomSubtree.Data = t
 
 	return
+}
+
+func (n *Node) PrintTree() {
+	n.printTree(0)
+}
+
+func (n *Node) printTree(r int) {
+	for i := 0; i < r; i++ {
+		fmt.Printf("  ")
+	}
+	if n.Type() == html.ElementNode {
+		sty := ""
+		if len(n.Map.Declarations) > 0 {
+			l := make([]string, 0, 2)
+			for k, d := range n.Map.Declarations {
+				s := fmt.Sprintf("%v=%v", k, d.Value)
+				if d.Important {
+					s += "!"
+				}
+				l = append(l, s)
+			}
+			sty += ` style="` + strings.Join(l, " ") + `"`
+		}
+		fmt.Printf("<%v%v>\n", n.Data(), sty)
+	} else if n.Type() == html.TextNode {
+		fmt.Printf("\"%v\"\n", strings.TrimSpace(n.Data()))
+	} else {
+		fmt.Printf("%v\n", n.Data())
+	}
+	for _, c := range n.Children {
+		c.printTree(r+1)
+	}
 }

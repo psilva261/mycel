@@ -18,6 +18,7 @@ import (
 )
 
 func init() {
+	debugPrintHtml = false
 	log.Debug = true
 	style.Init(nil)
 }
@@ -249,6 +250,10 @@ func TestInlining(t *testing.T) {
 
 	// 2. Elements are row-like
 	kids, ok := explodeRow(boxed)
+	if !ok || len(kids) != 1 {
+		t.Errorf("boxed: %+v", boxed)
+	}
+	kids, ok = explodeRow(kids[0].UI.(*Element))
 	if !ok || len(kids) != 2 {
 		t.Errorf("boxed: %+v", boxed)
 	}
@@ -257,7 +262,8 @@ func TestInlining(t *testing.T) {
 	if bel.n.Data() != "(" {
 		t.Errorf("bel: %+v", bel)
 	}
-	if ael.n.Data() != "span" {
+	if ael.n.Data() != "a" {
+		ael.n.PrintTree()
 		t.Errorf("ael: %+v %+v '%v'", ael, ael.n, ael.n.Data())
 	}
 	if !ael.IsLink || ael.Click == nil {
@@ -296,6 +302,10 @@ func TestInlining2(t *testing.T) {
 
 	// 2. Elements are row-like
 	kids, ok := explodeRow(boxed)
+	if !ok || len(kids) != 1 {
+		t.Errorf("boxed: %+v, kids: %+v", boxed, kids)
+	}
+	kids, ok = explodeRow(kids[0].UI.(*Element))
 	if !ok || len(kids) != 3 {
 		t.Errorf("boxed: %+v, kids: %+v", boxed, kids)
 	}
@@ -304,11 +314,61 @@ func TestInlining2(t *testing.T) {
 	if sel.n.Data() != "span" {
 		t.Errorf("sel: %+v", sel)
 	}
-	if ael.n.Data() != "edit" {
+	if ael.n.Data() != "a" {
+		ael.n.PrintTree()
 		t.Errorf("ael: %+v %+v", ael, ael.n)
 	}
 	if !ael.IsLink || ael.Click == nil {
 		t.Errorf("ael: %+v %+v", ael, ael.n)
+	}
+}
+
+func TestInlining3(t *testing.T) {
+	htm := `
+		<body>
+			<p>
+				<span>
+					<tt>bind&nbsp;-ac&nbsp;/dist/plan9front&nbsp;/</tt>
+				</span>
+			</p>
+			<p>
+				<span>
+					<tt>git/pull&nbsp;-u&nbsp;gits://git.9front.org/plan9front/plan9front</tt>
+				</span>
+			</p>
+		</body>
+	`
+	nt, boxed, err := digestHtm(htm)
+	if err != nil {
+		t.Fatalf("digest: %v", err)
+	}
+
+	// 1. nodes are 2 rows
+	ps := nt.FindAll("p")
+	if len(ps) != 2 || ps[0].IsInline() || ps[1].IsInline() {
+		t.Fail()
+	}
+	// 1a. nodes' children are inline
+	for i := 0; i < 2; i++ {
+		p := ps[i]
+		span := p.Find("span")
+		tt := span.Find("tt")
+		if !span.IsInline() || !tt.IsInline() {
+			t.Fail()
+		}
+	}
+	
+	PrintTree(boxed)
+	// 2. Elements are 2 rows
+
+	kids, ok := explodeRow(boxed)
+	if !ok || len(kids) != 1 {
+		t.Errorf("boxed: %+v, kids: %+v", boxed, kids)
+	}
+
+	g := kids[0].UI.(*duitx.Grid)
+	if g.Columns != 1 || len(g.Kids) != 2 {
+		t.Fail()
 	}
 }
 

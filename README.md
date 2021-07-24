@@ -19,17 +19,10 @@ Supported features:
 
 ## Plan 9
 
-Setup TLS:
-
-```
-hget https://curl.haxx.se/ca/cacert.pem > /sys/lib/tls/ca.pem
-```
-
-Create mountpoint (only needed on 9legacy):
-
-```
-mkdir /mnt/opossum
-```
+    # Setup TLS
+    hget https://curl.haxx.se/ca/cacert.pem > /sys/lib/tls/ca.pem
+    # Create mountpoint (only needed on 9legacy)
+    mkdir /mnt/opossum
 
 ### Binary
 

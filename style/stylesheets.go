@@ -131,6 +131,19 @@ func smaller(d, dd css.Declaration) bool {
 	return dd.Important
 }
 
+func compile(v string) (cs cascadia.Selector, err error) {
+	l := strings.Split(v, " ")
+	for _, s := range l {
+		s = strings.TrimSpace(s)
+		if strings.HasSuffix(s, ":") {
+			// TODO: selectors like .selector: would crash otherwise
+			err = fmt.Errorf("unsupported selector: %v", s)
+			return
+		}
+	}
+	return cascadia.Compile(v)
+}
+
 func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*html.Node][]*css.Rule, err error) {
 	m = make(map[*html.Node][]*css.Rule)
 	s, err := parser.Parse(cssText)
@@ -139,7 +152,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 	}
 	processRule := func(m map[*html.Node][]*css.Rule, r *css.Rule) (err error) {
 		for _, sel := range r.Selectors {
-			cs, err := cascadia.Compile(sel.Value)
+			cs, err := compile(sel.Value)
 			if err != nil {
 				log.Printf("cssSel compile %v: %v", sel.Value, err)
 				continue
