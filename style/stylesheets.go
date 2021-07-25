@@ -2,6 +2,7 @@ package style
 
 import (
 	"9fans.net/go/draw"
+	"bytes"
 	"fmt"
 	"github.com/andybalholm/cascadia"
 	"github.com/chris-ramon/douceur/css"
@@ -11,6 +12,7 @@ import (
 	"golang.org/x/net/html"
 	"github.com/psilva261/opossum/logger"
 	"math"
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -561,11 +563,56 @@ func (cs *Map) Tlbr(key string) (s duit.Space, err error) {
 	return
 }
 
+var reBcInput = regexp.MustCompile(`^[0-9\+\*\-\/\(\)\\.\s]+$`)
+
+func calc(cs *Map, l string) (f float64, unit string, err error) {
+	if !strings.HasPrefix(l, "calc(") && !strings.HasSuffix(l, ")") {
+		return 0, "", fmt.Errorf("wrong format")
+	}
+	l = strings.TrimPrefix(l, "calc(")
+	l = strings.TrimSuffix(l, ")")
+	if len(l) > 50 {
+		return 0, "", fmt.Errorf("parse expression: %v", l)
+	}
+	l = strings.ReplaceAll(l, "px", "")
+	for _, u := range []string{"rem", "em", "%", "vw", "vh"} {
+		if !strings.Contains(l, u) {
+			continue
+		}
+		r, _, err := length(cs, "1"+u)
+		if err != nil {
+			return 0, "", fmt.Errorf("u %v: %v", u, err)
+		}
+		l = strings.ReplaceAll(l, u, fmt.Sprintf("*%v", r))
+	}
+	if !reBcInput.MatchString(l) {
+		return 0, "", fmt.Errorf("parse expression: %v", l)
+	}
+	cmd := exec.Command("bc")
+	cmd.Stdin = strings.NewReader(l + "\n")
+	var out bytes.Buffer
+	var er bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &er
+	if e := er.String(); e != "" {
+		log.Errorf("bc: %v", e)
+	}
+	if err = cmd.Run(); err != nil {
+		return
+	}
+	f, err = strconv.ParseFloat(strings.TrimSpace(out.String()), 64)
+	return
+}
+
 func length(cs *Map, l string) (f float64, unit string, err error) {
 	var s string
 
-	if l == "auto" || l == "inherit" || l == "0" {
+	if l == "auto" || l == "inherit" || l == "initial" || l == "0" {
 		return 0, "px", nil
+	}
+
+	if strings.Contains(l, "calc") {
+		return calc(cs, l)
 	}
 
 	for _, suffix := range []string{"px", "%", "rem", "em", "vw", "vh"} {

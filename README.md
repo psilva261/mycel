@@ -80,8 +80,6 @@ go install ./cmd/gojafs
 
 On 9legacy also the folder `/mnt/opossum` needs to exist.
 
-```
-
 Then it can be tested with:
 
 ```

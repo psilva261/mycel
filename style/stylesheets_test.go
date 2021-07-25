@@ -2,11 +2,16 @@ package style
 
 import (
 	"github.com/chris-ramon/douceur/css"
-	"golang.org/x/net/html"
 	"github.com/mjl-/duit"
+	"github.com/psilva261/opossum/logger"
+	"golang.org/x/net/html"
 	"strings"
 	"testing"
 )
+
+func init() {
+	log.Debug = true
+}
 
 func d(c string) Map {
 	m := Map{
@@ -275,6 +280,42 @@ func TestApplyChildStyleInherit2(t *testing.T) {
 	res := parent.ApplyChildStyle(child, true)
 	if v := res.Declarations["font-size"].Value; v != "12pt" {
 		t.Fatalf(v)
+	}
+}
+
+func TestCalc(t *testing.T) {
+	tests := map[string]float64{
+		"calc(1px+2px)": 3.0,
+		"calc(1px + 2px)": 3.0,
+		"calc(1em+2px)": 13.0,
+		"calc(1em+(2px-1px))": 12.0,
+		"calc(1em+(2px-1.5px))": 11.5,
+	}
+	for x, px := range tests {
+		f, _, err := length(nil, x)
+		if err != nil {
+			t.Fatalf("%v: %v", x, err)
+		}
+		if f != px {
+			t.Fatalf("expected %v but got %v", px, f)
+		}		
+	}
+}
+
+func TestCalc2(t *testing.T) {
+	fails := []string{
+		"calc(a+2px)",
+		"calc(if(1)2)",
+		"calc(quit)",
+		"calc(1;)",
+		"calc()",
+		"calc(" + strings.Repeat("1", 51) + ")",
+	}
+	for _, x := range fails {
+		_, _, err := length(nil, x)
+		if err == nil {
+			t.Fatalf("%v: %v", x, err)
+		}
 	}
 }
 
