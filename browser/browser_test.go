@@ -17,6 +17,10 @@ import (
 	"testing"
 )
 
+var (
+	_ duitx.Boxable = &Element{}
+)
+
 func init() {
 	debugPrintHtml = false
 	log.Debug = true
@@ -86,15 +90,21 @@ func TestArrange(t *testing.T) {
 				t.Fatalf("%+v", e)
 			}
 		}
-		body := v.UI.(*duitx.Box).Kids[0]
-		if d == "inline" {
-			b := body.UI.(*duitx.Box)
-			if len(b.Kids) != 3 {
-				t.Fatalf("%v %+v", len(b.Kids), b)
-			}
-		} else {
-			if g := body.UI.(*duitx.Grid); g.Columns != 1 || len(g.Kids) != 3 {
-				t.Fatalf("%+v", g)
+		PrintTree(v)
+		b := v.UI.(*duitx.Box)
+		if len(b.Kids) != 3 {
+			t.Fatalf("%v %+v", len(b.Kids), b)
+		}
+		for _, k := range b.Kids {
+			disp := k.UI.(duitx.Boxable).Display()
+			if d == "inline" {
+				if disp != duitx.Inline {
+					t.Fail()
+				}
+			} else {
+				if disp != duitx.Block {
+					t.Fail()
+				}
 			}
 		}
 	}
@@ -362,13 +372,13 @@ func TestInlining3(t *testing.T) {
 	// 2. Elements are 2 rows
 
 	kids, ok := explodeRow(boxed)
-	if !ok || len(kids) != 1 {
+	if !ok || len(kids) != 2 {
 		t.Errorf("boxed: %+v, kids: %+v", boxed, kids)
 	}
-
-	g := kids[0].UI.(*duitx.Grid)
-	if g.Columns != 1 || len(g.Kids) != 2 {
-		t.Fail()
+	for _, k := range kids {
+		if k.UI.(duitx.Boxable).Display() != duitx.Block {
+			t.Fail()
+		}
 	}
 }
 

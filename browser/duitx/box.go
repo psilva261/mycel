@@ -45,6 +45,27 @@ func NewReverseBox(uis ...duit.UI) *Box {
 	return &Box{Kids: kids, Reverse: true}
 }
 
+type Display int
+
+const (
+	InlineBlock = iota // default
+	Block              // always start a new line
+	Inline             // flow inline but ignore margin, width and height
+	Flex
+)
+
+type Dir int
+
+const (
+	Row = iota + 1
+	Column
+)
+
+type Boxable interface {
+	Display() Display
+	FlexDir() Dir
+}
+
 // Box keeps elements on a line as long as they fit, then moves on to the next line.
 type Box struct {
 	Kids       []*duit.Kid      // Kids and UIs in this box.
@@ -56,12 +77,23 @@ type Box struct {
 	Height     int         // 0 means dynamic (as much as needed), -1 means full height, >0 means that exact amount of lowDPI pixels.
 	MaxWidth   int         // if >0, the max number of lowDPI pixels that will be used.
 	ContentBox bool        // Use ContentBox (BorderBox by default)
+	Disp       Display
+	Dir        Dir
 	Background *draw.Image `json:"-"` // Background for this box, instead of default duit background.
 
 	size image.Point // of entire box, including padding but excluding margin
 }
 
 var _ duit.UI = &Box{}
+var _ Boxable = &Box{}
+
+func (ui *Box) Display() Display {
+	return ui.Disp
+}
+
+func (ui *Box) FlexDir() Dir {
+	return ui.Dir
+}
 
 func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, force bool) {
 	debugLayout(dui, self)
@@ -80,6 +112,12 @@ func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, forc
 	bbw := dui.Scale(ui.Width)
 	bbmaxw := dui.Scale(ui.MaxWidth)
 	bbh := dui.Scale(ui.Height)
+
+	if ui.Disp == Inline {
+		bbw = 0
+		bbmaxw = 0
+		bbh = 0
+	}
 
 	if ui.ContentBox {
 		bbw += margin.Dx()+padding.Dx()
@@ -124,12 +162,20 @@ func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, forc
 		k.UI.Layout(dui, k, sizeAvail.Sub(image.Pt(0, cur.Y+lineY)), true)
 		childSize := k.R.Size()
 		var kr image.Rectangle
-		if nx == 0 || cur.X+childSize.X <= sizeAvail.X {
+		var shouldCol bool
+		if ui.Disp == Flex {
+			shouldCol = ui.Dir == Column
+		} else if display(k) == Block {
+			shouldCol = true
+		}
+		if (nx == 0 || cur.X+childSize.X <= sizeAvail.X) && !shouldCol {
+			// Put on same line
 			kr = rect(childSize).Add(cur).Add(padding.Topleft())
 			cur.X += childSize.X
 			lineY = maximum(lineY, childSize.Y)
 			nx += 1
 		} else {
+			// Put on new line
 			if nx > 0 {
 				fixValign(ui.Kids[i-nx : i])
 				cur.X = 0
@@ -166,6 +212,13 @@ func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, forc
 		ui.size.Y = osize.Y
 	}
 	self.R = rect(ui.size.Add(margin.Size()))
+}
+
+func display(k *duit.Kid) (d Display) {
+	if b, ok := k.UI.(Boxable); ok {
+		return b.Display()
+	}
+	return InlineBlock
 }
 
 func (ui *Box) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {

@@ -328,7 +328,7 @@ func NewElement(ui duit.UI, n *nodes.Node) *Element {
 	}
 
 	if n.Type() != html.TextNode {
-		if box, ok := newBoxElement(ui, n); ok {
+		if box, ok := newBoxElement(n, false, ui); ok {
 			ui = box
 		}
 	}
@@ -339,11 +339,11 @@ func NewElement(ui duit.UI, n *nodes.Node) *Element {
 	}
 }
 
-func newBoxElement(ui duit.UI, n *nodes.Node) (box *duitx.Box, ok bool) {
-	if ui == nil {
+func newBoxElement(n *nodes.Node, force bool, uis ...duit.UI) (box *duitx.Box, ok bool) {
+	if len(uis) == 0 || (len(uis) == 1 && uis[0] == nil) {
 		return nil, false
 	}
-	if n.IsDisplayNone() {
+	if n != nil && n.IsDisplayNone() {
 		return nil, false
 	}
 
@@ -352,51 +352,56 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *duitx.Box, ok bool) {
 	var m, p duit.Space
 	var zs duit.Space
 	var h int
-	w := n.Width()
-	if n.Data() != "body" {
-		h = n.Height()
-	}
-	mw, err := n.CssPx("max-width")
-	if err != nil {
-		log.Printf("max-width: %v", err)
+	var w int
+	var mw int
+
+	if n != nil {
+		w = n.Width()
+		if n.Data() != "body" {
+			h = n.Height()
+		}
+		mw, err = n.CssPx("max-width")
+		if err != nil {
+			log.Printf("max-width: %v", err)
+		}
+
+		if bg, err := n.BoxBackground(); err == nil {
+			i = bg
+		} else {
+			log.Printf("box background: %f", err)
+		}
+
+		if p, err = n.Tlbr("padding"); err != nil {
+			log.Errorf("padding: %v", err)
+		}
+		if m, err = n.Tlbr("margin"); err != nil {
+			log.Errorf("margin: %v", err)
+		}
+
+		if n.Css("display") == "inline" {
+			// Actually this doesn't fix the problem to the full extend
+			// exploded texts' elements might still do double and triple
+			// horizontal pads/margins
+			w = 0
+			mw = 0
+			m.Top = 0
+			m.Bottom = 0
+			p.Top = 0
+			p.Bottom = 0
+		}
+
+		// TODO: make sure input fields can be put into a box
+		if n.Data() =="input" {
+			return nil, false
+		}
 	}
 
-	if bg, err := n.BoxBackground(); err == nil {
-		i = bg
-	} else {
-		log.Printf("box background: %f", err)
-	}
-
-	if p, err = n.Tlbr("padding"); err != nil {
-		log.Errorf("padding: %v", err)
-	}
-	if m, err = n.Tlbr("margin"); err != nil {
-		log.Errorf("margin: %v", err)
-	}
-
-	if n.Css("display") == "inline" {
-		// Actually this doesn't fix the problem to the full extend
-		// exploded texts' elements might still do double and triple
-		// horizontal pads/margins
-		w = 0
-		mw = 0
-		m.Top = 0
-		m.Bottom = 0
-		p.Top = 0
-		p.Bottom = 0
-	}
-
-	// TODO: make sure input fields can be put into a box
-	if n.Data() =="input" {
-		return nil, false
-	}
-
-	if w == 0 && h == 0 && mw == 0 && i == nil && m == zs && p == zs {
+	if w == 0 && h == 0 && mw == 0 && i == nil && m == zs && p == zs && !force {
 		return nil, false
 	}
 
 	box = &duitx.Box{
-		Kids:       duit.NewKids(ui),
+		Kids:       duit.NewKids(uis...),
 		Width:      w,
 		Height:     h,
 		MaxWidth: mw,
@@ -404,6 +409,8 @@ func newBoxElement(ui duit.UI, n *nodes.Node) (box *duitx.Box, ok bool) {
 		Background: i,
 		Margin: m,
 		Padding: p,
+		Dir: duitFlexDir(n),
+		Disp: duitDisplay(n),
 	}
 
 	return box, true
@@ -612,6 +619,22 @@ func NewTextArea(n *nodes.Node) *Element {
 	}
 
 	return el
+}
+
+func (el *Element) Display() duitx.Display {
+	var n *nodes.Node
+	if el != nil {
+		n = el.n
+	}
+	return duitDisplay(n)
+}
+
+func (el *Element) FlexDir() duitx.Dir {
+	var n *nodes.Node
+	if el != nil {
+		n = el.n
+	}
+	return duitFlexDir(n)
 }
 
 func (el *Element) Key(dui *duit.DUI, self *duit.Kid, k rune, m draw.Mouse, orig image.Point) (r duit.Result) {
@@ -829,124 +852,82 @@ func arrangeAbsolute(n *nodes.Node, elements ...*Element) (ael *Element, ok bool
 }
 
 func Arrange(n *nodes.Node, elements ...*Element) *Element {
-	if n.IsFlex() {
-		if n.IsFlexDirectionRow() {
-			return NewElement(horizontalSeq(true, elements), n)
-		} else {
-			return NewElement(verticalSeq(elements), n)
-		}
-	}
-
 	if ael, ok := arrangeAbsolute(n, elements...); ok {
 		return ael
 	}
 
-	rows := make([][]*Element, 0, 10)
-	currentRow := make([]*Element, 0, 10)
-	flushCurrentRow := func() {
-		if len(currentRow) > 0 {
-			rows = append(rows, currentRow)
-			currentRow = make([]*Element, 0, 10)
-		}
-	}
-
-	for _, e := range elements {
-		isInline := e.n.IsInline() || e.n.Type() == html.TextNode
-		if !isInline {
-			flushCurrentRow()
-		}
-		currentRow = append(currentRow, e)
-		if !isInline {
-			flushCurrentRow()
-		}
-	}
-	flushCurrentRow()
-	if len(rows) == 0 {
+	ui := horizontalSeq(n, true, elements)
+	if ui == nil {
 		return nil
-	} else if len(rows) == 1 {
-		if len(rows[0]) == 0 {
-			return nil
-		} else if len(rows[0]) == 1 {
-			return rows[0][0]
-		}
-		s := horizontalSeq(true, rows[0])
-		if el, ok := s.(*Element); ok {
-			return el
-		}
-		return NewElement(s, n)
-	} else {
-		seqs := make([]*Element, 0, len(rows))
-		for _, row := range rows {
-			seq := horizontalSeq(true, row)
-			if el, ok := seq.(*Element); ok {
-				seqs = append(seqs, el)
-			} else {
-				seqs = append(seqs, NewElement(seq, n))
-			}
-		}
-		s := verticalSeq(seqs)
-		if el, ok := s.(*Element); ok {
-			return el
-		}
-		return NewElement(s, n)
+	}
+	return &Element{
+		n: n,
+		UI: ui,
 	}
 }
 
-func horizontalSeq(wrap bool, es []*Element) duit.UI {
+func horizontalSeq(parent *nodes.Node, wrap bool, es []*Element) duit.UI {
 	if len(es) == 0 {
 		return nil
-	} else if len(es) == 1 {
-		return es[0]
 	}
 
-	halign := make([]duit.Halign, 0, len(es))
-	valign := make([]duit.Valign, 0, len(es))
-
-	for i := 0; i < len(es); i++ {
-		halign = append(halign, duit.HalignLeft)
-		valign = append(valign, duit.ValignTop)
-	}
-
-	uis := make([]duit.UI, 0, len(es))
-	for _, e := range es {
-		uis = append(uis, e)
-	}
-
-	if wrap {
-		finalUis := make([]duit.UI, 0, len(uis))
-		for _, ui := range uis {
-			PrintTree(ui)
-			el, ok := ui.(*Element)
-
-			if ok {
-				label, isLabel := el.UI.(*duit.Label)
-				if isLabel {
-					tts := strings.Split(label.Text, " ")
-					for _, t := range tts {
-						finalUis = append(finalUis, NewElement(&duit.Label{
-							Text: t,
-							Font: label.Font,
-						}, el.n))
-					}
-				} else {
-					finalUis = append(finalUis, ui)
-				}
-			} else {
-				finalUis = append(finalUis, ui)
+	finalUis := make([]duit.UI, 0, len(es))
+	for _, el := range es {
+		label, isLabel := el.UI.(*duit.Label)
+		if isLabel {
+			tts := strings.Split(label.Text, " ")
+			for _, t := range tts {
+				finalUis = append(finalUis, NewElement(&duit.Label{
+					Text: t,
+					Font: label.Font,
+				}, el.n))
+			}
+		} else {
+			if el != nil {
+				finalUis = append(finalUis, el)
 			}
 		}
+	}
 
-		return &duitx.Box{
-			Kids:    duit.NewKids(finalUis...),
-		}
-	} else {
-		return &duitx.Grid{
-			Columns: len(es),
-			Padding: duit.NSpace(len(es), duit.SpaceXY(0, 3)),
-			Halign:  halign,
-			Valign:  valign,
-			Kids:    duit.NewKids(uis...),
-		}
+	b, ok := newBoxElement(parent, true, finalUis...)
+	if !ok {
+		return nil
+	}
+	return b
+}
+
+func duitDisplay(n *nodes.Node) duitx.Display {
+	if n == nil {
+		return duitx.InlineBlock
+	}
+	if n.Css("float") == "left" {
+		return duitx.InlineBlock
+	} else if cl := n.Css("clear"); cl == "left" || cl == "both" {
+		return duitx.Block
+	}
+	switch n.Css("display") {
+	case "inline":
+		return duitx.Inline
+	case "block":
+		return duitx.Block
+	case "flex":
+		return duitx.Flex
+	default:
+		return duitx.InlineBlock
+	}
+}
+
+func duitFlexDir(n *nodes.Node) duitx.Dir {
+	if n == nil {
+		return 0
+	}
+	switch n.Css("flex-direction") {
+	case "row":
+		return duitx.Row
+	case "column":
+		return duitx.Column
+	default:
+		return 0
 	}
 }
 
@@ -968,12 +949,6 @@ func verticalSeq(es []*Element) duit.UI {
 		Halign:  []duit.Halign{duit.HalignLeft},
 		Valign:  []duit.Valign{duit.ValignTop},
 		Kids:    duit.NewKids(uis...),
-	}
-}
-
-func check(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s\n", msg, err)
 	}
 }
 
@@ -1086,7 +1061,7 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 			}
 
 			if len(rowEls) > 0 {
-				seq := horizontalSeq(false, rowEls)
+				seq := horizontalSeq(nil, false, rowEls)
 				seqs = append(seqs, NewElement(seq, row.n))
 			}
 		}
@@ -1158,7 +1133,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 			return
 		case "input":
 			t := n.Attr("type")
-			if t == "" || t == "text" || t == "search" || t == "password" {
+			if t == "" || t == "text" || t == "email" || t == "search" || t == "password" {
 				return NewInputField(n)
 			} else if t == "submit" {
 				return NewSubmitButton(b, n)
@@ -1227,21 +1202,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 			}
 			fallthrough
 		default:
-			if !n.IsInline() {
-				// Explicitly keep block elements to preserve rows from
-				// getting squashed
-				innerContent := InnerNodesToBox(r+1, b, n)
-				if innerContent == nil {
-					return nil
-				}
-				if innerContent.n == n {
-					return innerContent
-				}
-				return NewElement(innerContent, n)
-			} else {
-				// Internal node object
-				return InnerNodesToBox(r+1, b, n)
-			}
+			return InnerNodesToBox(r+1, b, n)
 		}
 	} else if n.Type() == html.TextNode {
 		// Leaf text object
@@ -1284,7 +1245,7 @@ func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
 			if len(ls) == 0 {
 				continue
 			}
-			el := NewElement(horizontalSeq(true, ls), c)
+			el := NewElement(horizontalSeq(c, true, ls), c)
 			if el == nil {
 				continue
 			}
@@ -1296,8 +1257,6 @@ func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
 
 	if len(els) == 0 {
 		return nil
-	} else if len(els) == 1 {
-		return els[0]
 	}
 
 	return Arrange(n, els...)
