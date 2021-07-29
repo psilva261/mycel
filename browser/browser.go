@@ -1014,40 +1014,59 @@ func (t *Table) numColsMax() (max int) {
 func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 	numRows := len(t.rows)
 	numCols := t.numColsMax()
+	useOneGrid := t.numColsMin() == t.numColsMax()
 
 	if numCols == 0 {
 		return nil
 	}
 
-	uis := make([]duit.UI, 0, numRows*numCols)
+	if useOneGrid {
+		uis := make([]duit.UI, 0, numRows*numCols)
 
-	for _, row := range t.rows {
-		for _, td := range row.columns {
-			uis = append(uis, NodeToBox(r+1, b, td))
+		for _, row := range t.rows {
+			for _, td := range row.columns {
+				uis = append(uis, NodeToBox(r+1, b, td))
+			}
 		}
-		for i := len(row.columns); i < numCols; i++ {
-			uis = append(uis, &duitx.Label{})
+
+		halign := make([]duit.Halign, 0, len(uis))
+		valign := make([]duit.Valign, 0, len(uis))
+
+		for i := 0; i < numCols; i++ {
+			halign = append(halign, duit.HalignLeft)
+			valign = append(valign, duit.ValignTop)
 		}
+
+		return NewElement(
+			&duitx.Grid{
+				Columns: numCols,
+				Padding: duit.NSpace(numCols, duit.SpaceXY(0, 3)),
+				Halign:  halign,
+				Valign:  valign,
+				Kids:    duit.NewKids(uis...),
+			},
+			n,
+		)
+	} else {
+		seqs := make([]*Element, 0, len(t.rows))
+
+		for _, row := range t.rows {
+			rowEls := make([]*Element, 0, len(row.columns))
+			for _, col := range row.columns {
+				ui := NodeToBox(r+1, b, col)
+				if ui != nil {
+					el := NewElement(ui, col)
+					rowEls = append(rowEls, el)
+				}
+			}
+
+			if len(rowEls) > 0 {
+				seq := horizontalSeq(nil, false, rowEls)
+				seqs = append(seqs, NewElement(seq, row.n))
+			}
+		}
+		return NewElement(verticalSeq(seqs), n)
 	}
-
-	halign := make([]duit.Halign, 0, len(uis))
-	valign := make([]duit.Valign, 0, len(uis))
-
-	for i := 0; i < numCols; i++ {
-		halign = append(halign, duit.HalignLeft)
-		valign = append(valign, duit.ValignTop)
-	}
-
-	return NewElement(
-		&duitx.Grid{
-			Columns: numCols,
-			Padding: duit.NSpace(numCols, duit.SpaceXY(0, 3)),
-			Halign:  halign,
-			Valign:  valign,
-			Kids:    duit.NewKids(uis...),
-		},
-		n,
-	)
 }
 
 type TableRow struct {

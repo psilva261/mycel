@@ -23,7 +23,6 @@ package duitx
 import (
 	"fmt"
 	"image"
-	"math"
 
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
@@ -91,14 +90,7 @@ func (ui *Grid) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, for
 		space := spaces[col]
 		for i := col; i < len(ui.Kids); i += ui.Columns {
 			k := ui.Kids[i]
-
-			// Prevent wide columns to use up all space at once
-			colsLeft := len(ui.Kids)-i
-			wAvail := sizeAvail.X-width-space.Dx()
-			wAvail = int(float64(wAvail) / (float64(colsLeft)/math.Phi))
-			yAvail := sizeAvail.Y-space.Dy()
-
-			k.UI.Layout(dui, k, image.Pt(wAvail, yAvail), true)
+			k.UI.Layout(dui, k, image.Pt(sizeAvail.X-width-space.Dx(), sizeAvail.Y-space.Dy()), true)
 			newDx = maximum(newDx, k.R.Dx()+space.Dx())
 		}
 		ui.widths[col] = newDx
