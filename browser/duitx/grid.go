@@ -90,12 +90,23 @@ func (ui *Grid) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, for
 		space := spaces[col]
 		for i := col; i < len(ui.Kids); i += ui.Columns {
 			k := ui.Kids[i]
-			k.UI.Layout(dui, k, image.Pt(sizeAvail.X-width-space.Dx(), sizeAvail.Y-space.Dy()), true)
+			k.UI.Layout(dui, k, image.Pt(sizeAvail.X-space.Dx(), sizeAvail.Y-space.Dy()), true)
 			newDx = maximum(newDx, k.R.Dx()+space.Dx())
 		}
 		ui.widths[col] = newDx
 		width += ui.widths[col]
 	}
+
+	// Reduce used widths if too large
+	if width > sizeAvail.X {
+		r := float64(sizeAvail.X) / float64(width)
+		width = sizeAvail.X
+		for i := range ui.widths {
+			ui.widths[i] = int(float64(ui.widths[i])*r)
+		}
+	}
+
+	// Enable full width if activated
 	if scaledWidth < 0 && width < sizeAvail.X {
 		leftover := sizeAvail.X - width
 		given := 0
