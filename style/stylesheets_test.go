@@ -13,27 +13,13 @@ func init() {
 	log.Debug = true
 }
 
-func d(c string) Map {
-	m := Map{
-		Declarations: make(map[string]css.Declaration),
-	}
-	m.Declarations["color"] = css.Declaration{
-		Property: "color",
-		Value:    c,
-	}
-	return m
-}
-
 func TestColorHex(t *testing.T) {
-	tr := d("red")
-	hr := d("#ff0000")
-
-	tri, ok := tr.colorHex("color")
+	tri, ok := colorHex("red")
 	if !ok {
 		t.Fail()
 	}
 
-	hri, ok := hr.colorHex("color")
+	hri, ok := colorHex("#ff0000")
 	if !ok {
 		t.Fail()
 	}
@@ -41,12 +27,14 @@ func TestColorHex(t *testing.T) {
 	if tri != hri {
 		t.Fatalf("tri=%x hri=%x", tri, hri)
 	}
+
+	if _, ok := colorHex("rgb(1,2)"); ok {
+		t.Fail()
+	}
 }
 
 func TestColorHex3(t *testing.T) {
-	m := d("#fff")
-
-	c, ok := m.colorHex("color")
+	c, ok := colorHex("#fff")
 	if !ok {
 		t.Fail()
 	}

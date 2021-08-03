@@ -176,7 +176,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 		}
 
 		// for media queries
-		if strings.Contains(r.Prelude, "print") {
+		if strings.Contains(r.Prelude, "print") && !strings.Contains(r.Prelude, "screen") {
 			continue
 		}
 		if rMaxWidth.MatchString(r.Prelude) {
@@ -366,96 +366,98 @@ func (cs Map) FontHeight() float64 {
 }
 
 func (cs Map) Color() draw.Color {
-	h, ok := cs.colorHex("color")
-	if !ok {
-		return draw.Black
+	if d, ok := cs.Declarations["color"]; ok {
+		if h, ok := colorHex(d.Value); ok {
+			c := draw.Color(h)
+			return c
+		}
 	}
-	c := draw.Color(h)
-	return c
+	return draw.Black
 }
 
-func (cs Map) colorHex(cssPropName string) (c draw.Color, ok bool) {
-	propVal, ok := cs.Declarations[cssPropName]
-	if ok {
-		var r, g, b uint32
-		if strings.HasPrefix(propVal.Value, "rgb") {
-			val := propVal.Value[3:]
-			val = strings.TrimPrefix(val, "(")
-			val = strings.TrimSuffix(val, ")")
-			vals := strings.Split(val, ",")
-			rr, err := strconv.ParseInt(vals[0], 10, 32)
+func colorHex(propVal string) (c draw.Color, ok bool) {
+	var r, g, b uint32
+	var x uint32
+	if strings.HasPrefix(propVal, "rgb") {
+		val := propVal[3:]
+		val = strings.TrimPrefix(val, "a")
+		val = strings.TrimPrefix(val, "(")
+		val = strings.TrimSuffix(val, ")")
+		vals := strings.Split(val, ",")
+		if len(vals) < 3 {
+			log.Errorf("vals=%+v", vals)
+			return
+		}
+		rr, err := strconv.ParseInt(vals[0], 10, 32)
+		if err != nil {
+			goto default_value
+		}
+		gg, err := strconv.ParseInt(vals[1], 10, 32)
+		if err != nil {
+			goto default_value
+		}
+		bb, err := strconv.ParseInt(vals[2], 10, 32)
+		if err != nil {
+			goto default_value
+		}
+		r = uint32(rr) * 256
+		g = uint32(gg) * 256
+		b = uint32(bb) * 256
+	} else if strings.HasPrefix(propVal, "#") {
+		hexColor := propVal[1:]
+
+		if len(hexColor) == 3 {
+			rr, err := strconv.ParseInt(hexColor[0:1], 16, 32)
 			if err != nil {
 				goto default_value
 			}
-			gg, err := strconv.ParseInt(vals[1], 10, 32)
+			gg, err := strconv.ParseInt(hexColor[1:2], 16, 32)
 			if err != nil {
 				goto default_value
 			}
-			bb, err := strconv.ParseInt(vals[2], 10, 32)
+			bb, err := strconv.ParseInt(hexColor[2:3], 16, 32)
+			if err != nil {
+				goto default_value
+			}
+			r = uint32(rr) * 256 * 0x11
+			g = uint32(gg) * 256 * 0x11
+			b = uint32(bb) * 256 * 0x11
+		} else if len(hexColor) == 6 {
+			rr, err := strconv.ParseInt(hexColor[0:2], 16, 32)
+			if err != nil {
+				goto default_value
+			}
+			gg, err := strconv.ParseInt(hexColor[2:4], 16, 32)
+			if err != nil {
+				goto default_value
+			}
+			bb, err := strconv.ParseInt(hexColor[4:6], 16, 32)
 			if err != nil {
 				goto default_value
 			}
 			r = uint32(rr) * 256
 			g = uint32(gg) * 256
 			b = uint32(bb) * 256
-		} else if strings.HasPrefix(propVal.Value, "#") {
-			hexColor := propVal.Value[1:]
-
-			if len(hexColor) == 3 {
-				rr, err := strconv.ParseInt(hexColor[0:1], 16, 32)
-				if err != nil {
-					goto default_value
-				}
-				gg, err := strconv.ParseInt(hexColor[1:2], 16, 32)
-				if err != nil {
-					goto default_value
-				}
-				bb, err := strconv.ParseInt(hexColor[2:3], 16, 32)
-				if err != nil {
-					goto default_value
-				}
-				r = uint32(rr) * 256 * 0x11
-				g = uint32(gg) * 256 * 0x11
-				b = uint32(bb) * 256 * 0x11
-			} else if len(hexColor) == 6 {
-				rr, err := strconv.ParseInt(hexColor[0:2], 16, 32)
-				if err != nil {
-					goto default_value
-				}
-				gg, err := strconv.ParseInt(hexColor[2:4], 16, 32)
-				if err != nil {
-					goto default_value
-				}
-				bb, err := strconv.ParseInt(hexColor[4:6], 16, 32)
-				if err != nil {
-					goto default_value
-				}
-				r = uint32(rr) * 256
-				g = uint32(gg) * 256
-				b = uint32(bb) * 256
-			} else {
-				goto default_value
-			}
-		} else if propVal.Value == "inherit" {
-			// TODO: handle properly
-			goto default_value
 		} else {
-			colorRGBA, ok := colornames.Map[propVal.Value]
-			if !ok {
-				goto default_value
-			}
-			r, g, b, _ = colorRGBA.RGBA()
+			goto default_value
 		}
-
-		x := (r / 256) << 24
-		x = x | ((g / 256) << 16)
-		x = x | ((b / 256) << 8)
-		x = x | 0x000000ff
-
-		return draw.Color(uint32(x)), true
+	} else if propVal == "inherit" {
+		// TODO: handle properly
+		goto default_value
 	} else {
-		return 0, false
+		colorRGBA, ok := colornames.Map[propVal]
+		if !ok {
+			goto default_value
+		}
+		r, g, b, _ = colorRGBA.RGBA()
 	}
+
+	x = (r / 256) << 24
+	x = x | ((g / 256) << 16)
+	x = x | ((b / 256) << 8)
+	x = x | 0x000000ff
+
+	return draw.Color(uint32(x)), true
 default_value:
 	log.Printf("could not interpret %v", propVal)
 	return 0, false

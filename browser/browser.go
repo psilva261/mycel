@@ -673,7 +673,7 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 	maxX := self.R.Dx()
 	maxY := self.R.Dy()
 	if 5 <= x && x <= (maxX-5) && 5 <= y && y <= (maxY-5) && el.IsLink {
-		//dui.Display.SetCursor(&draw.Cursor{
+		//dui.Display.SwitchCursor(&draw.Cursor{
 		//	Set: cursor,
 		//})
 		if m.Buttons == 0 {
@@ -681,7 +681,7 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 			return r
 		}
 	} else {
-		dui.Display.SetCursor(nil)
+		dui.Display.SwitchCursor(nil)
 	}
 
 	return el.UI.Mouse(dui, self, m, origM, orig)

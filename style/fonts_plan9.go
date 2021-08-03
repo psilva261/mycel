@@ -26,7 +26,7 @@ func initFonts() {
 		// unit tests
 		return
 	}
-	def := dui.Display.DefaultFont.Name
+	def := dui.Display.Font.Name
 	ms, err := fontsLike(def)
 	if err != nil {
 		log.Errorf("find fonts: %v", err)
