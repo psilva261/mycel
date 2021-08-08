@@ -1,7 +1,8 @@
 name64='opossum-amd64'
 name32='opossum-386'
-tarball64=`{pwd} ^ '/packages/' ^ $name64 ^ '-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
-tarball32=`{pwd} ^ '/packages/' ^ $name32 ^ '-' ^ `{date -i} ^ '-' ^ `{cat /mnt/git/branch/heads/master/hash | read -c 6} ^ '.tgz'
+version=`{date -i} ^ '-' ^ `{cat .git/fs/branch/heads/master/hash | read -c 6}
+tarball64=`{pwd} ^ '/packages/' ^ $name64 ^ '-' ^ $version ^ '.tgz'
+tarball32=`{pwd} ^ '/packages/' ^ $name32 ^ '-' ^ $version ^ '.tgz'
 
 fn build {
 	tarball=$1
@@ -22,7 +23,7 @@ fn build {
 	cd ../..
 	mv cmd/opossum/$name cmd/gojafs/gojafs ./$name/
 	cp README.md ./$name/
-	cp opossum.jpg ./$name/
+-	cp opossum.jpg ./$name/
 	tar czf $tarball $name
 	chmod +t $tarball
 	echo Created $tarball

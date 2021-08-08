@@ -125,6 +125,11 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 	log.Printf("%v html nodes found...", countHtmlNodes(doc))
 
 	body := grep(doc, "body")
+	if body == nil {
+		// TODO: handle frameset without noframes
+		log.Errorf("html has no body")
+		return
+	}
 
 	log.Printf("Layout website...")
 	nt := nodes.NewNodeTree(body, style.Map{}, nodeMap, &nodes.Node{})
