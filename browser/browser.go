@@ -586,7 +586,7 @@ func NewSelect(n *nodes.Node) *Element {
 	if n.Css("height") == "" {
 		n.SetCss("height", fmt.Sprintf("%vpx", 4 * n.Font().Height))
 	}
-	return NewElement(duitx.NewScroll(l), n)
+	return NewElement(duit.NewScroll(l), n)
 }
 
 func NewTextArea(n *nodes.Node) *Element {
@@ -673,11 +673,11 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 	maxX := self.R.Dx()
 	maxY := self.R.Dy()
 	if 5 <= x && x <= (maxX-5) && 5 <= y && y <= (maxY-5) && el.IsLink {
-		//dui.Display.SwitchCursor(&draw.Cursor{
-		//	Set: cursor,
-		//})
+		dui.Display.SwitchCursor(&draw.Cursor{
+			Black: cursor,
+		})
 		if m.Buttons == 0 {
-			r.Consumed = true
+			//r.Consumed = true
 			return r
 		}
 	} else {

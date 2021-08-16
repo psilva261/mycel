@@ -24,11 +24,14 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"time"
 
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum/logger"
 )
+
+const maxAge = time.Minute
 
 // Scroll shows a part of its single child, typically a box, and lets you scroll the content.
 type Scroll struct {
@@ -44,13 +47,104 @@ type Scroll struct {
 	scrollbarSize int
 	lastMouseUI   duit.UI
 	drawOffset int
+
+	tiles map[int]*draw.Image
+	last map[int]time.Time
+	tilesChanged bool
 }
 
 var _ duit.UI = &Scroll{}
 
 // NewScroll returns a full-height scroll bar containing ui.
-func NewScroll(ui duit.UI) *Scroll {
-	return &Scroll{Height: -1, Kid: duit.Kid{UI: ui}}
+func NewScroll(dui *duit.DUI, ui duit.UI) *Scroll {
+	s := &Scroll{
+		Height: -1,
+		Kid: duit.Kid{UI: ui},
+		tiles: make(map[int]*draw.Image),
+		last: make(map[int]time.Time),
+	}
+	return s
+}
+
+func (ui *Scroll) Free() {
+	for _, tl := range ui.tiles {
+		tl.Free()
+	}
+	ui.tiles = make(map[int]*draw.Image)
+	ui.last = make(map[int]time.Time)
+}
+
+func (ui *Scroll) freeCur() {
+	i, of := ui.pos()
+	tl, ok := ui.tiles[i]
+	tl1, ok1 := ui.tiles[i+1]
+	if !ui.tilesChanged && (!ok || ui.sizeOk(tl)) && (of == 0 || !ok1 || ui.sizeOk(tl1)) {
+		return
+	}
+	if ui.tiles[i] != nil {
+		ui.tiles[i].Free()
+		delete(ui.tiles, i)
+		delete(ui.last, i)
+	}
+	if of > 0 {
+		if ui.tiles[i+1] != nil {
+			ui.tiles[i+1].Free()
+			delete(ui.tiles, i+1)
+			delete(ui.last, i+1)
+		}
+	}
+	ui.tilesChanged = false
+}
+
+func (ui *Scroll) sizeOk(tl *draw.Image) bool {
+	return tl != nil && tl.R.Dx() == ui.r.Dx() && tl.R.Dy() == ui.r.Dy()
+}
+
+func (ui *Scroll) ensure(dui *duit.DUI, i int) {
+	log.Printf("ensure(dui, %v)", i)
+	last, ok := ui.last[i]
+	tl, _ := ui.tiles[i]
+	if ok && time.Since(last) < maxAge  && ui.sizeOk(tl) {
+		return
+	}
+
+	log.Printf("ensure(dui, %v): draw", i)
+	r := ui.r.Add(image.Point{X: 0, Y: i*ui.r.Dy()})
+	img, err := dui.Display.AllocImage(r, draw.ARGB32, false, dui.BackgroundColor)
+	if duitError(dui, err, "allocimage") {
+		return
+	}
+	ui.Kid.UI.Draw(dui, &ui.Kid, img, image.ZP, draw.Mouse{}, true)
+
+	if ui.tiles[i] != nil {
+		ui.tiles[i].Free()
+		ui.tiles[i] = nil
+	}
+	log.Printf("ensure: ui.tiles[%d] = img(R=%+v, ...)", i, img.R)
+	ui.tiles[i] = img
+	ui.last[i] = time.Now()
+
+	for j, t := range ui.tiles {
+		if math.Abs(float64(i-j)) > 5 {
+			t.Free()
+			delete(ui.tiles, j)
+			delete(ui.last, j)
+		}
+	}
+}
+
+func (ui *Scroll) pos() (t, of int) {
+	t = ui.Offset / ui.r.Dy()
+	of = ui.Offset % ui.r.Dy()
+	return
+}
+
+func (ui *Scroll) tlR(i int) (r image.Rectangle) {
+	r.Min.X = ui.r.Min.X
+	r.Max.X = ui.r.Max.X
+	r.Min.Y = ui.r.Min.Y+i*ui.r.Dy()
+	r.Max.Y = r.Min.Y+ui.r.Dy()
+	return
 }
 
 func (ui *Scroll) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, force bool) {
@@ -86,6 +180,7 @@ func (ui *Scroll) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, f
 		ui.childR.Max.Y = kY
 	}
 	self.R = rect(ui.r.Size())
+	ui.Free()
 }
 
 func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
@@ -93,13 +188,21 @@ func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig imag
 
 	if self.Draw == duit.Clean {
 		return
+	} else {
+		log.Printf("Draw: self.Draw=%v is not clean, force=%v", self.Draw, force)
 	}
-	self.Draw = duit.Clean
 
 	if ui.r.Empty() {
+		self.Draw = duit.Clean
 		return
 	}
 
+	ui.drawBar(dui, self, img, orig, m, force)
+	ui.drawChild(dui, self, img, orig, m, force)
+	self.Draw = duit.Clean
+}
+
+func (ui *Scroll) drawBar(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
 	// ui.scroll(0)
 	barHover := m.In(ui.barR)
 
@@ -124,65 +227,89 @@ func (ui *Scroll) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig imag
 		barActiveR.Max.X -= 1 // unscaled
 		img.Draw(barActiveR, vis, nil, image.ZP)
 	}
+}
 
+func (ui *Scroll) drawChild(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
 	// draw child ui
 	if ui.childR.Empty() {
 		return
 	}
-	d := math.Abs(float64(ui.drawOffset - ui.Offset))
-	if  d > float64(ui.r.Max.Y) {
-		ui.Kid.Draw = duit.Dirty
-	}
-	if ui.img == nil || ui.drawRect().Size() != ui.img.R.Size() || ui.Kid.Draw == duit.Dirty {
-		var err error
-		if ui.img != nil {
-			ui.img.Free()
-			ui.img = nil
-		}
-		ui.Kid.Draw = duit.Dirty
-		if ui.Kid.R.Dx() == 0 || ui.Kid.R.Dy() == 0 {
-			return
-		}
-		ui.img, err = dui.Display.AllocImage(ui.drawRect(), draw.ARGB32, false, dui.BackgroundColor)
-		if duitError(dui, err, "allocimage") {
-			return
-		}
-		ui.drawOffset = ui.Offset
-	} else if ui.Kid.Draw == duit.Dirty {
-		ui.img.Draw(ui.img.R, dui.Background, nil, image.ZP)
-	}
-	m.Point = m.Point.Add(image.Pt(-ui.childR.Min.X, ui.Offset))
-	if ui.Kid.Draw != duit.Clean {
-		if force {
-			ui.Kid.Draw = duit.Dirty
-		}
-		ui.Kid.UI.Draw(dui, &ui.Kid, ui.img, image.ZP, m, ui.Kid.Draw == duit.Dirty)
-		ui.Kid.Draw = duit.Clean
-	}
-	img.Draw(ui.childR.Add(orig), ui.img, nil, image.Pt(0, ui.Offset))
-}
+	
+	var i, of int
+	var tl, tl1 *draw.Image
+	var ok, ok1, ok2, ok3, okm1, okm2 bool
+	p := draw.Point{X: 0, Y: ui.Offset}
+	n := draw.Point{X: 0, Y: -ui.Offset}
 
-// Allocate only an image buffer of view size ui.r
-// - which is translated by scroll offset ui.Offset - instead
-// of whole Kid view size ui.Kid.R which leads to much
-// faster render times for large pages. Add same size rectangles
-// above/below to decrease flickering.
-func (ui *Scroll) drawRect() image.Rectangle {
-	if 2*ui.r.Dy() > ui.Kid.R.Dy() {
-		return ui.Kid.R
+	predrawCur := func() {
+		// tile draw
+		i, of = ui.pos()
+		tl, ok = ui.tiles[i]
+		tl1, ok1 = ui.tiles[i+1]
+		if !ok { ui.ensure(dui, i) }
+		if !ok1 { ui.ensure(dui, i+1) }
+		if !ok { tl, _ = ui.tiles[i] }
+		if !ok1 && of > 0 { tl1, _ = ui.tiles[i+1] }
 	}
-	r := image.Rectangle{
-		Min: ui.r.Min,
-		Max: image.Point{
-			ui.r.Max.X,
-			3*ui.r.Max.Y,
+
+	predrawFut := func() {
+		// tile draw
+		i, of = ui.pos()
+		tl1, ok1 = ui.tiles[i+1]
+		_, ok2 = ui.tiles[i+2]
+		_, ok3 = ui.tiles[i+3]
+		if i > 0 {
+			_, okm1 = ui.tiles[i-1]
+		}
+		if i > 1 {
+			_, okm2 = ui.tiles[i-2]
+		}
+		if of == 0 && !ok1 { ui.ensure(dui, i+1) }
+		if ok1 && !ok2 { ui.ensure(dui, i+2) }
+		if ok2 && !ok3 { ui.ensure(dui, i+3) }
+		if i > 0 && !okm1 { ui.ensure(dui, i-1) }
+		if i > 1 && okm1 && !okm2 { ui.ensure(dui, i-2) }
+	}
+	defer predrawFut()
+
+	if self.Draw == duit.DirtyKid {
+		ui.freeCur()
+		ui.Kid.Draw = duit.Clean
+	} else if ui.Kid.Draw != duit.Clean || force {
+		log.Printf("drawChild: refresh: ui.Kid.Draw=%v  force=%v", ui.Kid.Draw, force)
+		log.Flush()
+		ui.freeCur()
+		tmp := img.Clipr
+		img.ReplClipr(false, ui.childR.Add(orig))
+		ui.Kid.UI.Draw(dui, &ui.Kid, img, orig.Add(ui.childR.Min).Add(n), draw.Mouse{}, true)
+		img.ReplClipr(false, tmp)
+		ui.Kid.Draw = duit.Clean
+		return
+	}
+
+	predrawCur()
+
+	rTop := draw.Rectangle{
+		Min: ui.childR.Min,
+		Max: draw.Point{
+			X: ui.childR.Max.X,
+			Y: ui.childR.Max.Y - of,
 		},
 	}
-	r = r.Add(image.Point{X:0, Y:ui.Offset-ui.r.Max.Y})
-	if r.Min.Y > ui.Offset {
-		r.Min.Y -= ui.Offset
+	rBtm := draw.Rectangle{
+		Min: draw.Point{
+			X: ui.childR.Min.X,
+			Y: rTop.Max.Y,
+		},
+		Max: ui.childR.Max,
 	}
-	return r
+	pOf := draw.Point{X: 0, Y: ui.Offset+rTop.Dy()}
+	img.Draw(rTop.Add(orig), tl, nil, p)
+	if of > 0 {
+		img.Draw(rBtm.Add(orig), tl1, nil, pOf)
+	}
+
+	return
 }
 
 func (ui *Scroll) scroll(delta int) (changed bool) {
@@ -240,8 +367,14 @@ func (ui *Scroll) result(dui *duit.DUI, self *duit.Kid, r *duit.Result, scrolled
 		ui.Kid.Layout = duit.Clean
 		ui.Kid.Draw = duit.Dirty
 		self.Draw = duit.Dirty
+		if r.Consumed && !scrolled {
+			ui.tilesChanged = true
+		}
 	} else if ui.Kid.Draw != duit.Clean || scrolled {
 		self.Draw = duit.Dirty
+		if r.Consumed && !scrolled {
+			ui.tilesChanged = true
+		}
 	}
 }
 
@@ -252,7 +385,7 @@ func (ui *Scroll) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.
 	nm.Point = nm.Point.Add(image.Pt(-ui.scrollbarSize, ui.Offset))
 
 	if m.Buttons == 0 {
-		ui.Kid.UI.Mouse(dui, &ui.Kid, nm, nOrigM, image.ZP)
+		ui.Kid.UI.Mouse(dui, &ui.Kid, nm, nOrigM, image.ZP) // comment this to have no flicker after mouse move and then scroll
 		return
 	}
 	if m.Point.In(ui.barR) {
@@ -269,6 +402,8 @@ func (ui *Scroll) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.
 		r = ui.Kid.UI.Mouse(dui, &ui.Kid, nm, nOrigM, image.ZP)
 		if r.Consumed {
 			self.Draw = duit.Dirty
+			ui.tilesChanged = true
+			log.Printf("Mouse: set ui.tilesChanged = true")
 		}
 	}
 	return
@@ -283,15 +418,18 @@ func (ui *Scroll) Key(dui *duit.DUI, self *duit.Kid, k rune, m draw.Mouse, orig 
 		}
 	}
 	if m.Point.In(ui.childR) {
+		log.Printf("Key: in ui.childR (self.Draw=%v)", self.Draw)
 		m.Point = m.Point.Add(image.Pt(-ui.scrollbarSize, ui.Offset))
+		scrolled := ui.scrollKey(k)
+		if scrolled {
+			self.Draw = duit.Dirty
+			r.Consumed = scrolled
+			return
+		}
 		r = ui.Kid.UI.Key(dui, &ui.Kid, k, m, image.ZP)
 		ui.warpScroll(dui, self, r.Warp, orig)
-		scrolled := false
-		if !r.Consumed {
-			scrolled = ui.scrollKey(k)
-			r.Consumed = scrolled
-		}
 		ui.result(dui, self, &r, scrolled)
+		log.Printf("Key: in ui.childR (self.Draw'=%v)", self.Draw)
 	}
 	return
 }

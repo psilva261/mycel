@@ -133,9 +133,11 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 
 	log.Printf("Layout website...")
 	nt := nodes.NewNodeTree(body, style.Map{}, nodeMap, &nodes.Node{})
-	scroller = duitx.NewScroll(
-		NodeToBox(0, browser, nt),
-	)
+	if scroller != nil {
+		scroller.Free()
+		scroller = nil
+	}
+	scroller = duitx.NewScroll(dui, NodeToBox(0, browser, nt))
 	numElements := 0
 	TraverseTree(scroller, func(ui duit.UI) {
 		numElements++
@@ -145,9 +147,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 	if numElements < 10 {
 		log.Errorf("Less than 10 elements layouted, seems css processing failed. Will layout without css")
 		nt = nodes.NewNodeTree(body, style.Map{}, make(map[*html.Node]style.Map), nil)
-		scroller = duitx.NewScroll(
-			NodeToBox(0, browser, nt),
-		)
+		scroller = duitx.NewScroll(dui, NodeToBox(0, browser, nt))
 		w.UI = scroller
 	}
 
