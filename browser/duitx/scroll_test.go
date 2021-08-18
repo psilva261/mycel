@@ -1,9 +1,35 @@
 package duitx
 
 import (
+	"9fans.net/go/draw"
+	"github.com/mjl-/duit"
 	"image"
 	"testing"
+	"time"
 )
+
+func TestFreeCur(t *testing.T) {
+	ui := &Scroll{
+		r: image.Rectangle{
+			Min: image.Point{0, 0},
+			Max: image.Point{100, 1000},
+		},
+		Offset: 1,
+		tiles: make(map[int]*draw.Image),
+		last: make(map[int]time.Time),
+	}
+	dui, err := duit.NewDUI("scroll_test", nil)
+	if err != nil { t.Fatalf("err: %v", err) }
+	r := rect(draw.Point{100,100})
+	for i := 0; i < 10; i++ {
+		ui.tiles[i], err = dui.Display.AllocImage(r, draw.ARGB32, false, 0xff00ff00)
+		if err != nil { t.Fatalf("err: %v", err) }
+	}
+	ui.freeCur()
+	if len(ui.tiles) != 8 {
+		t.Fail()
+	}
+}
 
 func TestPos(t *testing.T) {
 	s := &Scroll{
