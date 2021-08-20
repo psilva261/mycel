@@ -786,7 +786,7 @@ func setAttr(n *html.Node, key, val string) {
 	n.Attr = append(n.Attr, newAttr)
 }
 
-func placeFunc(name string, place *duit.Place) func(self *duit.Kid, sizeAvail image.Point) {
+func placeFunc(name string, place *duitx.Place) func(self *duit.Kid, sizeAvail image.Point) {
 	return func(self *duit.Kid, sizeAvail image.Point) {
 		for i, kid := range place.Kids {
 			el := kid.UI.(*Element)
@@ -842,7 +842,7 @@ func arrangeAbsolute(n *nodes.Node, elements ...*Element) (ael *Element, ok bool
 	for _, a := range absolutes {
 		uis = append(uis, a)
 	}
-	pl := &duit.Place{
+	pl := &duitx.Place{
 		Kids: duit.NewKids(uis...),
 		Background: bg,
 	}
@@ -1301,7 +1301,7 @@ func traverseTree(r int, ui duit.UI, f func(ui duit.UI)) {
 	case *duit.Edit:
 	case *duit.Button:
 	case *duit.List:
-	case *duit.Place:
+	case *duitx.Place:
 		for _, kid := range v.Kids {
 			traverseTree(r+1, kid.UI, f)
 		}
