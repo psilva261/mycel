@@ -668,7 +668,7 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 			}
 		}
 	}
-	x := m.Point.X
+	/*x := m.Point.X
 	y := m.Point.Y
 	maxX := self.R.Dx()
 	maxY := self.R.Dy()
@@ -682,7 +682,7 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 		}
 	} else {
 		dui.Display.SwitchCursor(nil)
-	}
+	}*/
 
 	return el.UI.Mouse(dui, self, m, origM, orig)
 }
