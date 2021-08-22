@@ -1492,6 +1492,13 @@ func (b *Browser) Back() (e duit.Event) {
 
 func (b *Browser) SetAndLoadUrl(u *url.URL) func() duit.Event {
 	return func() duit.Event {
+		// Stop updating existing widgets
+		if scroller != nil {
+			scroller.Free()
+			scroller = nil
+		}
+		b.showBodyMessage("")
+
 		if !b.loading {
 			b.loading = true
 			b.LocationField.Text = u.String()
