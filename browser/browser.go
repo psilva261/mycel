@@ -939,12 +939,20 @@ func verticalSeq(es []*Element) duit.UI {
 	}
 
 	uis := make([]duit.UI, 0, len(es))
+	colSpans := make([]int, 0, len(es))
+	rowSpans := make([]int, 0, len(es))
+	
 	for _, e := range es {
 		uis = append(uis, e)
+		colSpans = append(colSpans, 1)
+		rowSpans = append(rowSpans, 1)
 	}
 
 	return &duitx.Grid{
 		Columns: 1,
+		Rows: len(uis),
+		ColSpans: colSpans,
+		RowSpans: rowSpans,
 		Padding: duit.NSpace(1, duit.SpaceXY(0, 3)),
 		Halign:  []duit.Halign{duit.HalignLeft},
 		Valign:  []duit.Valign{duit.ValignTop},
@@ -1029,10 +1037,16 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 			}
 		}
 
+		colSpans := make([]int, 0, len(uis))
+		rowSpans := make([]int, 0, len(uis))
 		halign := make([]duit.Halign, 0, len(uis))
 		valign := make([]duit.Valign, 0, len(uis))
 
-		for i := 0; i < numCols; i++ {
+		for j := 0; j < numCols; j++ {
+			for i := 0; i < len(t.rows); i++ {
+				colSpans = append(colSpans, 1)
+				rowSpans = append(rowSpans, 1)
+			}
 			halign = append(halign, duit.HalignLeft)
 			valign = append(valign, duit.ValignTop)
 		}
@@ -1040,6 +1054,9 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 		return NewElement(
 			&duitx.Grid{
 				Columns: numCols,
+				Rows: len(t.rows),
+				ColSpans: colSpans,
+				RowSpans: rowSpans,
 				Padding: duit.NSpace(numCols, duit.SpaceXY(0, 3)),
 				Halign:  halign,
 				Valign:  valign,

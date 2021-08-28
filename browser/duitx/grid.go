@@ -26,29 +26,98 @@ import (
 
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
+	"github.com/psilva261/opossum/logger"
 )
 
 // Grid lays out other duit.UIs in a table-like grid.
 type Grid struct {
 	Kids       []*duit.Kid      // Holds UIs in the grid, per row.
-	Columns    int         // Number of clumns.
+	Columns    int              // Number of columns.
+	Rows       int              // Number of rows.
+	RowSpans   []int
+	ColSpans   []int
 	Valign     []duit.Valign    // Vertical alignment per column.
 	Halign     []duit.Halign    // Horizontal alignment per column.
 	Padding    []duit.Space     // Padding in lowDPI pixels per column.
-	Width      int         // -1 means full width, 0 means automatic width, >0 means exactly that many lowDPI pixels.
+	Width      int              // -1 means full width, 0 means automatic width, >0 means exactly that many lowDPI pixels.
 	Background *draw.Image `json:"-"` // Background color.
 
 	widths  []int
 	heights []int
+	pos     [][]int
 	size    image.Point
 }
 
 var _ duit.UI = &Grid{}
 
+func (ui *Grid) initPos() {
+	log.Printf("grid: %+v", ui)
+	var i, j int
+	// make ui.pos and init with (-1)
+	ui.pos = make([][]int, ui.Rows)
+	for i := 0; i < ui.Rows; i++ {
+		ui.pos[i] = make([]int, ui.Columns)
+		for j := 0; j < ui.Columns; j++ {
+			ui.pos[i][j] = -1
+		}
+	}
+	inc := func() {
+		j +=1
+		if j >= ui.Columns {
+			j = 0
+			i += 1
+		}
+	}
+
+	for l := range ui.Kids {
+ij_iter:
+		if ll := ui.pos[i][j]; ll >= 0 {
+			inc()
+			goto ij_iter
+		}
+		for jj := j; jj < j+ui.RowSpans[l]; jj++ {
+			ui.pos[i][jj] = l
+		}
+		for ii := i; ii < i+ui.ColSpans[l]; ii++ {
+			ui.pos[ii][j] = l
+		}
+		inc()
+	}
+}
+
+func (ui *Grid) maxWidths(dui *duit.DUI, sizeAvail image.Point) (maxW []int, width int, x []int) {
+	x = make([]int, ui.Columns)
+	maxW = make([]int, ui.Columns)
+	spaces := ui.spaces(dui)
+	for j := 0; j < ui.Columns; j++ {
+		space := spaces[j]
+		newDx := 0
+		if j > 0 {
+			x[j] = x[j-1] + maxW[j-1]
+		}
+		for i := 0; i < ui.Rows; i++ {
+			l := ui.pos[i][j]
+			k := ui.Kids[l]
+			k.UI.Layout(dui, k, image.Pt(sizeAvail.X-space.Dx(), sizeAvail.Y-space.Dy()), true)
+			newDx = maximum(
+				newDx,
+				(k.R.Dx()+space.Dx()) / ui.ColSpans[l],
+			)
+		}
+		maxW[j] = newDx
+		width += newDx
+	}
+	return
+}
+
 func (ui *Grid) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, force bool) {
 	debugLayout(dui, self)
 	if duit.KidsLayout(dui, self, ui.Kids, force) {
 		return
+	}
+
+	if ui.pos == nil {
+		ui.initPos()
 	}
 
 	if ui.Valign != nil && len(ui.Valign) != ui.Columns {
@@ -70,32 +139,13 @@ func (ui *Grid) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, for
 	}
 
 	ui.widths = make([]int, ui.Columns) // widths include padding
-	spaces := make([]duit.Space, ui.Columns)
-	if ui.Padding != nil {
-		for i, pad := range ui.Padding {
-			spaces[i] = dui.ScaleSpace(pad)
-		}
-	}
+	spaces := ui.spaces(dui)
 	width := 0                       // total width so far
 	x := make([]int, len(ui.widths)) // x offsets per column
 	x[0] = 0
 
 	// first determine the column widths
-	for col := 0; col < ui.Columns; col++ {
-		if col > 0 {
-			x[col] = x[col-1] + ui.widths[col-1]
-		}
-		ui.widths[col] = 0
-		newDx := 0
-		space := spaces[col]
-		for i := col; i < len(ui.Kids); i += ui.Columns {
-			k := ui.Kids[i]
-			k.UI.Layout(dui, k, image.Pt(sizeAvail.X-space.Dx(), sizeAvail.Y-space.Dy()), true)
-			newDx = maximum(newDx, k.R.Dx()+space.Dx())
-		}
-		ui.widths[col] = newDx
-		width += ui.widths[col]
-	}
+	ui.widths, width, x = ui.maxWidths(dui, sizeAvail)
 
 	// Reduce used widths if too large
 	if width > sizeAvail.X {
@@ -185,6 +235,16 @@ func (ui *Grid) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, for
 		ui.size.X = sizeAvail.X
 	}
 	self.R = rect(ui.size)
+}
+
+func (ui *Grid) spaces(dui *duit.DUI) (s []duit.Space) {
+	s = make([]duit.Space, ui.Columns)
+	if ui.Padding != nil {
+		for i, pad := range ui.Padding {
+			s[i] = dui.ScaleSpace(pad)
+		}
+	}
+	return
 }
 
 func (ui *Grid) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
