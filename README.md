@@ -30,6 +30,8 @@ A binary for amd64 and 386 can be downloaded from http://psilva.sdf.org/opossum.
 
 ### Compile from Source
 
+Set `$GOPROXY` to `https://proxy.golang.org` and then:
+
     go install ./cmd/opossum
 
 Command line options:
