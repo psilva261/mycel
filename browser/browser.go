@@ -1394,7 +1394,7 @@ type Browser struct {
 	LocationField *duit.Field
 	loading bool
 	client    *http.Client
-	Download func(done chan int) chan string
+	Download func(res chan *string)
 }
 
 func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
@@ -1560,21 +1560,20 @@ func (b *Browser) loadUrl(url *url.URL) {
 	if contentType.IsHTML() || contentType.IsPlain() || contentType.IsEmpty() {
 		b.render(contentType, buf)
 	} else {
-		done := make(chan int)
-		res := b.Download(done)
+		res := make(chan *string, 1)
+		b.Download(res)
 
 		log.Infof("Download unhandled content type: %v", contentType)
 
 		fn := <-res
 
-		if fn != "" {
-			log.Infof("Download to %v", fn)
-			f, _ := os.Create(fn)
+		if fn != nil && *fn != "" {
+			log.Infof("Download to %v", *fn)
+			f, _ := os.Create(*fn)
 			f.Write(buf)
 			f.Close()
 		}
 		dui.Call <- func() {
-			done <- 1
 			b.loading = false
 		}
 	}

@@ -16,17 +16,27 @@ import (
 	"github.com/mjl-/duit"
 )
 
-var dui *duit.DUI
 
-var cpuprofile string
-var startPage string = "http://9p.io"
-var dbg bool
+var (
+	dui *duit.DUI
+	b *browser.Browser
+	cpuprofile string
+	startPage string = "http://9p.io"
+	dbg bool
+	v View
+)
 
 func init() {
 	browser.EnableNoScriptTag = true
 }
 
-func mainView(b *browser.Browser) []*duit.Kid {
+type View interface {
+	Render() []*duit.Kid
+}
+
+type Nav struct {}
+
+func (n *Nav) Render() []*duit.Kid {
 	return duit.NewKids(
 		&duit.Grid{
 			Columns: 2,
@@ -51,13 +61,73 @@ func mainView(b *browser.Browser) []*duit.Kid {
 	)
 }
 
-func render(b *browser.Browser, kids []*duit.Kid) {
+type Confirm struct {
+	text string
+	value string
+	res chan *string
+	done bool
+}
+
+func (c *Confirm) Render() []*duit.Kid {
+	f := &duit.Field{
+		Text: c.value,
+	}
+	return duit.NewKids(
+		&duit.Grid{
+			Columns: 3,
+			Padding: duit.NSpace(3, duit.SpaceXY(5, 3)),
+			Halign:  []duit.Halign{duit.HalignLeft, duit.HalignLeft, duit.HalignRight},
+			Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle, duit.ValignMiddle},
+			Kids: duit.NewKids(
+				&duit.Button{
+					Text:  "Ok",
+					Font:  browser.Style.Font(),
+					Click: func() (e duit.Event) {
+						if c.done { return }
+						s := f.Text
+						c.res <- &s
+						c.done = true
+						e.Consumed = true
+						v = &Nav{}
+						render()
+						return
+					},
+				},
+				&duit.Button{
+					Text:  "Abort",
+					Font:  browser.Style.Font(),
+					Click: func() (e duit.Event) {
+						if c.done { return }
+						close(c.res)
+						c.done = true
+						e.Consumed = true
+						v = &Nav{}
+						render()
+						return
+					},
+				},
+				f,
+			),
+		},
+		&duit.Label{
+			Text: c.text,
+		},
+	)
+}
+
+type Loading struct {}
+
+func (l *Loading) Render() []*duit.Kid {
+	return nil
+}
+
+func render() {
 	white, err := dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, 0xffffffff)
 	if err != nil {
 		log.Errorf("%v", err)
 	}
 	dui.Top.UI = &duit.Box{
-		Kids: kids,
+		Kids: v.Render(),
 		Background: white,
 	}
 	browser.PrintTree(b.Website.UI)
@@ -66,53 +136,6 @@ func render(b *browser.Browser, kids []*duit.Kid) {
 	dui.MarkDraw(dui.Top.UI)
 	dui.Render()
 	log.Printf("Rendering done")
-}
-
-func confirm(b *browser.Browser, text, value string) chan string {
-	res := make(chan string)
-
-	dui.Call <- func() {
-		f := &duit.Field{
-			Text: value,
-		}
-
-		kids := duit.NewKids(
-			&duit.Grid{
-				Columns: 3,
-				Padding: duit.NSpace(3, duit.SpaceXY(5, 3)),
-				Halign:  []duit.Halign{duit.HalignLeft, duit.HalignLeft, duit.HalignRight},
-				Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle, duit.ValignMiddle},
-				Kids: duit.NewKids(
-					&duit.Button{
-						Text:  "Ok",
-						Font:  browser.Style.Font(),
-						Click: func() (e duit.Event) {
-							res <- f.Text
-							e.Consumed = true
-							return
-						},
-					},
-					&duit.Button{
-						Text:  "Abort",
-						Font:  browser.Style.Font(),
-						Click: func() (e duit.Event) {
-							res <- ""
-							e.Consumed = true
-							return
-						},
-					},
-					f,
-				),
-			},
-			&duit.Label{
-				Text: text,
-			},
-		)
-
-		render(b, kids)
-	}
-
-	return res
 }
 
 func Main() (err error) {
@@ -124,17 +147,18 @@ func Main() (err error) {
 
 	style.Init(dui)
 
-	b := browser.NewBrowser(dui, startPage)
-	b.Download = func(done chan int) chan string {
-		go func() {
-			<-done
-			dui.Call <- func() {
-				render(b, mainView(b))
-			}
-		}()
-		return confirm(b, fmt.Sprintf("Download %v", b.URL()), "/download.file")
+	b = browser.NewBrowser(dui, startPage)
+	b.Download = func(res chan *string) {
+		v = &Confirm{
+			text: fmt.Sprintf("Download %v", b.URL()),
+			value: "/download.file",
+			res: res,
+		}
+		render()
+		return
 	}
-	render(b, mainView(b))
+	v = &Nav{}
+	render()
 
 	for {
 		select {
