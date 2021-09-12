@@ -1421,14 +1421,8 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	}
 	b.History.Push(u, 0)
 
-	buf, ct, err := b.get(u, true)
-	if err != nil {
-		log.Fatalf("get: %v", err)
-	}
-	b.Website.ContentType = ct
-	htm := string(ct.Utf8(buf))
-
 	browser = b
+	b.Website.UI = &duit.Label{}
 	style.SetFetcher(b)
 	dui = _dui
 	dui.Background, err = dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, 0x00000000)
@@ -1436,14 +1430,13 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 		log.Fatalf("%v", err)
 	}
 	display = dui.Display
+	b.LoadUrl(u)
 
 	if ExperimentalJsInsecure {
 		fs.Client = &http.Client{}
 		fs.Fetcher = browser
 	}
 	go fs.Srv9p()
-
-	b.Website.layout(b, htm, InitialLayout)
 
 	return
 }
