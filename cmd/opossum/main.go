@@ -10,8 +10,10 @@ import (
 	"github.com/psilva261/opossum/js"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/style"
+	"net/url"
 	"os/signal"
 	"runtime/pprof"
+	"strings"
 	"time"
 	"github.com/mjl-/duit"
 )
@@ -21,9 +23,10 @@ var (
 	dui *duit.DUI
 	b *browser.Browser
 	cpuprofile string
-	startPage string = "http://9p.io"
+	loc string = "http://9p.io"
 	dbg bool
 	v View
+	Style = style.Map{}
 )
 
 func init() {
@@ -34,10 +37,37 @@ type View interface {
 	Render() []*duit.Kid
 }
 
-type Nav struct {}
+type Nav struct {
+	LocationField *duit.Field
+}
+
+func NewNav() (n *Nav) {
+	n = &Nav{
+		LocationField: &duit.Field{
+			Text:    loc,
+			Font:    Style.Font(),
+			Keys:    func(k rune, m draw.Mouse) (e duit.Event) {
+				if k == browser.EnterKey && !b.Loading() {
+					a := n.LocationField.Text
+					if !strings.HasPrefix(strings.ToLower(a), "http") {
+						a = "http://" + a
+					}
+					u, err := url.Parse(a)
+					if err != nil {
+						log.Errorf("parse url: %v", err)
+						return
+					}
+					return b.LoadUrl(u)
+				}
+				return
+			},
+		},
+	}
+	return
+}
 
 func (n *Nav) Render() []*duit.Kid {
-	return duit.NewKids(
+	uis := []duit.UI{
 		&duit.Grid{
 			Columns: 2,
 			Padding: duit.NSpace(2, duit.SpaceXY(5, 3)),
@@ -51,14 +81,16 @@ func (n *Nav) Render() []*duit.Kid {
 				},
 				&duit.Box{
 					Kids: duit.NewKids(
-						b.LocationField,
+						n.LocationField,
 					),
 				},
 			),
 		},
-		b.StatusBar,
-		b.Website,
-	)
+	}
+	if b != nil {
+		uis = append(uis, b.StatusBar, b.Website)
+	}
+	return duit.NewKids(uis...)
 }
 
 type Confirm struct {
@@ -88,7 +120,7 @@ func (c *Confirm) Render() []*duit.Kid {
 						c.res <- &s
 						c.done = true
 						e.Consumed = true
-						v = &Nav{}
+						v = NewNav()
 						render()
 						return
 					},
@@ -101,7 +133,7 @@ func (c *Confirm) Render() []*duit.Kid {
 						close(c.res)
 						c.done = true
 						e.Consumed = true
-						v = &Nav{}
+						v = NewNav()
 						render()
 						return
 					},
@@ -130,7 +162,9 @@ func render() {
 		Kids: v.Render(),
 		Background: white,
 	}
-	browser.PrintTree(b.Website.UI)
+	if b != nil {
+		browser.PrintTree(b.Website.UI)
+	}
 	log.Printf("Render.....")
 	dui.MarkLayout(dui.Top.UI)
 	dui.MarkDraw(dui.Top.UI)
@@ -146,8 +180,13 @@ func Main() (err error) {
 	dui.Debug = dbg
 
 	style.Init(dui)
+	v = NewNav()
+	render()
 
-	b = browser.NewBrowser(dui, startPage)
+	b = &browser.Browser{
+		LocCh: make(chan string, 10),
+	}
+	b = browser.NewBrowser(dui, loc)
 	b.Download = func(res chan *string) {
 		v = &Confirm{
 			text: fmt.Sprintf("Download %v", b.URL()),
@@ -157,15 +196,23 @@ func Main() (err error) {
 		render()
 		return
 	}
-	v = &Nav{}
+	v = NewNav()
 	render()
 
 	for {
 		select {
 		case e := <-dui.Inputs:
+			//log.Infof("e=%v", e)
 			dui.Input(e)
 
+		case loc = <-b.LocCh:
+			log.Infof("loc=%v", loc)
+			if nav, ok := v.(*Nav); ok {
+				nav.LocationField.Text = loc
+			}
+
 		case err, ok := <-dui.Error:
+			//log.Infof("err=%v", err)
 			if !ok {
 				return nil
 			}
@@ -203,7 +250,7 @@ func main() {
 			if len(args) > 1 {
 				usage()
 			}
-			startPage, args = args[0], args[1:]
+			loc, args = args[0], args[1:]
 		}
 	}
 

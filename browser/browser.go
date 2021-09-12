@@ -1391,10 +1391,10 @@ type Browser struct {
 	dui       *duit.DUI
 	Website   *Website
 	StatusBar *duit.Label
-	LocationField *duit.Field
 	loading bool
 	client    *http.Client
 	Download func(res chan *string)
+	LocCh chan string
 }
 
 func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
@@ -1412,27 +1412,7 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 			Text: "",
 		},
 		Website: &Website{},
-	}
-
-	b.LocationField = &duit.Field{
-		Text:    initUrl,
-		Font:    Style.Font(),
-		Keys:    func(k rune, m draw.Mouse) (e duit.Event) {
-			if k == EnterKey && !b.loading {
-				b.loading = true
-				a := b.LocationField.Text
-				if !strings.HasPrefix(strings.ToLower(a), "http") {
-					a = "http://" + a
-				}
-				u, err := url.Parse(a)
-				if err != nil {
-					log.Errorf("parse url: %v", err)
-					return
-				}
-				return b.LoadUrl(u)
-			}
-			return
-		},
+		LocCh: make(chan string, 10),
 	}
 
 	u, err := url.Parse(initUrl)
@@ -1498,9 +1478,8 @@ func (b *Browser) Origin() *url.URL {
 
 func (b *Browser) Back() (e duit.Event) {
 	if !b.loading {
-		b.loading = true
 		b.History.Back()
-		b.LocationField.Text = b.History.URL().String()
+		b.LocCh <- b.History.URL().String()
 		b.LoadUrl(b.History.URL())
 	}
 	e.Consumed = true
@@ -1517,8 +1496,7 @@ func (b *Browser) SetAndLoadUrl(u *url.URL) func() duit.Event {
 		b.showBodyMessage("")
 
 		if !b.loading {
-			b.loading = true
-			b.LocationField.Text = u.String()
+			b.LocCh <- u.String()
 			b.LoadUrl(u)
 		}
 
@@ -1526,6 +1504,10 @@ func (b *Browser) SetAndLoadUrl(u *url.URL) func() duit.Event {
 			Consumed: true,
 		}
 	}
+}
+
+func (b *Browser) Loading() bool {
+	return b.loading
 }
 
 func (b *Browser) showBodyMessage(msg string) {
@@ -1540,6 +1522,7 @@ func (b *Browser) showBodyMessage(msg string) {
 
 // LoadUrl after from location field,
 func (b *Browser) LoadUrl(url *url.URL) (e duit.Event) {
+	b.loading = true
 	go b.loadUrl(url)
 	e.Consumed = true
 
@@ -1672,7 +1655,7 @@ func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType o
 		}
 		b.History.Push(resp.Request.URL, of)
 		log.Printf("b.History is now %s", b.History.String())
-		b.LocationField.Text = b.URL().String()
+		b.LocCh <- b.URL().String()
 	}
 	return
 }
