@@ -17,7 +17,11 @@ var (
 	fontHs []int
 )
 
-func initFontserver() {}
+func initFontserver() {
+	if df := dui.Font(nil); df.Height >= 40 {
+		dui.Display.DPI = 200
+	}
+}
 
 func initFonts() {
 	fonts = make(map[int]*draw.Font)

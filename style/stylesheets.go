@@ -14,6 +14,7 @@ import (
 	"math"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -292,6 +293,10 @@ func (cs Map) Font() *draw.Font {
 	fn, ok := cs.FontFilename()
 	if !ok || dui == nil {
 		return nil
+	}
+	if runtime.GOOS == "plan9" && dui.Display.HiDPI() {
+		// TODO: proper hidpi handling
+		return dui.Font(nil)
 	}
 	font, ok := fontCache[fn]
 	if ok {
