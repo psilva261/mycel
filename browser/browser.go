@@ -400,12 +400,13 @@ func newBoxElement(n *nodes.Node, force bool, uis ...duit.UI) (box *duitx.Box, o
 		return nil, false
 	}
 
+	contentBox := n == nil || n.Css("box-sizing") != "border-box"
 	box = &duitx.Box{
 		Kids:       duit.NewKids(uis...),
 		Width:      w,
 		Height:     h,
 		MaxWidth: mw,
-		ContentBox: true,
+		ContentBox: contentBox,
 		Background: i,
 		Margin: m,
 		Padding: p,
