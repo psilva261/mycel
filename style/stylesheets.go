@@ -622,7 +622,7 @@ func length(cs *Map, l string) (f float64, unit string, err error) {
 		return calc(cs, l)
 	}
 
-	for _, suffix := range []string{"px", "%", "rem", "em", "vw", "vh"} {
+	for _, suffix := range []string{"px", "%", "rem", "em", "ex", "vw", "vh", "mm"} {
 		if strings.HasSuffix(l, suffix) {
 			if s = strings.TrimSuffix(l, suffix); s != "" {
 				f, err = strconv.ParseFloat(s, 64)
@@ -637,9 +637,16 @@ func length(cs *Map, l string) (f float64, unit string, err error) {
 
 	switch unit {
 	case "px":
-	case "em", "rem":
-		// TODO: distinguish between em and rem
+	case "rem":
+		// TODO: use font size from root element
 		f *= FontBaseSize
+	case "em", "ex":
+		// TODO: distinguish between em and ex
+		if cs == nil {
+			f *= FontBaseSize
+		} else {
+			f *= cs.FontHeight()
+		}
 	case "vw":
 		f *= float64(WindowWidth) / 100.0
 	case "vh":
@@ -655,6 +662,12 @@ func length(cs *Map, l string) (f float64, unit string, err error) {
 			log.Printf("%% unit used in root element")
 		}
 		f *= 0.01 * float64(wp)
+	case "mm":
+		dpi := 100
+		if dui != nil && dui.Display != nil && dui.Display.DPI != 0 {
+			dpi = dui.Display.DPI
+		}
+		f *= float64(dpi) / 25.4
 	default:
 		return f, unit, fmt.Errorf("unknown suffix: %v", l)
 	}

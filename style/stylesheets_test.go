@@ -313,9 +313,11 @@ func TestLength(t *testing.T) {
 		"inherit": 0.0,
 		"17px": 17.0,
 		"10em": 110.0,
+		"10ex": 110.0,
 		"10vw": 128.0,
 		"10vh": 108.0,
 		"10%": 0,
+		"101.6mm": 400,
 	}
 	for l, px := range lpx {
 		f, _, err := length(nil, l)
