@@ -110,7 +110,7 @@ func MergeNodeMaps(m, addOn map[*html.Node]Map) {
 }
 
 func FetchNodeMap(doc *html.Node, cssText string, windowWidth int) (m map[*html.Node]Map, err error) {
-	mr, err := FetchNodeRules(doc, cssText, windowWidth)
+	mr, rv, err := FetchNodeRules(doc, cssText, windowWidth)
 	if err != nil {
 		return nil, fmt.Errorf("fetch rules: %w", err)
 	}
@@ -121,6 +121,13 @@ func FetchNodeMap(doc *html.Node, cssText string, windowWidth int) (m map[*html.
 			for _, d := range r.Declarations {
 				if exist, ok := ds[d.Property]; ok && smaller(*d, exist) {
 					continue
+				}
+				if strings.HasPrefix(d.Value, "var(") {
+					v := strings.TrimPrefix(d.Value, "var(")
+					v = strings.TrimSuffix(v, ")")
+					if vv, ok := rv[v]; ok {
+						d.Value = vv
+					}
 				}
 				ds[d.Property] = *d
 			}
@@ -147,14 +154,20 @@ func compile(v string) (cs cascadia.Selector, err error) {
 	return cascadia.Compile(v)
 }
 
-func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*html.Node][]*css.Rule, err error) {
+func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*html.Node][]*css.Rule, rVars map[string]string, err error) {
 	m = make(map[*html.Node][]*css.Rule)
+	rVars = make(map[string]string)
 	s, err := parser.Parse(cssText)
 	if err != nil {
-		return nil, fmt.Errorf("douceur parse: %w", err)
+		return nil, nil, fmt.Errorf("douceur parse: %w", err)
 	}
 	processRule := func(m map[*html.Node][]*css.Rule, r *css.Rule) (err error) {
 		for _, sel := range r.Selectors {
+			if sel.Value == ":root" {
+				for _, d := range r.Declarations {
+					rVars[d.Property] = d.Value
+				}
+			}
 			cs, err := compile(sel.Value)
 			if err != nil {
 				log.Printf("cssSel compile %v: %v", sel.Value, err)
@@ -173,7 +186,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 	}
 	for _, r := range s.Rules {
 		if err := processRule(m, r); err != nil {
-			return nil, fmt.Errorf("process rule: %w", err)
+			return nil, nil, fmt.Errorf("process rule: %w", err)
 		}
 
 		// for media queries
@@ -185,7 +198,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 			l := m[1]+m[2]
 			maxWidth, _, err := length(nil, l)
 			if err != nil {
-				return nil, fmt.Errorf("atoi: %w", err)
+				return nil, nil, fmt.Errorf("atoi: %w", err)
 			}
 			if float64(windowWidth) > maxWidth {
 				continue
@@ -196,7 +209,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 			l := m[1]+m[2]
 			minWidth, _, err := length(nil, l)
 			if err != nil {
-				return nil, fmt.Errorf("atoi: %w", err)
+				return nil, nil, fmt.Errorf("atoi: %w", err)
 			}
 			if float64(windowWidth) < minWidth {
 				continue
@@ -204,7 +217,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 		}
 		for _, rr := range r.Rules {
 			if err := processRule(m, rr); err != nil {
-				return nil, fmt.Errorf("process embedded rule: %w", err)
+				return nil, nil, fmt.Errorf("process embedded rule: %w", err)
 			}
 		}
 	}

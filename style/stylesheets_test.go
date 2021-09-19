@@ -67,7 +67,7 @@ b {
 	`
 	for _, w := range []int{400, 800} {
 		t.Logf("w=%v", w)
-		m, err := FetchNodeRules(doc, css, w)
+		m, _, err := FetchNodeRules(doc, css, w)
 		if err != nil {
 			t.Fail()
 		}
@@ -124,7 +124,7 @@ func TestFetchNodeRules2(t *testing.T) {
 	if err != nil {
 		t.Fail()
 	}
-	m, err := FetchNodeRules(doc, AddOnCSS, 1024)
+	m, _, err := FetchNodeRules(doc, AddOnCSS, 1024)
 	if err != nil {
 		t.Fail()
 	}
@@ -354,3 +354,57 @@ func TestTlbr(tt *testing.T) {
 		}
 	}
 }
+
+func TestCssVars(t *testing.T) {
+	data := `<body>
+      		<h2 id="foo">a header</h2>
+     		<h2 id="bar">another header</h2>
+   		<p>Some text <b>in bold</b></p>
+    	</body>`
+	doc, err := html.Parse(strings.NewReader(data))
+	if err != nil {
+		t.Fail()
+	}
+	css := AddOnCSS + `
+:root {
+	--emph: red;
+	--h: 10px;
+}
+
+b {
+	color: var(--emph);
+}
+	`
+	
+	_, rv, err := FetchNodeRules(doc, css, 1280)
+	if err != nil {
+		t.Fail()
+	}
+
+	if len(rv) != 2 || rv["--emph"] != "red" || rv["--h"] != "10px" {
+		t.Fail()
+	}
+
+	var b *html.Node
+	var f func(n *html.Node)
+	f = func(n *html.Node) {
+		if n.Data == "b" {
+			b = n
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(doc)
+
+	nm, err := FetchNodeMap(doc, css, 1280)
+	if err != nil {
+		t.Fail()
+	}
+	d := nm[b]
+	t.Logf("d=%+v", d)
+	if d.Declarations["color"].Value != "red" {
+		t.Fail()
+	}
+}
+

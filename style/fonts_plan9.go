@@ -18,6 +18,10 @@ var (
 )
 
 func initFontserver() {
+	if dui == nil {
+		// unit test
+		return
+	}
 	if df := dui.Font(nil); df.Height >= 40 {
 		dui.Display.DPI = 200
 	}

@@ -46,7 +46,7 @@ Command line options:
 consider turning on scroll since processing
 waits for that...)
 
-`$font` is used to select the font.
+`$font` is used to select the font. Very large fonts will set dpi to 200.
 
 ## macOS
 
