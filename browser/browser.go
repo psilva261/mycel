@@ -1391,11 +1391,11 @@ type Browser struct {
 	history.History
 	dui       *duit.DUI
 	Website   *Website
-	StatusBar *duit.Label
 	loading bool
 	client    *http.Client
 	Download func(res chan *string)
 	LocCh chan string
+	StatusCh chan string
 }
 
 func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
@@ -1409,11 +1409,9 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 			Jar: jar,
 		},
 		dui: _dui,
-		StatusBar: &duit.Label{
-			Text: "",
-		},
 		Website: &Website{},
 		LocCh: make(chan string, 10),
+		StatusCh: make(chan string, 10),
 	}
 
 	u, err := url.Parse(initUrl)
@@ -1600,33 +1598,10 @@ func (b *Browser) Get(uri *url.URL) (buf []byte, contentType opossum.ContentType
 	return c.Buf, c.ContentType, err
 }
 
-func (b *Browser) statusBarMsg(msg string, emptyBody bool) {
-	if dui == nil || dui.Top.UI == nil {
-		return
-	}
-
-	go func() {
-		dui.Call <- func() {
-			if msg == "" {
-				b.StatusBar.Text = ""
-			} else {
-				b.StatusBar.Text += msg + "\n"
-			}
-			if emptyBody {
-				b.Website.UI = &duit.Label{}
-			}
-
-			dui.MarkLayout(dui.Top.UI)
-			dui.MarkDraw(dui.Top.UI)
-			dui.Render()
-		}
-	}()
-}
-
 func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType opossum.ContentType, err error) {
 	msg := fmt.Sprintf("Get %v", uri.String())
 	log.Printf(msg)
-	b.statusBarMsg(msg, true)
+	b.StatusCh <- msg
 	req, err := http.NewRequest("GET", uri.String(), nil)
 	if err != nil {
 		return

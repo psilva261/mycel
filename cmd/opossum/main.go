@@ -39,29 +39,35 @@ type View interface {
 
 type Nav struct {
 	LocationField *duit.Field
+	StatusBar *duit.Label
 }
 
 func NewNav() (n *Nav) {
 	n = &Nav{
-		LocationField: &duit.Field{
-			Text:    loc,
-			Font:    Style.Font(),
-			Keys:    func(k rune, m draw.Mouse) (e duit.Event) {
-				if k == browser.EnterKey && !b.Loading() {
-					a := n.LocationField.Text
-					if !strings.HasPrefix(strings.ToLower(a), "http") {
-						a = "http://" + a
-					}
-					u, err := url.Parse(a)
-					if err != nil {
-						log.Errorf("parse url: %v", err)
-						return
-					}
-					return b.LoadUrl(u)
-				}
-				return
-			},
+		StatusBar: &duit.Label{
+			Text: "",
 		},
+	}
+	n.LocationField = &duit.Field{
+		Text:    loc,
+		Font:    Style.Font(),
+		Keys:    n.keys,
+	}
+	return
+}
+
+func (n *Nav) keys(k rune, m draw.Mouse) (e duit.Event) {
+	if k == browser.EnterKey && !b.Loading() {
+		a := n.LocationField.Text
+		if !strings.HasPrefix(strings.ToLower(a), "http") {
+			a = "http://" + a
+		}
+		u, err := url.Parse(a)
+		if err != nil {
+			log.Errorf("parse url: %v", err)
+			return
+		}
+		return b.LoadUrl(u)
 	}
 	return
 }
@@ -86,9 +92,10 @@ func (n *Nav) Render() []*duit.Kid {
 				},
 			),
 		},
+		n.StatusBar,
 	}
 	if b != nil {
-		uis = append(uis, b.StatusBar, b.Website)
+		uis = append(uis, b.Website)
 	}
 	return duit.NewKids(uis...)
 }
@@ -209,6 +216,18 @@ func Main() (err error) {
 			log.Infof("loc=%v", loc)
 			if nav, ok := v.(*Nav); ok {
 				nav.LocationField.Text = loc
+			}
+
+		case msg := <- b.StatusCh:
+			if nav, ok := v.(*Nav); ok {
+				if msg == "" {
+					nav.StatusBar.Text = ""
+				} else {
+					nav.StatusBar.Text += msg + "\n"
+				}
+				dui.MarkLayout(nav.StatusBar)
+				dui.MarkDraw(nav.StatusBar)
+				dui.Render()
 			}
 
 		case err, ok := <-dui.Error:
