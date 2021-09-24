@@ -67,9 +67,6 @@ func NewScroll(dui *duit.DUI, ui duit.UI) *Scroll {
 }
 
 func (ui *Scroll) Free() {
-	for _, tl := range ui.tiles {
-		tl.Free()
-	}
 	ui.tiles = make(map[int]*draw.Image)
 	ui.last = make(map[int]time.Time)
 }

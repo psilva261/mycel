@@ -1522,6 +1522,7 @@ func (b *Browser) LoadUrl(url *url.URL) (e duit.Event) {
 }
 
 func (b *Browser) loadUrl(url *url.URL) {
+	b.StatusCh <- fmt.Sprintf("Load %v...", url)
 	buf, contentType, err := b.get(url, true)
 	if err != nil {
 		log.Errorf("error loading %v: %v", url, err)
@@ -1599,9 +1600,7 @@ func (b *Browser) Get(uri *url.URL) (buf []byte, contentType opossum.ContentType
 }
 
 func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType opossum.ContentType, err error) {
-	msg := fmt.Sprintf("Get %v", uri.String())
-	log.Printf(msg)
-	b.StatusCh <- msg
+	log.Infof(fmt.Sprintf("Get %v", uri.String()))
 	req, err := http.NewRequest("GET", uri.String(), nil)
 	if err != nil {
 		return
@@ -1630,10 +1629,7 @@ func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType o
 }
 
 func (b *Browser) PostForm(uri *url.URL, data url.Values) (buf []byte, contentType opossum.ContentType, err error) {
-	b.Website.UI = &duit.Label{Text: "Posting..."}
-	dui.MarkLayout(dui.Top.UI)
-	dui.MarkDraw(dui.Top.UI)
-	dui.Render()
+	b.StatusCh <- "Posting..."
 	fb := strings.NewReader(escapeValues(b.Website.ContentType, data).Encode())
 	req, err := http.NewRequest("POST", uri.String(), fb)
 	if err != nil {
