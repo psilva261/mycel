@@ -31,16 +31,16 @@ import (
 
 // Grid lays out other duit.UIs in a table-like grid.
 type Grid struct {
-	Kids       []*duit.Kid      // Holds UIs in the grid, per row.
-	Columns    int              // Number of columns.
-	Rows       int              // Number of rows.
+	Kids       []*duit.Kid // Holds UIs in the grid, per row.
+	Columns    int         // Number of columns.
+	Rows       int         // Number of rows.
 	RowSpans   []int
 	ColSpans   []int
-	Valign     []duit.Valign    // Vertical alignment per column.
-	Halign     []duit.Halign    // Horizontal alignment per column.
-	Padding    []duit.Space     // Padding in lowDPI pixels per column.
-	Width      int              // -1 means full width, 0 means automatic width, >0 means exactly that many lowDPI pixels.
-	Background *draw.Image `json:"-"` // Background color.
+	Valign     []duit.Valign // Vertical alignment per column.
+	Halign     []duit.Halign // Horizontal alignment per column.
+	Padding    []duit.Space  // Padding in lowDPI pixels per column.
+	Width      int           // -1 means full width, 0 means automatic width, >0 means exactly that many lowDPI pixels.
+	Background *draw.Image   `json:"-"` // Background color.
 
 	widths  []int
 	heights []int
@@ -62,7 +62,7 @@ func (ui *Grid) initPos() {
 		}
 	}
 	inc := func() {
-		j +=1
+		j += 1
 		if j >= ui.Columns {
 			j = 0
 			i += 1
@@ -70,7 +70,7 @@ func (ui *Grid) initPos() {
 	}
 
 	for l := range ui.Kids {
-ij_iter:
+	ij_iter:
 		if ll := ui.pos[i][j]; ll >= 0 {
 			inc()
 			goto ij_iter
@@ -101,7 +101,7 @@ func (ui *Grid) maxWidths(dui *duit.DUI, sizeAvail image.Point) (maxW []int, wid
 			k.UI.Layout(dui, k, image.Pt(sizeAvail.X-space.Dx(), sizeAvail.Y-space.Dy()), true)
 			newDx = maximum(
 				newDx,
-				(k.R.Dx()+space.Dx()) / ui.ColSpans[l],
+				(k.R.Dx()+space.Dx())/ui.ColSpans[l],
 			)
 		}
 		maxW[j] = newDx
@@ -152,7 +152,7 @@ func (ui *Grid) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, for
 		r := float64(sizeAvail.X) / float64(width)
 		width = sizeAvail.X
 		for i := range ui.widths {
-			ui.widths[i] = int(float64(ui.widths[i])*r)
+			ui.widths[i] = int(float64(ui.widths[i]) * r)
 		}
 	}
 

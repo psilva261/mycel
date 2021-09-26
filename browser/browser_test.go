@@ -3,16 +3,16 @@ package browser
 import (
 	"9fans.net/go/draw"
 	"fmt"
-	"github.com/mjl-/duit"
-	"golang.org/x/net/html"
-	"image"
-	"net/http"
-	"net/url"
 	"github.com/chris-ramon/douceur/css"
+	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum/browser/duitx"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
+	"golang.org/x/net/html"
+	"image"
+	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -118,13 +118,13 @@ func TestLinkedUrl(t *testing.T) {
 			expect: "https://news.ycombinator.com/news",
 		},
 		item{
-			orig: "https://golang.org/pkg/",
-			href: "net/http",
+			orig:   "https://golang.org/pkg/",
+			href:   "net/http",
 			expect: "https://golang.org/pkg/net/http",
 		},
 		item{
-			orig: "https://example.com/",
-			href: "info",
+			orig:   "https://example.com/",
+			href:   "info",
 			expect: "https://example.com/info",
 		},
 	}
@@ -302,7 +302,7 @@ func TestInlining2(t *testing.T) {
 		t.Errorf("node: %+v", outerSpan)
 	}
 	bracket := outerSpan.Children[0]
-	if /*bracket.Data() != "(" || */!bracket.IsInline() {
+	if /*bracket.Data() != "(" || */ !bracket.IsInline() {
 		t.Errorf("bracket, is inline: %v %+v %+v", bracket.IsInline(), bracket, bracket.Data())
 	}
 	sp1 := outerSpan.Children[1]
@@ -367,7 +367,7 @@ func TestInlining3(t *testing.T) {
 			t.Fail()
 		}
 	}
-	
+
 	PrintTree(boxed)
 	// 2. Elements are 2 rows
 

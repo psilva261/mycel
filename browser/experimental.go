@@ -1,13 +1,13 @@
 package browser
 
 import (
+	"9fans.net/go/draw"
 	"fmt"
-	"image"
+	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum/browser/duitx"
 	"github.com/psilva261/opossum/js"
 	"github.com/psilva261/opossum/logger"
-	"9fans.net/go/draw"
-	"github.com/mjl-/duit"
+	"image"
 )
 
 type AtomBox struct {
@@ -20,18 +20,18 @@ type Atom struct {
 	// BackgroundImgSrc to read image from provided cache
 	// it's okay when the pointer is empty -> defered loading
 	BackgroundImgSrc string
-	BackgroundColor draw.Color
-	BorderWidths AtomBox
-	Color draw.Color
-	Margin AtomBox
-	Padding AtomBox
-	Wrap bool
+	BackgroundColor  draw.Color
+	BorderWidths     AtomBox
+	Color            draw.Color
+	Margin           AtomBox
+	Padding          AtomBox
+	Wrap             bool
 
 	// Children []*Atom TODO: future; at the same time rething where
-        //                                      to put Draw functions etc./if to rely on
-        //                                      type Kid
-	Text  string           // Text to draw, wrapped at glyph boundary.
-	Font  *draw.Font       `json:"-"` // For drawing text.
+	//                                      to put Draw functions etc./if to rely on
+	//                                      type Kid
+	Text  string     // Text to draw, wrapped at glyph boundary.
+	Font  *draw.Font `json:"-"` // For drawing text.
 	Click func()
 
 	lines []string
@@ -58,7 +58,7 @@ func isLeaf(ui duit.UI) bool {
 	if ui == nil {
 		return true
 	}
-	switch /*v := */ui.(type) {
+	switch /*v := */ ui.(type) {
 	case nil:
 		return true
 	case *duit.Scroll:

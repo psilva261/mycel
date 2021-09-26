@@ -7,11 +7,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"golang.org/x/net/html"
-	"io"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
+	"golang.org/x/net/html"
+	"io"
 	"os"
 	"os/exec"
 	"os/user"
@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-var timeout = 60*time.Second
+var timeout = 60 * time.Second
 
 type ReadWriteCloser struct {
 	io.Reader
@@ -28,8 +28,8 @@ type ReadWriteCloser struct {
 }
 
 var (
-	fetcher   opossum.Fetcher
-	nt        *nodes.Node
+	fetcher opossum.Fetcher
+	nt      *nodes.Node
 
 	fsys   *client.Fsys
 	cancel context.CancelFunc
@@ -40,7 +40,7 @@ func NewJS(html string, fetcher opossum.Fetcher, nn *nodes.Node) {
 	return
 }
 
-func call(fn, cmd string, args... string) (resp string, err error) {
+func call(fn, cmd string, args ...string) (resp string, err error) {
 	if fsys == nil {
 		return "", fmt.Errorf("fsys nil")
 	}
@@ -49,9 +49,9 @@ func call(fn, cmd string, args... string) (resp string, err error) {
 		return
 	}
 	defer fid.Close()
-	fid.Write([]byte(cmd+"\n"))
+	fid.Write([]byte(cmd + "\n"))
 	for _, arg := range args {
-		fid.Write([]byte(arg+"\n"))
+		fid.Write([]byte(arg + "\n"))
 	}
 	r := bufio.NewReader(fid)
 	b := bytes.NewBuffer([]byte{})

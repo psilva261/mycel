@@ -3,8 +3,8 @@ package nodes
 import (
 	"bytes"
 	"encoding/json"
-	"golang.org/x/net/html"
 	"github.com/psilva261/opossum/style"
+	"golang.org/x/net/html"
 	"strings"
 	"testing"
 )
@@ -29,17 +29,23 @@ func TestQueryRef(t *testing.T) {
 		</body>
 	</html>`)
 	doc, err := html.Parse(buf)
-	if err != nil { t.Fatalf(err.Error()) }
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	nt := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
 	p := nt.Children[0].Children[1].Children[1]
 	a := p.Children[5]
-	if q := a.QueryRef(); q != "p:nth-child(1) > a:nth-child(3)" { t.Fatalf("%v", q) }
+	if q := a.QueryRef(); q != "p:nth-child(1) > a:nth-child(3)" {
+		t.Fatalf("%v", q)
+	}
 }
 
 func TestSetText(t *testing.T) {
 	buf := strings.NewReader("<textarea>initial</textarea>")
 	doc, err := html.Parse(buf)
-	if err != nil { t.Fatalf(err.Error()) }
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	n := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
 	if s := n.ContentString(false); s != "initial" {
 		t.Fatalf(s)
@@ -60,20 +66,22 @@ func TestNewNodeTree(t *testing.T) {
 		</body>
 	</html>`)
 	doc, err := html.Parse(buf)
-	if err != nil { t.Fatalf(err.Error()) }
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	n := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
 	body := n.Find("body")
 	bodyW := body.Map.Css("width")
 	bodyH := body.Map.Css("height")
 	bodyF := body.Map.Css("font-size")
-	if bodyW != "900px" || bodyH != "700px" || bodyF != "12px"  {
+	if bodyW != "900px" || bodyH != "700px" || bodyF != "12px" {
 		t.Fatalf("<%v> w=%v h=%v f=%v", body.Data(), bodyW, bodyH, bodyF)
 	}
 	b := n.Find("b")
 	bW := b.Map.Css("width")
 	bH := b.Map.Css("height")
 	bF := b.Map.Css("font-size")
-	if bW != "" || bH != "100px"/* || bF != "12px"*/  {
+	if bW != "" || bH != "100px" /* || bF != "12px"*/ {
 		t.Fatalf("<%v> w=%v h=%v f=%v", b.Data(), bW, bH, bF)
 	}
 	text := b.Children[0]
@@ -93,11 +101,13 @@ func TestJsonCycles(t *testing.T) {
 		</body>
 	</html>`)
 	doc, err := html.Parse(buf)
-	if err != nil { t.Fatalf(err.Error()) }
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	n := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
 	body := n.Find("body")
-	_=body
-	
+	_ = body
+
 	b := bytes.NewBufferString("")
 	enc := json.NewEncoder(b)
 	if err := enc.Encode(n); err != nil {
@@ -139,7 +149,9 @@ func TestContainingBlock(t *testing.T) {
 	}
 	for cbTag, htm := range tests {
 		doc, err := html.Parse(strings.NewReader(htm))
-		if err != nil { t.Fatalf(err.Error()) }
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
 		nt := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
 		cb := nt.Find(cbTag)
 		a := nt.Find("a")
@@ -161,8 +173,8 @@ func TestCBItems(t *testing.T) {
 			</html>
 		`: {
 			"body": {"a", "", "div", ""},
-			"div": {"", ""},
-			"a": {"link"},
+			"div":  {"", ""},
+			"a":    {"link"},
 		},
 		`
 			<html>
@@ -174,8 +186,8 @@ func TestCBItems(t *testing.T) {
 			</html>
 		`: {
 			"body": {"", "div", ""},
-			"div": {"a", "", ""},
-			"a": {"link"},
+			"div":  {"a", "", ""},
+			"a":    {"link"},
 		},
 		`
 			<html>
@@ -188,15 +200,17 @@ func TestCBItems(t *testing.T) {
 				</body>
 			</html>
 		`: {
-			"body": {"", "main", ""},
-			"main": {"a", "", "article", ""},
+			"body":    {"", "main", ""},
+			"main":    {"a", "", "article", ""},
 			"article": {"", ""},
-			"a": {"link"},
+			"a":       {"link"},
 		},
 	}
 	for htm, m := range tests {
 		doc, err := html.Parse(strings.NewReader(htm))
-		if err != nil { t.Fatalf(err.Error()) }
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
 		nt := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
 		for from, tos := range m {
 			t.Logf("from: %v", from)

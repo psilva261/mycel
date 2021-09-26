@@ -3,30 +3,29 @@ package main
 import (
 	"9fans.net/go/draw"
 	"fmt"
-	"image"
-	"os"
 	"github.com/knusbaum/go9p"
+	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum/browser"
 	"github.com/psilva261/opossum/js"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/style"
+	"image"
 	"net/url"
+	"os"
 	"os/signal"
 	"runtime/pprof"
 	"strings"
 	"time"
-	"github.com/mjl-/duit"
 )
 
-
 var (
-	dui *duit.DUI
-	b *browser.Browser
+	dui        *duit.DUI
+	b          *browser.Browser
 	cpuprofile string
-	loc string = "http://9p.io"
-	dbg bool
-	v View
-	Style = style.Map{}
+	loc        string = "http://9p.io"
+	dbg        bool
+	v          View
+	Style      = style.Map{}
 )
 
 func init() {
@@ -39,7 +38,7 @@ type View interface {
 
 type Nav struct {
 	LocationField *duit.Field
-	StatusBar *duit.Label
+	StatusBar     *duit.Label
 }
 
 func NewNav() (n *Nav) {
@@ -49,9 +48,9 @@ func NewNav() (n *Nav) {
 		},
 	}
 	n.LocationField = &duit.Field{
-		Text:    loc,
-		Font:    Style.Font(),
-		Keys:    n.keys,
+		Text: loc,
+		Font: Style.Font(),
+		Keys: n.keys,
 	}
 	return
 }
@@ -101,10 +100,10 @@ func (n *Nav) Render() []*duit.Kid {
 }
 
 type Confirm struct {
-	text string
+	text  string
 	value string
-	res chan *string
-	done bool
+	res   chan *string
+	done  bool
 }
 
 func (c *Confirm) Render() []*duit.Kid {
@@ -119,10 +118,12 @@ func (c *Confirm) Render() []*duit.Kid {
 			Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle, duit.ValignMiddle},
 			Kids: duit.NewKids(
 				&duit.Button{
-					Text:  "Ok",
-					Font:  browser.Style.Font(),
+					Text: "Ok",
+					Font: browser.Style.Font(),
 					Click: func() (e duit.Event) {
-						if c.done { return }
+						if c.done {
+							return
+						}
 						s := f.Text
 						c.res <- &s
 						c.done = true
@@ -133,10 +134,12 @@ func (c *Confirm) Render() []*duit.Kid {
 					},
 				},
 				&duit.Button{
-					Text:  "Abort",
-					Font:  browser.Style.Font(),
+					Text: "Abort",
+					Font: browser.Style.Font(),
 					Click: func() (e duit.Event) {
-						if c.done { return }
+						if c.done {
+							return
+						}
 						close(c.res)
 						c.done = true
 						e.Consumed = true
@@ -154,7 +157,7 @@ func (c *Confirm) Render() []*duit.Kid {
 	)
 }
 
-type Loading struct {}
+type Loading struct{}
 
 func (l *Loading) Render() []*duit.Kid {
 	return nil
@@ -166,7 +169,7 @@ func render() {
 		log.Errorf("%v", err)
 	}
 	dui.Top.UI = &duit.Box{
-		Kids: v.Render(),
+		Kids:       v.Render(),
 		Background: white,
 	}
 	if b != nil {
@@ -196,9 +199,9 @@ func Main() (err error) {
 	b = browser.NewBrowser(dui, loc)
 	b.Download = func(res chan *string) {
 		v = &Confirm{
-			text: fmt.Sprintf("Download %v", b.URL()),
+			text:  fmt.Sprintf("Download %v", b.URL()),
 			value: "/download.file",
-			res: res,
+			res:   res,
 		}
 		render()
 		return
@@ -218,7 +221,7 @@ func Main() (err error) {
 				nav.LocationField.Text = loc
 			}
 
-		case msg := <- b.StatusCh:
+		case msg := <-b.StatusCh:
 			if nav, ok := v.(*Nav); ok {
 				if msg == "" {
 					nav.StatusBar.Text = ""

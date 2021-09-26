@@ -1,12 +1,12 @@
 package js
 
 import (
-	"io/ioutil"
 	"github.com/psilva261/opossum/browser/fs"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
 	"golang.org/x/net/html"
+	"io/ioutil"
 	"strings"
 	"testing"
 )
@@ -37,7 +37,9 @@ func TestJQueryHide(t *testing.T) {
 
 	r := strings.NewReader(simpleHTML)
 	doc, err := html.Parse(r)
-	if err != nil { t.Fatalf(err.Error()) }
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	nt := nodes.NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
 	fs.DOM = nt
 	fs.Update(simpleHTML, nil, []string{string(buf), script})
@@ -54,7 +56,9 @@ func TestJQueryHide(t *testing.T) {
 
 	r = strings.NewReader(resHtm)
 	doc, err = html.Parse(r)
-	if err != nil { t.Fatalf(err.Error()) }
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	nt = nodes.NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
 	if v := nt.Find("h1").Css("display"); v != "none" {
 		t.Fatalf("%v", v)

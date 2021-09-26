@@ -3,10 +3,10 @@ package main
 import (
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
-	"bufio"
 	"net"
 	"os/user"
 	"strings"
@@ -38,15 +38,15 @@ func connect() (fsys *client.Fsys, c io.Closer, err error) {
 	return fsys, conn, nil
 }
 
-func call(fsys *client.Fsys, fn, cmd string, args... string) (resp string, err error) {
+func call(fsys *client.Fsys, fn, cmd string, args ...string) (resp string, err error) {
 	fid, err := fsys.Open(fn, plan9.ORDWR)
 	if err != nil {
 		return
 	}
 	defer fid.Close()
-	fid.Write([]byte(cmd+"\n"))
+	fid.Write([]byte(cmd + "\n"))
 	for _, arg := range args {
-		fid.Write([]byte(arg+"\n"))
+		fid.Write([]byte(arg + "\n"))
 	}
 	r := bufio.NewReader(fid)
 	b := bytes.NewBuffer([]byte{})

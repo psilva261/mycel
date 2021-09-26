@@ -1,8 +1,8 @@
 package nodes
 
 import (
-	"golang.org/x/net/html"
 	"github.com/psilva261/opossum/style"
+	"golang.org/x/net/html"
 	"strings"
 	"testing"
 )
@@ -19,7 +19,9 @@ func TestQuery(t *testing.T) {
 		</body>
 	</html>`)
 	doc, err := html.Parse(buf)
-	if err != nil { t.Fatalf(err.Error()) }
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 	nt := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
 	res, _ := nt.Query("b")
 	if len(res) != 1 || res[0].Data() != "b" {

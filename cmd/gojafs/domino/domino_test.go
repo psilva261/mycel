@@ -147,7 +147,7 @@ func TestTrackChanges(t *testing.T) {
 }*/
 
 func TestES6(t *testing.T) {
-	d := NewDomino(simpleHTML, nil,  nil)
+	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 	script := `
 	var foo = function(data={}) {}
@@ -268,7 +268,7 @@ func TestJQueryAjax(t *testing.T) {
 		}
 	});
 	`
-	_, err = d.Exec(string(buf) + ";" + script, true)
+	_, err = d.Exec(string(buf)+";"+script, true)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -306,14 +306,14 @@ func TestJQueryAjax182(t *testing.T) {
 		}
 	});
 	`
-	_, err = d.Exec(string(buf) + ";" + script, true)
+	_, err = d.Exec(string(buf)+";"+script, true)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 	if err = d.CloseDoc(); err != nil {
 		t.Fatalf("%v", err)
 	}
-	<-time.After(5*time.Second)
+	<-time.After(5 * time.Second)
 	res, err := d.Exec("res;", false)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -364,7 +364,7 @@ func TestJQuery(t *testing.T) {
 	}, 1000);
 	var a = 1;
 	`
-	_, err = d.Exec(string(buf) + ";" + script, true)
+	_, err = d.Exec(string(buf)+";"+script, true)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -425,7 +425,7 @@ func TestGodoc(t *testing.T) {
 	d := NewDomino(string(buf), nil, nil)
 	d.Start()
 	for i, fn := range []string{"initfuncs.js", "jquery-1.8.2.js", "goversion.js", "godocs.js"} {
-		buf, err := ioutil.ReadFile("../../../js/godoc/"+fn)
+		buf, err := ioutil.ReadFile("../../../js/godoc/" + fn)
 		if err != nil {
 			t.Fatalf("%v", err)
 		}
@@ -445,7 +445,7 @@ func TestGoplayground(t *testing.T) {
 	d := NewDomino(string(buf), nil, nil)
 	d.Start()
 	for i, fn := range []string{"initfuncs.js", "jquery-1.8.2.js", "playground.js", "goversion.js", "godocs.js", "golang.js"} {
-		buf, err := ioutil.ReadFile("../../../js/godoc/"+fn)
+		buf, err := ioutil.ReadFile("../../../js/godoc/" + fn)
 		if err != nil {
 			t.Fatalf("%v", err)
 		}
@@ -458,7 +458,7 @@ func TestGoplayground(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	if !strings.Contains(res, "function playground(opts) {")  {
+	if !strings.Contains(res, "function playground(opts) {") {
 		t.Fatalf("%v", res)
 	}
 
@@ -477,7 +477,7 @@ func TestJqueryUI(t *testing.T) {
 	`
 	_ = script
 	for i, fn := range []string{"jquery-1.12.4.js", "jquery-ui.js", "tabs.js"} {
-		buf, err := ioutil.ReadFile("../../../js/jqueryui/"+fn)
+		buf, err := ioutil.ReadFile("../../../js/jqueryui/" + fn)
 		if err != nil {
 			t.Fatalf("%v", err)
 		}
@@ -535,7 +535,7 @@ func TestTriggerClick(t *testing.T) {
     	});
     });
 	`
-	d := NewDomino(simpleHTML, nil,  nil)
+	d := NewDomino(simpleHTML, nil, nil)
 	d.Start()
 	_, err = d.Exec(SCRIPT, true)
 	if err != nil {
@@ -598,7 +598,7 @@ func TestDomChanged(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	_=res
+	_ = res
 	res, err = d.Exec("$('h1').html('minor updates :-)'); $('h1').html();", false)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -627,7 +627,7 @@ func TestMutationEvents(t *testing.T) {
 	$('h1').hide();
 	$('h1').show();
 	`
-	_, err = d.Exec(string(buf) + ";" + script, true)
+	_, err = d.Exec(string(buf)+";"+script, true)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}

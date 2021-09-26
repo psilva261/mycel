@@ -33,7 +33,7 @@ type Place struct {
 	// Place is called during layout. It must configure Kids, and set self.R, based on sizeAvail.
 	Place      func(self *duit.Kid, sizeAvail image.Point) `json:"-"`
 	Kids       []*duit.Kid                                 // Kids to draw, set by the Place function.
-	Background *draw.Image                            `json:"-"` // For background color.
+	Background *draw.Image                                 `json:"-"` // For background color.
 
 	kidsReversed []*duit.Kid
 	size         image.Point

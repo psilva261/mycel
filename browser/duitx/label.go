@@ -34,8 +34,8 @@ import (
 //	cmd-c, copy text
 //	\n, like button1 click, calls the Click function
 type Label struct {
-	Text  string           // Text to draw, wrapped at glyph boundary.
-	Font  *draw.Font       `json:"-"` // For drawing text.
+	Text  string                // Text to draw, wrapped at glyph boundary.
+	Font  *draw.Font            `json:"-"` // For drawing text.
 	Click func() (e duit.Event) `json:"-"` // Called on button1 click.
 
 	lines []string
@@ -84,7 +84,7 @@ func (ui *Label) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, fo
 }
 
 func (ui *Label) lineHeight(font *draw.Font) int {
-	return int(math.Ceil(float64(font.Height)*1.2))
+	return int(math.Ceil(float64(font.Height) * 1.2))
 }
 
 func (ui *Label) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {

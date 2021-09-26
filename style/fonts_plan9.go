@@ -1,3 +1,4 @@
+//go:build plan9
 // +build plan9
 
 package style
@@ -7,13 +8,13 @@ import (
 	"fmt"
 	"github.com/psilva261/opossum/logger"
 	"io/fs"
+	"os"
 	"regexp"
 	"strings"
-	"os"
 )
 
 var (
-	fonts map[int]*draw.Font
+	fonts  map[int]*draw.Font
 	fontHs []int
 )
 

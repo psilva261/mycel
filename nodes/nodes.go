@@ -3,21 +3,21 @@ package nodes
 import (
 	"bytes"
 	"fmt"
-	"golang.org/x/net/html"
 	"github.com/chris-ramon/douceur/css"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/style"
+	"golang.org/x/net/html"
 	"strings"
 )
 
 type Node struct {
 	DomSubtree *html.Node `json:"-"`
-	Text string
-	Wrappable bool
-	Attrs []html.Attribute
+	Text       string
+	Wrappable  bool
+	Attrs      []html.Attribute
 	style.Map
 	Children []*Node
-	parent *Node `json:"-"`
+	parent   *Node `json:"-"`
 }
 
 // NewNodeTree propagates the cascading styles to the leaves
@@ -56,7 +56,7 @@ func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map,
 		n.Text = filterText(doc.Data)
 		n.Map.Declarations["display"] = css.Declaration{
 			Property: "display",
-			Value: "inline",
+			Value:    "inline",
 		}
 	}
 	i := 0
@@ -168,7 +168,7 @@ func (n *Node) HasAttr(k string) bool {
 func (n *Node) IsContainingBlock(position string) bool {
 	if position == "absolute" {
 		return n.Css("position") == "fixed" || n.Css("position") == "absolute" ||
-		 n.Css("position") == "relative" || n.Css("position") == "sticky" || n.Data() == "body"
+			n.Css("position") == "relative" || n.Css("position") == "sticky" || n.Data() == "body"
 	}
 	return false
 }
@@ -188,7 +188,7 @@ func (n *Node) FindNextPositions(position string) (ps []*Node) {
 			ps = append(ps, c.FindNextPositions(position)...)
 		}
 	}
-	return 
+	return
 }
 
 // CB returns the Containing Block.
@@ -350,15 +350,15 @@ func (n *Node) SetText(t string) {
 
 		c := &html.Node{
 			Parent: d,
-			Type: html.TextNode,
+			Type:   html.TextNode,
 		}
 		d.FirstChild = c
 
 		n.Children = []*Node{
 			&Node{
 				DomSubtree: c,
-				Wrappable: true,
-				parent: n,
+				Wrappable:  true,
+				parent:     n,
 			},
 		}
 	}
@@ -397,6 +397,6 @@ func (n *Node) printTree(r int) {
 		fmt.Printf("%v\n", n.Data())
 	}
 	for _, c := range n.Children {
-		c.printTree(r+1)
+		c.printTree(r + 1)
 	}
 }

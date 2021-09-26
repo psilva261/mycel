@@ -21,12 +21,12 @@ import (
 )
 
 var (
-	d *domino.Domino
+	d       *domino.Domino
 	service string
 	mtpt    string
 	htm     string
 	js      []string
-	mu sync.Mutex
+	mu      sync.Mutex
 )
 
 func init() {
@@ -148,7 +148,7 @@ func query(sel, prop string) (val string, err error) {
 	}
 	defer rwc.Close()
 	r := json.NewDecoder(rwc)
-	_, err = io.WriteString(rwc, sel + "\n")
+	_, err = io.WriteString(rwc, sel+"\n")
 	if err != nil {
 		return "", fmt.Errorf("write: %w", err)
 	}

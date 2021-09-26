@@ -5,13 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"golang.org/x/net/html"
-	"golang.org/x/net/publicsuffix"
-	"image"
-	"io/ioutil"
-	"net/http"
-	"net/http/cookiejar"
-	"net/url"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser/cache"
 	"github.com/psilva261/opossum/browser/duitx"
@@ -22,7 +15,14 @@ import (
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
+	"golang.org/x/net/html"
+	"golang.org/x/net/publicsuffix"
+	"image"
+	"io/ioutil"
 	"math"
+	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -44,7 +44,7 @@ var debugPrintHtml = false
 // OpenClipart SVG ID: 163773 from OCAL 0.18 release 16/11/2019
 // https://freesvg.org/topo-architetto-francesc-01
 // (Public Domain)
-var cursor = [16*2]uint8{
+var cursor = [16 * 2]uint8{
 	0b00000001, 0b11111100,
 	0b00000111, 0b11111110,
 	0b00001111, 0b11111111,
@@ -61,15 +61,15 @@ var cursor = [16*2]uint8{
 
 var (
 	ExperimentalJsInsecure bool
-	EnableNoScriptTag bool
+	EnableNoScriptTag      bool
 )
 
 var (
-	browser *Browser
-	Style = style.Map{}
-	dui *duit.DUI
+	browser  *Browser
+	Style    = style.Map{}
+	dui      *duit.DUI
 	scroller *duitx.Scroll
-	display *draw.Display
+	display  *draw.Display
 
 	colorCache = make(map[draw.Color]*draw.Image)
 	imageCache = make(map[string]*draw.Image)
@@ -109,7 +109,7 @@ func NewText(content []string, n *nodes.Node) (el []*Element) {
 
 		l := &Element{
 			UI: NewLabel(t, n),
-			n: n,
+			n:  n,
 		}
 		ls = append(ls, l)
 	}
@@ -148,7 +148,7 @@ func NewCodeView(s string, n style.Map) (cv *CodeView) {
 	edit.Append([]byte(s))
 	cv.UI = &duitx.Box{
 		Kids:   duit.NewKids(edit),
-		Height: int(n.FontHeight()) * (lines+2),
+		Height: int(n.FontHeight()) * (lines + 2),
 	}
 	return
 }
@@ -195,7 +195,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 		src = newPicture(n)
 	} else if n.Data() == "svg" {
 		xml, err := n.Serialized()
-		if  err != nil {
+		if err != nil {
 			return nil, fmt.Errorf("serialize: %w", err)
 		}
 		log.Printf("newImage: xml: %v", xml)
@@ -272,9 +272,9 @@ func srcSet(n *nodes.Node) (w int, src string) {
 	bestW := 0
 	idealW := n.Width()
 	scale := 1
-	
+
 	u := func(wd int) int {
-		return int(math.Abs(float64(wd)-float64(idealW)))
+		return int(math.Abs(float64(wd) - float64(idealW)))
 	}
 
 	if dui != nil {
@@ -310,8 +310,8 @@ func srcSet(n *nodes.Node) (w int, src string) {
 type Element struct {
 	duit.UI
 	n       *nodes.Node
-	IsLink bool
-	Click  func() duit.Event
+	IsLink  bool
+	Click   func() duit.Event
 	Changed func(*Element)
 }
 
@@ -335,7 +335,7 @@ func NewElement(ui duit.UI, n *nodes.Node) *Element {
 
 	return &Element{
 		UI: ui,
-		n: n,
+		n:  n,
 	}
 }
 
@@ -391,7 +391,7 @@ func newBoxElement(n *nodes.Node, force bool, uis ...duit.UI) (box *duitx.Box, o
 		}
 
 		// TODO: make sure input fields can be put into a box
-		if n.Data() =="input" {
+		if n.Data() == "input" {
 			return nil, false
 		}
 	}
@@ -405,13 +405,13 @@ func newBoxElement(n *nodes.Node, force bool, uis ...duit.UI) (box *duitx.Box, o
 		Kids:       duit.NewKids(uis...),
 		Width:      w,
 		Height:     h,
-		MaxWidth: mw,
+		MaxWidth:   mw,
 		ContentBox: contentBox,
 		Background: i,
-		Margin: m,
-		Padding: p,
-		Dir: duitFlexDir(n),
-		Disp: duitDisplay(n),
+		Margin:     m,
+		Padding:    p,
+		Dir:        duitFlexDir(n),
+		Disp:       duitDisplay(n),
 	}
 
 	return box, true
@@ -510,8 +510,8 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 	}
 
 	btn := &duit.Button{
-		Text: t,
-		Font: n.Font(),
+		Text:  t,
+		Font:  n.Font(),
 		Click: click,
 	}
 	return NewElement(btn, n)
@@ -558,7 +558,7 @@ func NewSelect(n *nodes.Node) *Element {
 	var l *duit.List
 	l = &duit.List{
 		Values: make([]*duit.ListValue, 0, len(n.Children)),
-		Font: n.Font(),
+		Font:   n.Font(),
 		Changed: func(i int) (e duit.Event) {
 			v := l.Values[i]
 			vv := fmt.Sprintf("%v", v.Value)
@@ -575,8 +575,8 @@ func NewSelect(n *nodes.Node) *Element {
 			continue
 		}
 		lv := &duit.ListValue{
-			Text: c.ContentString(false),
-			Value: c.Attr("value"),
+			Text:     c.ContentString(false),
+			Value:    c.Attr("value"),
 			Selected: c.HasAttr("selected"),
 		}
 		l.Values = append(l.Values, lv)
@@ -585,7 +585,7 @@ func NewSelect(n *nodes.Node) *Element {
 		n.SetCss("max-width", "200px")
 	}
 	if n.Css("height") == "" {
-		n.SetCss("height", fmt.Sprintf("%vpx", 4 * n.Font().Height))
+		n.SetCss("height", fmt.Sprintf("%vpx", 4*n.Font().Height))
 	}
 	return NewElement(duit.NewScroll(l), n)
 }
@@ -603,7 +603,7 @@ func NewTextArea(n *nodes.Node) *Element {
 	edit.Append([]byte(t))
 
 	if n.Css("height") == "" {
-		n.SetCss("height", fmt.Sprintf("%vpx", (int(n.FontHeight()) * (lines+2))))
+		n.SetCss("height", fmt.Sprintf("%vpx", (int(n.FontHeight())*(lines+2))))
 	}
 
 	el := NewElement(edit, n)
@@ -844,7 +844,7 @@ func arrangeAbsolute(n *nodes.Node, elements ...*Element) (ael *Element, ok bool
 		uis = append(uis, a)
 	}
 	pl := &duitx.Place{
-		Kids: duit.NewKids(uis...),
+		Kids:       duit.NewKids(uis...),
 		Background: bg,
 	}
 	pl.Place = placeFunc(n.QueryRef(), pl)
@@ -862,7 +862,7 @@ func Arrange(n *nodes.Node, elements ...*Element) *Element {
 		return nil
 	}
 	return &Element{
-		n: n,
+		n:  n,
 		UI: ui,
 	}
 }
@@ -942,7 +942,7 @@ func verticalSeq(es []*Element) duit.UI {
 	uis := make([]duit.UI, 0, len(es))
 	colSpans := make([]int, 0, len(es))
 	rowSpans := make([]int, 0, len(es))
-	
+
 	for _, e := range es {
 		uis = append(uis, e)
 		colSpans = append(colSpans, 1)
@@ -950,14 +950,14 @@ func verticalSeq(es []*Element) duit.UI {
 	}
 
 	return &duitx.Grid{
-		Columns: 1,
-		Rows: len(uis),
+		Columns:  1,
+		Rows:     len(uis),
 		ColSpans: colSpans,
 		RowSpans: rowSpans,
-		Padding: duit.NSpace(1, duit.SpaceXY(0, 3)),
-		Halign:  []duit.Halign{duit.HalignLeft},
-		Valign:  []duit.Valign{duit.ValignTop},
-		Kids:    duit.NewKids(uis...),
+		Padding:  duit.NSpace(1, duit.SpaceXY(0, 3)),
+		Halign:   []duit.Halign{duit.HalignLeft},
+		Valign:   []duit.Valign{duit.ValignTop},
+		Kids:     duit.NewKids(uis...),
 	}
 }
 
@@ -1054,14 +1054,14 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 
 		return NewElement(
 			&duitx.Grid{
-				Columns: numCols,
-				Rows: len(t.rows),
+				Columns:  numCols,
+				Rows:     len(t.rows),
 				ColSpans: colSpans,
 				RowSpans: rowSpans,
-				Padding: duit.NSpace(numCols, duit.SpaceXY(0, 3)),
-				Halign:  halign,
-				Valign:  valign,
-				Kids:    duit.NewKids(uis...),
+				Padding:  duit.NSpace(numCols, duit.SpaceXY(0, 3)),
+				Halign:   halign,
+				Valign:   valign,
+				Kids:     duit.NewKids(uis...),
 			},
 			n,
 		)
@@ -1088,13 +1088,13 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 }
 
 type TableRow struct {
-	n *nodes.Node
+	n       *nodes.Node
 	columns []*nodes.Node
 }
 
 func NewTableRow(n *nodes.Node) (tr *TableRow) {
 	tr = &TableRow{
-		n: n,
+		n:       n,
 		columns: make([]*nodes.Node, 0, 5),
 	}
 
@@ -1389,12 +1389,12 @@ func printTree(r int, ui duit.UI) {
 
 type Browser struct {
 	history.History
-	dui       *duit.DUI
-	Website   *Website
-	loading bool
-	client    *http.Client
+	dui      *duit.DUI
+	Website  *Website
+	loading  bool
+	client   *http.Client
 	Download func(res chan *string)
-	LocCh chan string
+	LocCh    chan string
 	StatusCh chan string
 }
 
@@ -1408,9 +1408,9 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 		client: &http.Client{
 			Jar: jar,
 		},
-		dui: _dui,
-		Website: &Website{},
-		LocCh: make(chan string, 10),
+		dui:      _dui,
+		Website:  &Website{},
+		LocCh:    make(chan string, 10),
 		StatusCh: make(chan string, 10),
 	}
 
@@ -1650,4 +1650,3 @@ func (b *Browser) PostForm(uri *url.URL, data url.Values) (buf []byte, contentTy
 	contentType, err = opossum.NewContentType(resp.Header.Get("Content-Type"), resp.Request.URL)
 	return
 }
-

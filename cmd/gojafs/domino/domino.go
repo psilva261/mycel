@@ -10,8 +10,8 @@ import (
 	"github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/eventloop"
 	"github.com/dop251/goja_nodejs/require"
-	"io/ioutil"
 	"github.com/psilva261/opossum/logger"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-var timeout = 60*time.Second
+var timeout = 60 * time.Second
 
 //go:embed domino-lib/*js
 var lib embed.FS
@@ -44,16 +44,16 @@ func init() {
 type Mutation struct {
 	time.Time
 	Type int
-	Sel string
+	Sel  string
 }
 
 type Domino struct {
 	loop       *eventloop.EventLoop
 	html       string
 	outputHtml string
-	domChange chan Mutation
-	query func(sel, prop string) (val string, err error)
-	xhrq func(req *http.Request) (resp *http.Response, err error)
+	domChange  chan Mutation
+	query      func(sel, prop string) (val string, err error)
+	xhrq       func(req *http.Request) (resp *http.Response, err error)
 }
 
 func NewDomino(
@@ -62,10 +62,10 @@ func NewDomino(
 	query func(sel, prop string) (val string, err error),
 ) (d *Domino) {
 	d = &Domino{
-		html: html,
-		xhrq: xhr,
+		html:      html,
+		xhrq:      xhr,
 		domChange: make(chan Mutation, 100),
-		query: query,
+		query:     query,
 	}
 	return
 }
@@ -94,7 +94,7 @@ func IntrospectError(err error, script string) {
 		x, _ := strconv.Atoi(yx[1])
 		lines := strings.Split(script, "\n")
 
-		if y - 1 > len(lines) - 1 {
+		if y-1 > len(lines)-1 {
 			y = len(lines)
 		}
 
@@ -177,18 +177,18 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 				registry.Enable(vm)
 
 				type S struct {
-					Buf  string `json:"buf"`
-					HTML string `json:"html"`
-					Referrer func() string `json:"referrer"`
-					Style func(string, string, string, string) string `json:"style"`
-					XHR func(string, string, map[string]string, string, func(string, string)) `json:"xhr"`
-					Mutated func(int, string) `json:"mutated"`
+					Buf      string                                                                `json:"buf"`
+					HTML     string                                                                `json:"html"`
+					Referrer func() string                                                         `json:"referrer"`
+					Style    func(string, string, string, string) string                           `json:"style"`
+					XHR      func(string, string, map[string]string, string, func(string, string)) `json:"xhr"`
+					Mutated  func(int, string)                                                     `json:"mutated"`
 				}
 
 				vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
 				vm.Set("opossum", S{
-					HTML: d.html,
-					Buf:  "yolo",
+					HTML:     d.html,
+					Buf:      "yolo",
 					Referrer: func() string { return "https://example.com" },
 					Style: func(sel, pseudo, prop, prop2 string) string {
 						v, err := d.query(sel, prop)
@@ -198,7 +198,7 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 						}
 						return v
 					},
-					XHR: d.xhr,
+					XHR:     d.xhr,
 					Mutated: d.mutated,
 				})
 			}
@@ -221,21 +221,21 @@ func (d *Domino) Exec(script string, initial bool) (res string, err error) {
 
 	for {
 		select {
-			case v := <-ready:
-				log.Infof("ready")
-				<-time.After(10 * time.Millisecond)
-				if v != nil {
-					res = v.String()
-				}
-				goto cleanup
-			case er := <- errCh:
-				log.Infof("err")
-				<-time.After(10 * time.Millisecond)
-				err = fmt.Errorf("event loop: %w", er)
-				goto cleanup
-			case <-time.After(timeout):
-				log.Errorf("Interrupt JS after %v", timeout)
-				intCh <- 1
+		case v := <-ready:
+			log.Infof("ready")
+			<-time.After(10 * time.Millisecond)
+			if v != nil {
+				res = v.String()
+			}
+			goto cleanup
+		case er := <-errCh:
+			log.Infof("err")
+			<-time.After(10 * time.Millisecond)
+			err = fmt.Errorf("event loop: %w", er)
+			goto cleanup
+		case <-time.After(timeout):
+			log.Errorf("Interrupt JS after %v", timeout)
+			intCh <- 1
 		}
 	}
 
@@ -269,7 +269,7 @@ func (d *Domino) CloseDoc() (err error) {
 // (probably faster and cleaner than anything else)
 func (d *Domino) TriggerClick(selector string) (newHTML string, ok bool, err error) {
 	res, err := d.Exec(`
-		var sel = '` + selector + `';
+		var sel = '`+selector+`';
 		var el = document.querySelector(sel);
 
 		console.log('query ' + sel);
@@ -303,9 +303,9 @@ func (d *Domino) TriggerClick(selector string) (newHTML string, ok bool, err err
 // Put change into html (e.g. from input field mutation)
 func (d *Domino) PutAttr(selector, attr, val string) (ok bool, err error) {
 	res, err := d.Exec(`
-		var sel = '` + selector + `';
+		var sel = '`+selector+`';
 		var el = document.querySelector(sel);
-		el.attr('` + attr + `', '` + val + `');
+		el.attr('`+attr+`', '`+val+`');
 		!!el;
 	`, false)
 
@@ -315,7 +315,7 @@ func (d *Domino) PutAttr(selector, attr, val string) (ok bool, err error) {
 }
 
 func (d *Domino) TrackChanges() (html string, changed bool, err error) {
-	outer:
+outer:
 	for {
 		// TODO: either add other change types like ajax begin/end or
 		// just have one channel for all events worth waiting for.
@@ -338,7 +338,7 @@ func (d *Domino) TrackChanges() (html string, changed bool, err error) {
 }
 
 func (d *Domino) xhr(method, uri string, h map[string]string, data string, cb func(data string, err string)) {
-	req, err := http.NewRequest(method, /*u.String()*/uri, strings.NewReader(data))
+	req, err := http.NewRequest(method /*u.String()*/, uri, strings.NewReader(data))
 	if err != nil {
 		cb("", err.Error())
 		return
@@ -373,7 +373,7 @@ func (d *Domino) mutated(t int, q string) {
 	m := Mutation{
 		Time: time.Now(),
 		Type: t,
-		Sel: q,
+		Sel:  q,
 	}
 
 	select {

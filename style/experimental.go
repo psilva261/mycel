@@ -2,13 +2,13 @@ package style
 
 import (
 	"9fans.net/go/draw"
-	"github.com/chris-ramon/douceur/css"
 	"fmt"
+	"github.com/chris-ramon/douceur/css"
 	"github.com/mjl-/duit"
-	"image"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/img"
 	"github.com/psilva261/opossum/logger"
+	"image"
 	"strings"
 )
 
@@ -109,7 +109,7 @@ func (cs Map) backgroundGradient() (c draw.Color, ok bool) {
 
 	colors := make([]draw.Color, 0, 2)
 
-	for	i := 0; i < len(v); {
+	for i := 0; i < len(v); {
 		m := strings.Index(v[i:], ",")
 		op := strings.Index(v[i:], "(")
 		cl := strings.Index(v[i:], ")")
@@ -118,10 +118,10 @@ func (cs Map) backgroundGradient() (c draw.Color, ok bool) {
 		}
 		var arg string
 		if cl > 0 && op < m && m < cl {
-			arg = v[i:i+cl+1]
+			arg = v[i : i+cl+1]
 			i += cl + 1
 		} else {
-			arg = v[i:i+m]
+			arg = v[i : i+m]
 			i += m + 1
 		}
 
@@ -143,15 +143,15 @@ func (cs Map) backgroundGradient() (c draw.Color, ok bool) {
 func linearGradient(from, to draw.Color, x, y, xmax float64) (c draw.Color) {
 	fr, fg, fb, fa := from.RGBA()
 	tr, tg, tb, ta := to.RGBA()
-	d := x/xmax
+	d := x / xmax
 	r := uint32(float64(fr) + d*float64(tr-fr))
 	g := uint32(float64(fg) + d*float64(tg-fg))
 	b := uint32(float64(fb) + d*float64(tb-fb))
 	a := uint32(float64(fa) + d*float64(ta-fa))
-	cc := (r/256) << 24
-	cc = cc | ((g/256) << 16)
-	cc = cc | ((b/256) << 8)
-	cc = cc | (a/256)
+	cc := (r / 256) << 24
+	cc = cc | ((g / 256) << 16)
+	cc = cc | ((b / 256) << 8)
+	cc = cc | (a / 256)
 	return draw.Color(cc)
 }
 

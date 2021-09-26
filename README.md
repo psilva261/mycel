@@ -1,6 +1,6 @@
 # Opossum Web Browser
 
-Basic portable Web browser; only needs a Go compiler to compile.
+Basic portable Web browser; only needs a Go compiler to compile. Optimized for use on 9front and 9legacy, supports plan9port and 9pi as well.
 
 The UI is built with https://github.com/mjl-/duit
 

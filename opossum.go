@@ -2,12 +2,12 @@ package opossum
 
 import (
 	"bytes"
+	"github.com/psilva261/opossum/logger"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/htmlindex"
 	"golang.org/x/text/encoding/unicode"
 	"io/ioutil"
 	"mime"
-	"github.com/psilva261/opossum/logger"
 	"net/url"
 	"strings"
 )
@@ -23,7 +23,7 @@ type Fetcher interface {
 
 type ContentType struct {
 	MediaType string
-	Params map[string]string
+	Params    map[string]string
 }
 
 // NewContentType based on mime type string and url including file extension as fallback

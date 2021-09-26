@@ -9,9 +9,9 @@ import (
 
 func TestInitPos(t *testing.T) {
 	g := &Grid{
-		Kids: make([]*duit.Kid, 2*2),
-		Columns: 2,
-		Rows: 2,
+		Kids:     make([]*duit.Kid, 2*2),
+		Columns:  2,
+		Rows:     2,
 		RowSpans: []int{1, 1, 1, 1},
 		ColSpans: []int{1, 1, 1, 1},
 	}
@@ -21,9 +21,9 @@ func TestInitPos(t *testing.T) {
 	}
 
 	g = &Grid{
-		Kids: make([]*duit.Kid, 1*2),
-		Columns: 2,
-		Rows: 2,
+		Kids:     make([]*duit.Kid, 1*2),
+		Columns:  2,
+		Rows:     2,
 		RowSpans: []int{1, 1},
 		ColSpans: []int{2, 2},
 	}
@@ -33,9 +33,9 @@ func TestInitPos(t *testing.T) {
 	}
 
 	g = &Grid{
-		Kids: make([]*duit.Kid, 2*1),
-		Columns: 2,
-		Rows: 2,
+		Kids:     make([]*duit.Kid, 2*1),
+		Columns:  2,
+		Rows:     2,
 		RowSpans: []int{2, 2},
 		ColSpans: []int{1, 1},
 	}
@@ -50,17 +50,19 @@ func TestMaxWidths(t *testing.T) {
 		Dimensions: "400x300",
 	}
 	dui, err := duit.NewDUI("scroll_test", opts)
-	if err != nil { t.Fatalf("err: %v", err) }
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
 	g := Grid{
 		Kids: duit.NewKids(
 			&duit.Button{Text: "upper"},
 			&duit.Button{Text: "LL"},
 			&duit.Button{Text: "LR"},
 		),
-		Columns: 2,
-		Rows: 2,
-		RowSpans: []int{1,1,1},
-		ColSpans: []int{2,1,1},
+		Columns:  2,
+		Rows:     2,
+		RowSpans: []int{1, 1, 1},
+		ColSpans: []int{2, 1, 1},
 	}
 	g.initPos()
 	maxW, w, xs := g.maxWidths(dui, image.Point{X: 400, Y: 300})

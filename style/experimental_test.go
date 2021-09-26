@@ -53,8 +53,8 @@ func TestBackgroundColor(t *testing.T) {
 
 func TestBackgroundGradient(t *testing.T) {
 	values := map[string]uint32{
-		"linear-gradient(to right,rgb(10,0,50,1),rgb(200,0,50,1))": 0x690032ff,
-		"linear-gradient(to right,rgb(0,60,60,1),rgba(0,180,180,1))": 0x007878ff,
+		"linear-gradient(to right,rgb(10,0,50,1),rgb(200,0,50,1))":              0x690032ff,
+		"linear-gradient(to right,rgb(0,60,60,1),rgba(0,180,180,1))":            0x007878ff,
 		"linear-gradient(to bottom, rgba(40,40,40,1) 0%,rgba(40,40,40,1) 100%)": 0x282828ff,
 	}
 	for v, cc := range values {

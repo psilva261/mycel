@@ -41,36 +41,36 @@ func TestEmpty(t *testing.T) {
 }
 
 func TestSvg(t *testing.T) {
-       xml := `
+	xml := `
                <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24">
                </svg>
        `
 
-       _, err := Svg(xml, 0, 0)
-       if err != nil {
-               t.Fatalf(err.Error())
-       }
+	_, err := Svg(xml, 0, 0)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 }
 
 func TestSvgUnquoted(t *testing.T) {
-       xml := `
+	xml := `
                <svg fill=currentColor height=24 viewBox=0 0 24 24 width=24>
                	<g fill=green></g>
                	<g fill=yellow/>
                </svg>
        `
-       xml=`<svg xmlns=http://www.w3.org/2000/svg viewBox=0 0 37 37 fill=#000000><path class=border fill=blue stroke=green/></svg>`
+	xml = `<svg xmlns=http://www.w3.org/2000/svg viewBox=0 0 37 37 fill=#000000><path class=border fill=blue stroke=green/></svg>`
 
-       _, err := Svg(xml, 0, 0)
-       if err != nil {
-               t.Fatalf(err.Error())
-       }
+	_, err := Svg(xml, 0, 0)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 }
 
 func TestQuoteAttrsInTag(t *testing.T) {
 	cases := map[string]string{
 		`<svg xmlns=http://www.w3.org/2000/svg viewBox=0 0 37 37 fill=#000000>`: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" fill="#000000">`,
-		`<path class=border fill=yellow stroke=green d=M29.2 21.3 0z/>`: `<path class="border" fill="yellow" stroke="green" d="M29.2 21.3 0z"/>`,
+		`<path class=border fill=yellow stroke=green d=M29.2 21.3 0z/>`:         `<path class="border" fill="yellow" stroke="green" d="M29.2 21.3 0z"/>`,
 		`</svg>`: `</svg>`,
 	}
 	for c, exp := range cases {

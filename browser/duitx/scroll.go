@@ -46,10 +46,10 @@ type Scroll struct {
 	img           *draw.Image // for child to draw on
 	scrollbarSize int
 	lastMouseUI   duit.UI
-	drawOffset int
+	drawOffset    int
 
-	tiles map[int]*draw.Image
-	last map[int]time.Time
+	tiles        map[int]*draw.Image
+	last         map[int]time.Time
 	tilesChanged bool
 }
 
@@ -59,9 +59,9 @@ var _ duit.UI = &Scroll{}
 func NewScroll(dui *duit.DUI, ui duit.UI) *Scroll {
 	s := &Scroll{
 		Height: -1,
-		Kid: duit.Kid{UI: ui},
-		tiles: make(map[int]*draw.Image),
-		last: make(map[int]time.Time),
+		Kid:    duit.Kid{UI: ui},
+		tiles:  make(map[int]*draw.Image),
+		last:   make(map[int]time.Time),
 	}
 	return s
 }
@@ -101,12 +101,12 @@ func (ui *Scroll) ensure(dui *duit.DUI, i int) {
 	log.Printf("ensure(dui, %v)", i)
 	last, ok := ui.last[i]
 	tl, _ := ui.tiles[i]
-	if ok && time.Since(last) < maxAge  && ui.sizeOk(tl) {
+	if ok && time.Since(last) < maxAge && ui.sizeOk(tl) {
 		return
 	}
 
 	log.Printf("ensure(dui, %v): draw", i)
-	r := ui.r.Add(image.Point{X: 0, Y: i*ui.r.Dy()})
+	r := ui.r.Add(image.Point{X: 0, Y: i * ui.r.Dy()})
 	img, err := dui.Display.AllocImage(r, draw.ARGB32, false, dui.BackgroundColor)
 	if duitError(dui, err, "allocimage") {
 		return
@@ -139,8 +139,8 @@ func (ui *Scroll) pos() (t, of int) {
 func (ui *Scroll) tlR(i int) (r image.Rectangle) {
 	r.Min.X = ui.r.Min.X
 	r.Max.X = ui.r.Max.X
-	r.Min.Y = ui.r.Min.Y+i*ui.r.Dy()
-	r.Max.Y = r.Min.Y+ui.r.Dy()
+	r.Min.Y = ui.r.Min.Y + i*ui.r.Dy()
+	r.Max.Y = r.Min.Y + ui.r.Dy()
 	return
 }
 
@@ -231,7 +231,7 @@ func (ui *Scroll) drawChild(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig
 	if ui.childR.Empty() {
 		return
 	}
-	
+
 	var i, of int
 	var tl, tl1 *draw.Image
 	var ok, ok1, ok2, ok3, okm1, okm2 bool
@@ -243,10 +243,18 @@ func (ui *Scroll) drawChild(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig
 		i, of = ui.pos()
 		tl, ok = ui.tiles[i]
 		tl1, ok1 = ui.tiles[i+1]
-		if !ok { ui.ensure(dui, i) }
-		if !ok1 { ui.ensure(dui, i+1) }
-		if !ok { tl, _ = ui.tiles[i] }
-		if !ok1 && of > 0 { tl1, _ = ui.tiles[i+1] }
+		if !ok {
+			ui.ensure(dui, i)
+		}
+		if !ok1 {
+			ui.ensure(dui, i+1)
+		}
+		if !ok {
+			tl, _ = ui.tiles[i]
+		}
+		if !ok1 && of > 0 {
+			tl1, _ = ui.tiles[i+1]
+		}
 	}
 
 	predrawFut := func() {
@@ -261,11 +269,21 @@ func (ui *Scroll) drawChild(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig
 		if i > 1 {
 			_, okm2 = ui.tiles[i-2]
 		}
-		if of == 0 && !ok1 { ui.ensure(dui, i+1) }
-		if ok1 && !ok2 { ui.ensure(dui, i+2) }
-		if ok2 && !ok3 { ui.ensure(dui, i+3) }
-		if i > 0 && !okm1 { ui.ensure(dui, i-1) }
-		if i > 1 && okm1 && !okm2 { ui.ensure(dui, i-2) }
+		if of == 0 && !ok1 {
+			ui.ensure(dui, i+1)
+		}
+		if ok1 && !ok2 {
+			ui.ensure(dui, i+2)
+		}
+		if ok2 && !ok3 {
+			ui.ensure(dui, i+3)
+		}
+		if i > 0 && !okm1 {
+			ui.ensure(dui, i-1)
+		}
+		if i > 1 && okm1 && !okm2 {
+			ui.ensure(dui, i-2)
+		}
 	}
 	defer predrawFut()
 
@@ -300,7 +318,7 @@ func (ui *Scroll) drawChild(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig
 		},
 		Max: ui.childR.Max,
 	}
-	pOf := draw.Point{X: 0, Y: ui.Offset+rTop.Dy()}
+	pOf := draw.Point{X: 0, Y: ui.Offset + rTop.Dy()}
 	img.Draw(rTop.Add(orig), tl, nil, p)
 	if of > 0 {
 		img.Draw(rBtm.Add(orig), tl1, nil, pOf)

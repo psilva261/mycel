@@ -13,12 +13,12 @@ func Init() (err error) {
 		log.Printf("not loading htm/js from mtpt")
 		return
 	}
-	bs, err := os.ReadFile(mtpt+"/html")
+	bs, err := os.ReadFile(mtpt + "/html")
 	if err != nil {
 		return
 	}
 	htm = string(bs)
-	ds, err := os.ReadDir(mtpt+"/js")
+	ds, err := os.ReadDir(mtpt + "/js")
 	if err != nil {
 		return
 	}

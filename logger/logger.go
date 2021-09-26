@@ -10,11 +10,11 @@ import (
 
 // Sink for Go's log pkg
 var (
-	Sink io.Writer
+	Sink  io.Writer
 	quiet bool
-	gl *goLog.Logger
+	gl    *goLog.Logger
 
-	Debug    bool
+	Debug bool
 
 	mu       sync.Mutex
 	last     string

@@ -102,7 +102,7 @@ b {
 		}
 
 		if w == 400 {
-			_ =m[body][0]
+			_ = m[body][0]
 			if v := m[body][0].Declarations[0].Value; v != "lightblue" {
 				t.Fatalf("%v", v)
 			}
@@ -273,10 +273,10 @@ func TestApplyChildStyleInherit2(t *testing.T) {
 
 func TestCalc(t *testing.T) {
 	tests := map[string]float64{
-		"calc(1px+2px)": 3.0,
-		"calc(1px + 2px)": 3.0,
-		"calc(1em+2px)": 13.0,
-		"calc(1em+(2px-1px))": 12.0,
+		"calc(1px+2px)":         3.0,
+		"calc(1px + 2px)":       3.0,
+		"calc(1em+2px)":         13.0,
+		"calc(1em+(2px-1px))":   12.0,
 		"calc(1em+(2px-1.5px))": 11.5,
 	}
 	for x, px := range tests {
@@ -286,7 +286,7 @@ func TestCalc(t *testing.T) {
 		}
 		if f != px {
 			t.Fatalf("expected %v but got %v", px, f)
-		}		
+		}
 	}
 }
 
@@ -309,14 +309,14 @@ func TestCalc2(t *testing.T) {
 
 func TestLength(t *testing.T) {
 	lpx := map[string]float64{
-		"auto": 0.0,
+		"auto":    0.0,
 		"inherit": 0.0,
-		"17px": 17.0,
-		"10em": 110.0,
-		"10ex": 110.0,
-		"10vw": 128.0,
-		"10vh": 108.0,
-		"10%": 0,
+		"17px":    17.0,
+		"10em":    110.0,
+		"10ex":    110.0,
+		"10vw":    128.0,
+		"10vh":    108.0,
+		"10%":     0,
 		"101.6mm": 400,
 	}
 	for l, px := range lpx {
@@ -333,9 +333,9 @@ func TestLength(t *testing.T) {
 func TestTlbr(tt *testing.T) {
 	cases := map[string]duit.Space{
 		"1px 2px 3px 4px": duit.Space{1, 2, 3, 4},
-		"1px 2px 3px": duit.Space{1, 2, 3, 2},
-		"1px 2px": duit.Space{1, 2, 1, 2},
-		"1px": duit.Space{1, 1, 1, 1},
+		"1px 2px 3px":     duit.Space{1, 2, 3, 2},
+		"1px 2px":         duit.Space{1, 2, 1, 2},
+		"1px":             duit.Space{1, 1, 1, 1},
 	}
 	for v, exp := range cases {
 		m := Map{
@@ -375,7 +375,7 @@ b {
 	color: var(--emph);
 }
 	`
-	
+
 	_, rv, err := FetchNodeRules(doc, css, 1280)
 	if err != nil {
 		t.Fail()
@@ -407,4 +407,3 @@ b {
 		t.Fail()
 	}
 }
-

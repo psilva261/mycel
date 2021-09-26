@@ -9,8 +9,8 @@ import (
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
 	"golang.org/x/image/draw"
-	"image/png"
 	"image"
+	"image/png"
 	"io"
 	"net/url"
 	"strings"
@@ -28,7 +28,7 @@ func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) 
 		return nil, ct, fmt.Errorf("cannot handle charset")
 	}
 	parts := strings.Split(addr, ",")
-	
+
 	var ctStr string
 	if strings.Contains(parts[0], ";") {
 		header := strings.Split(parts[0], ";")
@@ -80,7 +80,7 @@ func quoteAttrsInTag(s string) string {
 		j := strings.LastIndex(s[:eq], " ")
 		keyStarts[i] = j
 	}
-	
+
 	valueEnds := make([]int, len(keyStarts))
 	for i, _ := range keyStarts {
 		if i+1 < len(keyStarts) {
@@ -88,7 +88,7 @@ func quoteAttrsInTag(s string) string {
 		} else {
 			off := eqs[i]
 			jj := strings.Index(s[off:], ">")
-			valueEnds[i] = jj+off
+			valueEnds[i] = jj + off
 			if s[valueEnds[i]-1:valueEnds[i]] == "/" {
 				valueEnds[i]--
 			}
@@ -132,7 +132,7 @@ func quoteAttrs(s string) string {
 			break
 		}
 	}
-	
+
 	if len(tagStarts) != len(tagEnds) {
 		log.Errorf("quoteAttrs: len(tagStarts) != len(tagEnds)")
 		return s
@@ -210,7 +210,7 @@ func Load(f opossum.Fetcher, src string, maxW, w, h int) (r io.Reader, err error
 
 		dx := img.Bounds().Max.X
 		dy := img.Bounds().Max.Y
-		log.Printf("dx,dy=%v,%v",dx,dy)
+		log.Printf("dx,dy=%v,%v", dx, dy)
 		if w == 0 && h == 0 && 0 < maxW && maxW < dx {
 			w = maxW
 		}
@@ -240,11 +240,11 @@ func newSizes(oldX, oldY, wantedX, wantedY int) (newX, newY int, skip bool) {
 		return oldX, oldY, true
 	}
 	if wantedX == 0 {
-		newX = int(float64(oldX) * float64(wantedY)/float64(oldY))
+		newX = int(float64(oldX) * float64(wantedY) / float64(oldY))
 		newY = wantedY
 	} else {
 		newX = wantedX
-		newY = int(float64(oldY) * float64(wantedX)/float64(oldX))
+		newY = int(float64(oldY) * float64(wantedX) / float64(oldX))
 	}
 
 	if newX > 2000 || newY > 2000 {

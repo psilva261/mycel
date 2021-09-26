@@ -68,11 +68,11 @@ type Boxable interface {
 
 // Box keeps elements on a line as long as they fit, then moves on to the next line.
 type Box struct {
-	Kids       []*duit.Kid      // Kids and UIs in this box.
+	Kids       []*duit.Kid // Kids and UIs in this box.
 	Reverse    bool        // Lay out children from bottom to top. First kid will be at the bottom.
-	Margin     duit.Space // In lowDPI pixels, will be adjusted for highDPI screens.
-	Padding    duit.Space       // Padding inside box, so children don't touch the sides; in lowDPI pixels, also adjusted for highDPI screens.
-	Valign     duit.Valign      // How to align children on a line.
+	Margin     duit.Space  // In lowDPI pixels, will be adjusted for highDPI screens.
+	Padding    duit.Space  // Padding inside box, so children don't touch the sides; in lowDPI pixels, also adjusted for highDPI screens.
+	Valign     duit.Valign // How to align children on a line.
 	Width      int         // 0 means dynamic (as much as needed), -1 means full width, >0 means that exact amount of lowDPI pixels.
 	Height     int         // 0 means dynamic (as much as needed), -1 means full height, >0 means that exact amount of lowDPI pixels.
 	MaxWidth   int         // if >0, the max number of lowDPI pixels that will be used.
@@ -120,9 +120,9 @@ func (ui *Box) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, forc
 	}
 
 	if ui.ContentBox {
-		bbw += margin.Dx()+padding.Dx()
-		bbmaxw += margin.Dx()+padding.Dx()
-		bbh += margin.Dy()+padding.Dy()
+		bbw += margin.Dx() + padding.Dx()
+		bbmaxw += margin.Dx() + padding.Dx()
+		bbh += margin.Dy() + padding.Dy()
 	}
 
 	osize := sizeAvail

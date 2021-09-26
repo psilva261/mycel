@@ -59,13 +59,13 @@ func TestPercentEncoding(t *testing.T) {
 		},
 	}
 	res := escapeValues(ct, q).Encode()
-	if res != "a=%E3%83%84"  {
+	if res != "a=%E3%83%84" {
 		t.Errorf("%v", res)
 	}
 
 	ct.Params["charset"] = "ISO-8859-1"
 	res = escapeValues(ct, q).Encode()
-	if res != "a=%26%2312484%3B"  {
+	if res != "a=%26%2312484%3B" {
 		t.Errorf("%v", res)
 	}
 }

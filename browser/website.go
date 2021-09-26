@@ -2,9 +2,6 @@ package browser
 
 import (
 	"github.com/mjl-/duit"
-	"golang.org/x/net/html"
-	"golang.org/x/text/encoding"
-	"net/url"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser/duitx"
 	"github.com/psilva261/opossum/browser/fs"
@@ -12,6 +9,9 @@ import (
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
+	"golang.org/x/net/html"
+	"golang.org/x/text/encoding"
+	"net/url"
 	"strings"
 )
 

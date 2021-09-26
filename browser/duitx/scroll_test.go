@@ -15,15 +15,19 @@ func TestFreeCur(t *testing.T) {
 			Max: image.Point{100, 1000},
 		},
 		Offset: 1,
-		tiles: make(map[int]*draw.Image),
-		last: make(map[int]time.Time),
+		tiles:  make(map[int]*draw.Image),
+		last:   make(map[int]time.Time),
 	}
 	dui, err := duit.NewDUI("scroll_test", nil)
-	if err != nil { t.Fatalf("err: %v", err) }
-	r := rect(draw.Point{100,100})
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	r := rect(draw.Point{100, 100})
 	for i := 0; i < 10; i++ {
 		ui.tiles[i], err = dui.Display.AllocImage(r, draw.ARGB32, false, 0xff00ff00)
-		if err != nil { t.Fatalf("err: %v", err) }
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
 	}
 	ui.freeCur()
 	if len(ui.tiles) != 8 {

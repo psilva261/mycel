@@ -8,9 +8,9 @@ import (
 	"github.com/chris-ramon/douceur/css"
 	"github.com/chris-ramon/douceur/parser"
 	"github.com/mjl-/duit"
+	"github.com/psilva261/opossum/logger"
 	"golang.org/x/image/colornames"
 	"golang.org/x/net/html"
-	"github.com/psilva261/opossum/logger"
 	"math"
 	"os/exec"
 	"regexp"
@@ -28,6 +28,7 @@ var rMinWidth = regexp.MustCompile(`min-width: (\d+)(px|em|rem)`)
 var rMaxWidth = regexp.MustCompile(`max-width: (\d+)(px|em|rem)`)
 
 const FontBaseSize = 11.0
+
 var WindowWidth = 1280
 var WindowHeight = 1080
 
@@ -195,7 +196,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 		}
 		if rMaxWidth.MatchString(r.Prelude) {
 			m := rMaxWidth.FindStringSubmatch(r.Prelude)
-			l := m[1]+m[2]
+			l := m[1] + m[2]
 			maxWidth, _, err := length(nil, l)
 			if err != nil {
 				return nil, nil, fmt.Errorf("atoi: %w", err)
@@ -206,7 +207,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 		}
 		if rMinWidth.MatchString(r.Prelude) {
 			m := rMinWidth.FindStringSubmatch(r.Prelude)
-			l := m[1]+m[2]
+			l := m[1] + m[2]
 			minWidth, _, err := length(nil, l)
 			if err != nil {
 				return nil, nil, fmt.Errorf("atoi: %w", err)
@@ -226,7 +227,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 
 type DomTree interface {
 	Parent() (p DomTree, ok bool)
-	Style()  Map
+	Style() Map
 }
 
 type Map struct {
@@ -264,12 +265,12 @@ func NewMap(n *html.Node) Map {
 
 			s.Declarations[a.Key] = css.Declaration{
 				Property: a.Key,
-				Value: v,
+				Value:    v,
 			}
 		} else if a.Key == "bgcolor" {
 			s.Declarations["background-color"] = css.Declaration{
 				Property: "background-color",
-				Value: a.Val,
+				Value:    a.Val,
 			}
 		}
 	}
@@ -567,16 +568,16 @@ func (cs *Map) Tlbr(key string) (s duit.Space, err error) {
 		}
 	}
 
-	if t, err := cs.CssPx(key+"-top"); err == nil {
+	if t, err := cs.CssPx(key + "-top"); err == nil {
 		s.Top = t
 	}
-	if r, err := cs.CssPx(key+"-right"); err == nil {
+	if r, err := cs.CssPx(key + "-right"); err == nil {
 		s.Right = r
 	}
-	if b, err := cs.CssPx(key+"-bottom"); err == nil {
+	if b, err := cs.CssPx(key + "-bottom"); err == nil {
 		s.Bottom = b
 	}
-	if l, err := cs.CssPx(key+"-left"); err == nil {
+	if l, err := cs.CssPx(key + "-left"); err == nil {
 		s.Left = l
 	}
 
@@ -770,6 +771,6 @@ func (cs *Map) CssPx(propName string) (l int, err error) {
 func (cs Map) SetCss(k, v string) {
 	cs.Declarations[k] = css.Declaration{
 		Property: k,
-		Value: v,
+		Value:    v,
 	}
 }

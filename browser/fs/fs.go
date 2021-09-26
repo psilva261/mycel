@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	mu  *sync.RWMutex
-	c   *sync.Cond
+	mu *sync.RWMutex
+	c  *sync.Cond
 
 	oFS     *fs.FS
 	un      string

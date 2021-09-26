@@ -25,7 +25,7 @@ func (is Items) Less(i, j int) bool {
 type Item struct {
 	Addr string
 	opossum.ContentType
-	Buf []byte
+	Buf  []byte
 	Used time.Time
 }
 
