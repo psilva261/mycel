@@ -571,6 +571,69 @@ func TestTriggerClick(t *testing.T) {
 	d.Stop()
 }
 
+func TestTriggerClickSubmit(t *testing.T) {
+	for _, sel := range []string{"#btn", "#submit"} {
+		jQuery, err := ioutil.ReadFile("../../../js/jquery-3.5.1.js")
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		h := `
+		<html>
+		<body>
+		<h1 id="title" style="display: inline-block;">Hello</h1>
+		<form id="the-form">
+			<input type="text" id="info">
+			<input type="submit" id="submit">Submit</button>
+			<button type="button" id="btn">Submit</button>
+		</form>
+		</body>
+		</html>
+		`
+		SCRIPT := string(jQuery) + `
+		var clicked = false;
+		const form = document.getElementById('the-form');
+		form.onsubmit = function(event) {
+			clicked = true;
+			event.preventDefault();
+		};
+		`
+		d := NewDomino(h, nil,  nil)
+		d.Start()
+		_, err = d.Exec(SCRIPT, true)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		d.CloseDoc()
+
+		res, err := d.Exec("$('button').html()", false)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		if res != "Submit" {
+			t.Fatalf(res)
+		}
+
+		if _, _, err = d.TrackChanges(); err != nil {
+			t.Fatalf(err.Error())
+		}
+		_, changed, err := d.TriggerClick(sel)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		if changed {
+			t.Fatal()
+		}
+		res, err = d.Exec("clicked", false)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+		if res != "true" {
+			t.Fatalf(res)
+		}
+		d.Stop()
+	}
+}
+
 func TestDomChanged(t *testing.T) {
 	jQuery, err := ioutil.ReadFile("../../../js/jquery-3.5.1.js")
 	if err != nil {

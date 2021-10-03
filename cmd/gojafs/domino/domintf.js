@@ -42,6 +42,18 @@ document._setMutationHandler(function(a) {
 	opossum.mutated(a.type, ___fq('yolo', a.target));
 });
 
+___opossumSubmit = function(a, b, c) {
+	if (this.tagName === 'BUTTON' || this.tagName === 'INPUT') {
+		let p;
+		for (p = el; p = p.parentElement; p != null) {
+			if (p.tagName === 'FORM') {
+				if (p.onsubmit) p.onsubmit()
+				break;
+			}
+		}
+	}
+}
+
 addEventListener = function() {};
 removeEventListener = function() {};
 

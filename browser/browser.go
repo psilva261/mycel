@@ -698,32 +698,28 @@ func (el *Element) FirstFocus(dui *duit.DUI, self *duit.Kid) *image.Point {
 }
 
 func (el *Element) click() (consumed bool) {
+	if ExperimentalJsInsecure {
+		q := el.n.QueryRef()
+		res, consumed, err := js.TriggerClick(q)
+		if err != nil {
+			log.Errorf("trigger click %v: %v", q, err)
+			return consumed
+		}
+
+		if consumed {
+			offset := scroller.Offset
+			browser.Website.layout(browser, res, ClickRelayout)
+			scroller.Offset = offset
+			dui.MarkLayout(dui.Top.UI)
+			dui.MarkDraw(dui.Top.UI)
+			dui.Render()
+		}
+	}
+
 	if el.Click != nil {
 		e := el.Click()
 		return e.Consumed
 	}
-
-	if !ExperimentalJsInsecure {
-		return
-	}
-
-	q := el.n.QueryRef()
-	res, consumed, err := js.TriggerClick(q)
-	if err != nil {
-		log.Errorf("trigger click %v: %v", q, err)
-		return
-	}
-
-	if !consumed {
-		return
-	}
-
-	offset := scroller.Offset
-	browser.Website.layout(browser, res, ClickRelayout)
-	scroller.Offset = offset
-	dui.MarkLayout(dui.Top.UI)
-	dui.MarkDraw(dui.Top.UI)
-	dui.Render()
 
 	return
 }

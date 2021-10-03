@@ -144,7 +144,9 @@ var HTMLElement = exports.HTMLElement = define({
         this._click_in_progress = false;
       }
     }},
-    submit: { value: utils.nyi },
+    submit: { value: function(a, b, c) {
+      ___opossumSubmit.bind(this)(a, b, c) }
+    },
   },
   attributes: {
     title: String,

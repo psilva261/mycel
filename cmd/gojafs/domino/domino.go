@@ -276,8 +276,6 @@ func (d *Domino) TriggerClick(selector string) (newHTML string, ok bool, err err
 
 		if (!el) {
 			console.log('el is null/undefined');
-			//console.log('html:');
-			//console.log(document.documentElement.innerHTML)
 			null;
 		} else if (el._listeners && el._listeners.click) {
 			var fn = el.click.bind(el);
@@ -288,6 +286,22 @@ func (d *Domino) TriggerClick(selector string) (newHTML string, ok bool, err err
 			}
 
 			!!fn;
+		} else if (el.type === 'submit' || el.type === 'button') {
+			let p;
+			let submitted = false;
+			for (p = el; p = p.parentElement; p != null) {
+				if (p.tagName && p.tagName === 'FORM') {
+					const event = new Event('submit');
+					event.cancelable = true;
+					if (p.onsubmit) p.onsubmit(event);
+					if (!event.defaultPrevented) {
+						p.submit();
+					}
+					submitted = true;
+					break;
+				}
+			}
+			submitted;
 		} else {
 			false;
 		}
