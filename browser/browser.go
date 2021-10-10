@@ -220,7 +220,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 	}
 
 	if src == "" {
-		return nil, fmt.Errorf("no src in %+v", n.Attrs)
+		return nil, fmt.Errorf("no src in %+v", n.DomSubtree.Attr)
 	}
 
 	if i, cached = imageCache[src]; !cached {

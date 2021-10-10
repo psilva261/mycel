@@ -99,7 +99,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 		}
 		scripts = js.Scripts(nt, downloads)
 		fs.Update(htm, csss, scripts)
-		fs.DOM = nt
+		fs.SetDOM(nt)
 		log.Infof("JS pipeline start")
 		js.Stop()
 		jsProcessed, changed, err := processJS2()
@@ -152,7 +152,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 	}
 
 	fs.Update(htm, csss, scripts)
-	fs.DOM = nt
+	fs.SetDOM(nt)
 
 	log.Flush()
 }

@@ -14,7 +14,6 @@ type Node struct {
 	DomSubtree *html.Node `json:"-"`
 	Text       string
 	Wrappable  bool
-	Attrs      []html.Attribute
 	style.Map
 	Children []*Node
 	parent   *Node `json:"-"`
@@ -46,7 +45,6 @@ func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map,
 	}
 	n = &Node{
 		DomSubtree: doc,
-		Attrs:      doc.Attr,
 		Map:        ncs,
 		Children:   make([]*Node, 0, 2),
 		parent:     parent,
@@ -147,7 +145,7 @@ func (n *Node) FindAll(tag string) (cs []*Node) {
 }
 
 func (n *Node) Attr(k string) string {
-	for _, a := range n.Attrs {
+	for _, a := range n.DomSubtree.Attr {
 		if a.Key == k {
 			return a.Val
 		}
@@ -156,7 +154,7 @@ func (n *Node) Attr(k string) string {
 }
 
 func (n *Node) HasAttr(k string) bool {
-	for _, a := range n.Attrs {
+	for _, a := range n.DomSubtree.Attr {
 		if a.Key == k {
 			return true
 		}

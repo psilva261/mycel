@@ -25,19 +25,25 @@ var (
 	gn      string
 	cssDir  *fs.StaticDir
 	jsDir   *fs.StaticDir
-	html    string
-	DOM     Queryable
+	htm     string
+	rt      *Node
 	Client  *http.Client
 	Fetcher opossum.Fetcher
 )
 
-type Queryable interface {
-	Query(q string) ([]*nodes.Node, error)
-}
-
 func init() {
 	mu = &sync.RWMutex{}
 	c = sync.NewCond(mu)
+	SetDOM(nil)
+}
+
+func SetDOM(d *nodes.Node) {
+	if rt == nil {
+		rt = &Node{
+			name: "0",
+		}
+	}
+	rt.nt = d
 }
 
 func Srv9p() {
@@ -64,7 +70,7 @@ func Srv9p() {
 			mu.RLock()
 			defer mu.RUnlock()
 
-			return []byte(html)
+			return []byte(htm)
 		},
 	)
 	root.AddChild(h)
@@ -87,6 +93,7 @@ func Srv9p() {
 	q := fs.NewListenFile(oFS.NewStat("query", un, gn, 0600))
 	root.AddChild(q)
 	lq := (*fs.ListenFileListener)(q)
+	root.AddChild(rt)
 	go Query(lq)
 	if Client != nil {
 		xhr := fs.NewListenFile(oFS.NewStat("xhr", un, gn, 0600))
@@ -125,11 +132,11 @@ func query(conn net.Conn) {
 	}
 	l = strings.TrimSpace(l)
 
-	if DOM == nil {
+	if rt.nt == nil {
 		log.Infof("DOM is nil")
 		return
 	}
-	nodes, err := DOM.Query(l)
+	nodes, err := rt.nt.Query(l)
 	if err != nil {
 		log.Errorf("query nodes: %v", err)
 		return
@@ -190,7 +197,7 @@ func xhr(conn net.Conn) {
 	}
 }
 
-func Update(htm string, css []string, js []string) {
+func Update(html string, css []string, js []string) {
 	c.L.Lock()
 	defer c.L.Unlock()
 
@@ -198,7 +205,7 @@ func Update(htm string, css []string, js []string) {
 		c.Wait()
 	}
 
-	html = htm
+	htm = html
 	if cssDir != nil {
 		for name := range cssDir.Children() {
 			cssDir.DeleteChild(name)

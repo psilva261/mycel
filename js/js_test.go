@@ -41,7 +41,7 @@ func TestJQueryHide(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	nt := nodes.NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
-	fs.DOM = nt
+	fs.SetDOM(nt)
 	fs.Update(simpleHTML, nil, []string{string(buf), script})
 
 	NewJS(simpleHTML, nil, nil)

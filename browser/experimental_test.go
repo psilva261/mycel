@@ -44,7 +44,7 @@ func TestProcessJS2SkipFailure(t *testing.T) {
 		`$('body').hide()`,
 		`throw 'fail';`,
 	}
-	fs.DOM = nt
+	fs.SetDOM(nt)
 	fs.Update(h, nil, scripts)
 	js.NewJS(h, nil, nt)
 	js.Start()

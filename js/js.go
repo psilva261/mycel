@@ -193,7 +193,7 @@ func iterateJsElements(doc *nodes.Node, fn func(src string, inlineCode string)) 
 			isJS := true
 			src := ""
 
-			for _, a := range n.Attrs {
+			for _, a := range n.DomSubtree.Attr {
 				switch strings.ToLower(a.Key) {
 				case "type":
 					t, err := opossum.NewContentType(a.Val, nil)
