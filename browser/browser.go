@@ -653,8 +653,8 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 		if el == nil {
 			log.Infof("inspect nil element")
 		} else {
-			log.Infof("%v:", el.n.Data())
-			log.Infof("inspect el %+v %+v %+v", el, el.n, el.UI)
+			p, _ := el.n.Path()
+			log.Infof("%v", p)
 		}
 	}
 

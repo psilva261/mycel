@@ -298,16 +298,16 @@ func TestInlining2(t *testing.T) {
 
 	// 1. nodes are row-like
 	outerSpan := nt.Find("span")
-	if outerSpan.Attr("id") != "outer" || len(outerSpan.Children) != 7 || outerSpan.IsFlex() {
+	if outerSpan.Attr("id") != "outer" || len(outerSpan.Children) != 3 || outerSpan.IsFlex() {
 		t.Errorf("node: %+v", outerSpan)
 	}
 	bracket := outerSpan.Children[0]
-	if /*bracket.Data() != "(" || */ !bracket.IsInline() {
+	if bracket.Data() != "span" || !bracket.IsInline() {
 		t.Errorf("bracket, is inline: %v %+v %+v", bracket.IsInline(), bracket, bracket.Data())
 	}
-	sp1 := outerSpan.Children[1]
-	if sp1.Data() != "span" || !sp1.IsInline() {
-		t.Errorf("sp1, is inline: %v, %+v %+v", sp1.IsInline(), sp1, sp1.Data())
+	a := outerSpan.Children[1]
+	if a.Data() != "a" || !a.IsInline() {
+		t.Errorf("sp1, is inline: %v, %+v %+v", a.IsInline(), a, a.Data())
 	}
 
 	// 2. Elements are row-like

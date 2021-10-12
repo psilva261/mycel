@@ -6,6 +6,41 @@ import (
 	"golang.org/x/net/html"
 )
 
+// Path relative to body
+func (n *Node) Path() (p string, ok bool) {
+	p, ok = n.path()
+	if ok {
+		p = PathPrefix+p
+	}
+	return
+}
+
+func (n *Node) path() (p string, ok bool) {
+	var i int
+	var c *Node
+
+	if n.DomSubtree == nil || n.Type() != html.ElementNode {
+		return
+	}
+	if n.parent == nil {
+		return "/", true
+	}
+	for i, c = range n.parent.Children {
+		if c == n {
+			break
+		}
+		if c.Type() == html.ElementNode {
+			i++
+		}
+	}
+	p += fmt.Sprintf("/%v", i)
+	q, ok := n.parent.path()
+	if ok {
+		p = q + p
+	}
+	return p, true
+}
+
 func (n *Node) Query(s string) (ns []*Node, err error) {
 	cs, err := cascadia.Compile(s)
 	if err != nil {

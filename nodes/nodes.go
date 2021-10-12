@@ -59,11 +59,12 @@ func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map,
 	}
 	i := 0
 	for c := doc.FirstChild; c != nil; c = c.NextSibling {
-		if c.Type != html.CommentNode {
-			cnt := NewNodeTree(c, ncs, nodeMap, n)
-			n.Children = append(n.Children, cnt)
-			i++
+		if c.Type == html.CommentNode || (c.Type == html.TextNode && strings.TrimSpace(c.Data) == "") {
+			continue
 		}
+		cnt := NewNodeTree(c, ncs, nodeMap, n)
+		n.Children = append(n.Children, cnt)
+		i++
 	}
 	n.Map.DomTree = n
 

@@ -33,8 +33,8 @@ func TestQueryRef(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	nt := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
-	p := nt.Children[0].Children[1].Children[1]
-	a := p.Children[5]
+	p := nt.Children[0].Children[1].Children[0]
+	a := p.Children[2]
 	if q := a.QueryRef(); q != "p:nth-child(1) > a:nth-child(3)" {
 		t.Fatalf("%v", q)
 	}
@@ -172,8 +172,8 @@ func TestCBItems(t *testing.T) {
 				</body>
 			</html>
 		`: {
-			"body": {"a", "", "div", ""},
-			"div":  {"", ""},
+			"body": {"a", "div"},
+			"div":  {},
 			"a":    {"link"},
 		},
 		`
@@ -185,8 +185,8 @@ func TestCBItems(t *testing.T) {
 				</body>
 			</html>
 		`: {
-			"body": {"", "div", ""},
-			"div":  {"a", "", ""},
+			"body": {"div"},
+			"div":  {"a"},
 			"a":    {"link"},
 		},
 		`
@@ -200,9 +200,9 @@ func TestCBItems(t *testing.T) {
 				</body>
 			</html>
 		`: {
-			"body":    {"", "main", ""},
-			"main":    {"a", "", "article", ""},
-			"article": {"", ""},
+			"body":    {"main"},
+			"main":    {"a", "article"},
+			"article": {},
 			"a":       {"link"},
 		},
 	}
