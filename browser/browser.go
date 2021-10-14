@@ -1571,7 +1571,9 @@ func (b *Browser) render(ct opossum.ContentType, buf []byte) {
 			}
 		})
 		PrintTree(b.Website.UI)
-		scroller.Offset = b.History.Scroll()
+		if scroller != nil {
+			scroller.Offset = b.History.Scroll()
+		}
 		dui.MarkLayout(dui.Top.UI)
 		dui.MarkDraw(dui.Top.UI)
 		dui.Render()
