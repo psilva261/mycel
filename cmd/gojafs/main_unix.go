@@ -1,5 +1,4 @@
 //go:build !plan9
-// +build !plan9
 
 package main
 
@@ -7,6 +6,7 @@ import (
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
 	"fmt"
+	"github.com/knusbaum/go9p"
 	"github.com/psilva261/opossum/logger"
 	"io"
 	"os/user"
@@ -84,4 +84,8 @@ func openQuery() (rwc io.ReadWriteCloser, err error) {
 
 func openXhr() (rwc io.ReadWriteCloser, err error) {
 	return fsys.Open("xhr", plan9.ORDWR)
+}
+
+func post(srv go9p.Srv) (err error) {
+	return go9p.PostSrv("goja", srv)
 }

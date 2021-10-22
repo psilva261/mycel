@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/knusbaum/go9p"
 	"github.com/psilva261/opossum/logger"
 	"io"
 	"os"
+	"syscall"
 )
 
 func Init() (err error) {
@@ -40,4 +42,27 @@ func openQuery() (rwc io.ReadWriteCloser, err error) {
 
 func openXhr() (rwc io.ReadWriteCloser, err error) {
 	return os.OpenFile(mtpt+"/xhr", os.O_RDWR, 0600)
+}
+
+func post(srv go9p.Srv) (err error) {
+	f1, f2, err := os.Pipe()
+	if err != nil {
+		return fmt.Errorf("pipe: %w", err)
+	}
+
+	go func() {
+		err = go9p.ServeReadWriter(f1, f1, srv)
+		if err != nil {
+			log.Errorf("serve rw: %v", err)
+		}
+	}()
+
+	if err = syscall.Mount(int(f2.Fd()), -1, "/mnt/goja", syscall.MCREATE, ""); err != nil {
+		return fmt.Errorf("mount: %w", err)
+	}
+	return
+}
+
+func callGojaCtl() (rwc io.ReadWriteCloser, err error) {
+	return os.OpenFile("/mnt/goja/ctl", os.O_RDWR, 0600)
 }

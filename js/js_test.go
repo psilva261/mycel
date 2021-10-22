@@ -46,11 +46,11 @@ func TestJQueryHide(t *testing.T) {
 
 	NewJS(simpleHTML, nil, nil)
 	resHtm, changed, err := Start(string(buf), script)
-	if !changed {
-		t.Fatalf("changed=%v", changed)
-	}
 	if err != nil {
 		t.Fatalf("%v", err)
+	}
+	if !changed {
+		t.Fatalf("changed=%v", changed)
 	}
 	t.Logf("resHtm=%v", resHtm)
 

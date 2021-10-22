@@ -1,83 +1,38 @@
 package main
 
 import (
-	"9fans.net/go/plan9"
-	"9fans.net/go/plan9/client"
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"net"
-	"os/user"
 	"strings"
 	"testing"
 )
 
-func connect() (fsys *client.Fsys, c io.Closer, err error) {
-	u, err := user.Current()
-	if err != nil {
-		return
-	}
-	un := u.Username
-	c1, c2 := net.Pipe()
-
-	go func() {
-		if err = Main(c1, c1); err != nil && err != io.EOF {
-			panic(err.Error())
-		}
-	}()
-
-	conn, err := client.NewConn(c2)
-	if err != nil {
-		return
-	}
-	fsys, err = conn.Attach(nil, un, "")
-	if err != nil {
-		return
-	}
-	return fsys, conn, nil
-}
-
-func call(fsys *client.Fsys, fn, cmd string, args ...string) (resp string, err error) {
-	fid, err := fsys.Open(fn, plan9.ORDWR)
-	if err != nil {
-		return
-	}
-	defer fid.Close()
-	fid.Write([]byte(cmd + "\n"))
+func call(fn, cmd string, args ...string) (resp string, err error) {
+	conn, rwc := net.Pipe()
+	go ctl(conn)
+	defer rwc.Close()
+	rwc.Write([]byte(cmd + "\n"))
 	for _, arg := range args {
-		fid.Write([]byte(arg + "\n"))
+		rwc.Write([]byte(arg + "\n"))
 	}
-	r := bufio.NewReader(fid)
+	r := bufio.NewReader(rwc)
 	b := bytes.NewBuffer([]byte{})
 	_, err = io.Copy(b, r)
-	if !strings.Contains(err.Error(), io.ErrClosedPipe.Error()) {
+	/*if !strings.Contains(err.Error(), io.ErrClosedPipe.Error()) {
 		return "", fmt.Errorf("unexpected error: %v", err)
-	}
+	}*/
 	return b.String(), nil
 }
 
 func TestMain(t *testing.T) {
-	t.Logf("connect...")
-	fsys, c, err := connect()
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	defer c.Close()
-	t.Logf("stat...")
-	d, err := fsys.Stat("ctl")
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	if d.Name != "ctl" {
-		t.Fail()
-	}
 	htm = "<html><h1 id=title>hello</h1></html>"
 	js = []string{
 		"document.getElementById('title').innerHTML='world'",
 	}
 	t.Logf("call start...")
-	resp, err := call(fsys, "ctl", "start")
+	resp, err := call("ctl", "start")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -88,11 +43,6 @@ func TestMain(t *testing.T) {
 }
 
 func TestClick(t *testing.T) {
-	fsys, c, err := connect()
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	defer c.Close()
 	htm = "<html><h1 id=title>hello</h1></html>"
 	js = []string{
 		`var c = 1;
@@ -100,11 +50,11 @@ func TestClick(t *testing.T) {
 			c = 3;
 		});`,
 	}
-	_, err = call(fsys, "ctl", "start")
+	_, err := call("ctl", "start")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	_, err = call(fsys, "ctl", "click", "#title")
+	_, err = call("ctl", "click", "#title")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}

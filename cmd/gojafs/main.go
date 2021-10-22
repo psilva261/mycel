@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/knusbaum/go9p"
 	"github.com/knusbaum/go9p/fs"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/cmd/gojafs/domino"
@@ -54,8 +53,8 @@ func Main(r io.Reader, w io.Writer) (err error) {
 	root.AddChild(c)
 	lctl := (*fs.ListenFileListener)(c)
 	go Ctl(lctl)
-	log.Infof("go9p.ServeReadWriter...\n")
-	return go9p.ServeReadWriter(r, w, gojafs.Server())
+	log.Infof("post fs...\n")
+	return post(gojafs.Server())
 }
 
 func Ctl(lctl *fs.ListenFileListener) {
@@ -225,4 +224,5 @@ func main() {
 	if err := Main(os.Stdin, os.Stdout); err != nil {
 		log.Fatalf("Main: %+v", err)
 	}
+	select{}
 }

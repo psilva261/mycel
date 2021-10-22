@@ -1,8 +1,6 @@
 package js
 
 import (
-	"9fans.net/go/plan9"
-	"9fans.net/go/plan9/client"
 	"bufio"
 	"bytes"
 	"context"
@@ -14,7 +12,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"os/user"
 	"strings"
 	"time"
 )
@@ -31,7 +28,6 @@ var (
 	fetcher opossum.Fetcher
 	nt      *nodes.Node
 
-	fsys   *client.Fsys
 	cancel context.CancelFunc
 )
 
@@ -41,19 +37,16 @@ func NewJS(html string, fetcher opossum.Fetcher, nn *nodes.Node) {
 }
 
 func call(fn, cmd string, args ...string) (resp string, err error) {
-	if fsys == nil {
-		return "", fmt.Errorf("fsys nil")
-	}
-	fid, err := fsys.Open(fn, plan9.ORDWR)
+	rwc, err := callGojaCtl()
 	if err != nil {
-		return
+		return "", fmt.Errorf("call goja ctl: %v", err)
 	}
-	defer fid.Close()
-	fid.Write([]byte(cmd + "\n"))
+	defer rwc.Close()
+	rwc.Write([]byte(cmd + "\n"))
 	for _, arg := range args {
-		fid.Write([]byte(arg + "\n"))
+		rwc.Write([]byte(arg + "\n"))
 	}
-	r := bufio.NewReader(fid)
+	r := bufio.NewReader(rwc)
 	b := bytes.NewBuffer([]byte{})
 	_, err = io.Copy(b, r)
 	if err != nil && !strings.Contains(err.Error(), io.ErrClosedPipe.Error()) {
@@ -72,46 +65,19 @@ func Start(scripts ...string) (resHtm string, changed bool, err error) {
 	ctx, cancel = context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, "gojafs", args...)
 	cmd.Stderr = os.Stderr
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return "", false, fmt.Errorf("stdin pipe: %w", err)
-	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return "", false, fmt.Errorf("stdout pipe: %w", err)
-	}
-	rwc := &ReadWriteCloser{
-		Reader: stdout,
-		Writer: stdin,
-		Closer: stdin,
-	}
 
 	log.Infof("cmd.Start...")
 	if err = cmd.Start(); err != nil {
-		return "", false, fmt.Errorf("start: %w", err)
+		return "", false, fmt.Errorf("cmd start: %w", err)
 	}
 	// Prevent Zombie processes after stopping
 	go cmd.Wait()
 
-	conn, err := client.NewConn(rwc)
-	if err != nil {
-		return "", false, fmt.Errorf("new conn: %w", err)
-	}
-	log.Infof("cmd.Connected...")
-	u, err := user.Current()
-	if err != nil {
-		return
-	}
-	un := u.Username
-	fsys, err = conn.Attach(nil, un, "")
-	if err != nil {
-		return
-	}
-	log.Infof("cmd.Attached...")
+	<-time.After(5*time.Second)
 
 	resp, err := call("ctl", "start")
 	if err != nil {
-		return "", false, fmt.Errorf("%v", err)
+		return "", false, fmt.Errorf("call start: %v", err)
 	}
 
 	if resp != "" {
