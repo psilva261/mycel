@@ -3,13 +3,11 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"github.com/knusbaum/go9p/fs"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/cmd/gojafs/domino"
 	"github.com/psilva261/opossum/logger"
-	"github.com/psilva261/opossum/nodes"
 	"io"
 	"net"
 	"net/http"
@@ -140,31 +138,20 @@ func ctl(conn net.Conn) {
 }
 
 func query(sel, prop string) (val string, err error) {
-	log.Infof("query: sel=%+v, prop=%+v\n", sel, prop)
-	rwc, err := openQuery()
+	log.Infof("gojajs: query: sel=%+v, prop=%+v\n", sel, prop)
+	fn := sel+"/style/"+prop
+	rwc, err := open(fn)
 	if err != nil {
-		return "", fmt.Errorf("open query: %w", err)
+		return "", fmt.Errorf("open %v: %v", fn, err)
 	}
 	defer rwc.Close()
-	r := json.NewDecoder(rwc)
-	_, err = io.WriteString(rwc, sel+"\n")
-	if err != nil {
-		return "", fmt.Errorf("write: %w", err)
-	}
-	log.Printf("devjs: query: sent")
-	var res []*nodes.Node
-	if err := r.Decode(&res); err != nil {
-		return "", fmt.Errorf("decodeeee: >%w<", err)
-	}
-	if n := len(res); n != 1 {
-		return "", fmt.Errorf("query returned %v results", n)
-	}
-	log.Printf("devjs: query: recvd: %v", res[0])
-	return res[0].Css(prop), nil
+	bs, err := io.ReadAll(rwc)
+	val = string(bs)
+	return
 }
 
 func xhr(req *http.Request) (resp *http.Response, err error) {
-	rwc, err := openXhr()
+	rwc, err := open("xhr")
 	if err != nil {
 		return nil, fmt.Errorf("open xhr: %w", err)
 	}

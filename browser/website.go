@@ -54,13 +54,12 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 
 			nm, err := style.FetchNodeMap(doc, css, 1280)
 			if err == nil {
-				log.Printf("[%v/%v] Fetch CSS Rules successful!", i+1, len(csss))
 				if debugPrintHtml {
 					log.Printf("%v", nm)
 				}
 				style.MergeNodeMaps(nodeMap, nm)
 			} else {
-				log.Errorf("Fetch CSS Rules failed: %v", err)
+				log.Errorf("%v/css/%v.css: Fetch CSS Rules failed: %v", opossum.PathPrefix, i, err)
 			}
 		}
 

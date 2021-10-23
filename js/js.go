@@ -28,7 +28,8 @@ var (
 	fetcher opossum.Fetcher
 	nt      *nodes.Node
 
-	cancel context.CancelFunc
+	service string
+	cancel  context.CancelFunc
 )
 
 func NewJS(html string, fetcher opossum.Fetcher, nn *nodes.Node) {
@@ -57,8 +58,9 @@ func call(fn, cmd string, args ...string) (resp string, err error) {
 
 // Start with pre-defined scripts
 func Start(scripts ...string) (resHtm string, changed bool, err error) {
+	service = fmt.Sprintf("goja.%d", os.Getpid())
 	args := make([]string, 0, len(scripts)+2)
-	args = append(args, "-s", "opossum")
+	args = append(args, "-s", service)
 	log.Infof("Start gojafs")
 
 	var ctx context.Context

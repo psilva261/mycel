@@ -1,5 +1,4 @@
-//go:build darwin || freebsd || netbsd || openbsd || linux
-// +build darwin freebsd netbsd openbsd linux
+//go:build !plan9
 
 package style
 

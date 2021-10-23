@@ -3,6 +3,7 @@ package nodes
 import (
 	"fmt"
 	"github.com/andybalholm/cascadia"
+	"github.com/psilva261/opossum"
 	"golang.org/x/net/html"
 )
 
@@ -10,7 +11,7 @@ import (
 func (n *Node) Path() (p string, ok bool) {
 	p, ok = n.path()
 	if ok {
-		p = PathPrefix+p
+		p = opossum.PathPrefix+p
 	}
 	return
 }

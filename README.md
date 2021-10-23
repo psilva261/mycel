@@ -21,8 +21,9 @@ Supported features:
 
     # Setup TLS
     hget https://curl.haxx.se/ca/cacert.pem > /sys/lib/tls/ca.pem
-    # Create mountpoint (only needed on 9legacy)
+    # Create mountpoints (needed on 9legacy)
     mkdir /mnt/opossum
+    mkdir /mnt/goja
 
 ### Binary
 
@@ -80,7 +81,7 @@ Build the js engine:
 go install ./cmd/gojafs
 ```
 
-On 9legacy also the folder `/mnt/opossum` needs to exist.
+On 9legacy also the folders `/mnt/opossum` and `/mnt/goja` need to exist.
 
 Then it can be tested with:
 

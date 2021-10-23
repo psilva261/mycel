@@ -71,7 +71,7 @@ func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map,
 	return
 }
 
-// filterText removes line break runes (TODO: add this later but handle properly) and maps runes to canonical widths
+// filterText removes line break runes (TODO: add this later but handle properly)
 func filterText(t string) string {
 	t = strings.ReplaceAll(t, "­", "")
 	t = strings.ReplaceAll(t, "\t", "    ")

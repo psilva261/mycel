@@ -16,11 +16,7 @@ var fsys *client.Fsys
 
 func Init() (err error) {
 	log.Infof("Init...")
-	if service == "" {
-		return
-	}
-	log.Infof("dial service...")
-	conn, err := client.DialService(service)
+	conn, err := client.DialService("opossum")
 	if err != nil {
 		log.Fatalf("dial: %v", err)
 	}
@@ -78,14 +74,13 @@ func Init() (err error) {
 	return
 }
 
-func openQuery() (rwc io.ReadWriteCloser, err error) {
-	return fsys.Open("query", plan9.ORDWR)
-}
-
-func openXhr() (rwc io.ReadWriteCloser, err error) {
-	return fsys.Open("xhr", plan9.ORDWR)
+func open(fn string) (rwc io.ReadWriteCloser, err error) {
+	return fsys.Open(fn, plan9.ORDWR)
 }
 
 func post(srv go9p.Srv) (err error) {
-	return go9p.PostSrv("goja", srv)
+	if service == "" {
+		return fmt.Errorf("no service specified")
+	}
+	return go9p.PostSrv(service, srv)
 }

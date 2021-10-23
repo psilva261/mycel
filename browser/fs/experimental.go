@@ -7,6 +7,7 @@ import (
 	"github.com/knusbaum/go9p/proto"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
+	"github.com/psilva261/opossum/style"
 	"golang.org/x/net/html"
 )
 
@@ -63,6 +64,7 @@ func (n Node) Children() (cs map[string]fs.FSNode) {
 		cs["tag"] = n.tag()
 		cs["attrs"] = Attrs{attrs: &n.nt.DomSubtree.Attr}
 		cs["html"] = n.html()
+		cs["style"] = Style{cs: &n.nt.Map}
 	}
 
 	return
@@ -141,6 +143,52 @@ func (as Attrs) Children() (cs map[string]fs.FSNode) {
 	}
 	for _, attr := range *as.attrs {
 		cs[attr.Key] = ff(attr.Key)
+	}
+	return 
+}
+
+type Style struct {
+	cs *style.Map
+}
+
+func (st Style) Stat() (s proto.Stat) {
+	s = *oFS.NewStat("style", un, gn, 0500)
+	s.Mode |= proto.DMDIR
+	// qtype bits should be consistent with Stat mode.
+	s.Qid.Qtype = uint8(s.Mode >> 24)
+	return
+}
+
+func (st Style) WriteStat(s *proto.Stat) error {
+	return nil
+}
+
+func (st Style) SetParent(p fs.Dir) {
+}
+
+func (st Style) Parent() fs.Dir {
+	return nil
+}
+
+func (st Style) Children() (cs map[string]fs.FSNode) {
+	log.Infof("Style#Children()")
+	cs = make(map[string]fs.FSNode)
+	ff := func(k string) fs.FSNode {
+		return fs.NewDynamicFile(
+			oFS.NewStat(k, un, gn, 0666),
+			func() []byte {
+				var v string
+				for p, d := range st.cs.Declarations {
+					if p == k {
+						v = d.Value
+					}
+				}
+				return []byte(v)
+			},
+		)
+	}
+	for p := range st.cs.Declarations {
+		cs[p] = ff(p)
 	}
 	return 
 }

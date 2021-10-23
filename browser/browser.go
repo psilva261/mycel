@@ -703,10 +703,7 @@ func (el *Element) click() (consumed bool) {
 		res, consumed, err := js.TriggerClick(q)
 		if err != nil {
 			log.Errorf("trigger click %v: %v", q, err)
-			return consumed
-		}
-
-		if consumed {
+		} else if consumed {
 			offset := scroller.Offset
 			browser.Website.layout(browser, res, ClickRelayout)
 			scroller.Offset = offset

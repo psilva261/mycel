@@ -103,16 +103,17 @@ ___fq = function(pre, el) {
 	if (!el) {
 		return undefined;
 	}
+	if (el.tagName === 'BODY') {
+		return '/0';
+	}
 	p = el.parentElement;
 
 	if (p) {
 		for (i = 0; i < p.children.length; i++) {
 			if (p.children[i] === el) {
-				return ___fq('', p) + ' > :nth-child(' + (i+1) + ')';
+				return ___fq('', p) + '/' + i;
 			}
 		}
-	} else {
-		return el.tagName;
 	}
 };
 

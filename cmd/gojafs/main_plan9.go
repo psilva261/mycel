@@ -36,12 +36,8 @@ func Init() (err error) {
 	return
 }
 
-func openQuery() (rwc io.ReadWriteCloser, err error) {
-	return os.OpenFile(mtpt+"/query", os.O_RDWR, 0600)
-}
-
-func openXhr() (rwc io.ReadWriteCloser, err error) {
-	return os.OpenFile(mtpt+"/xhr", os.O_RDWR, 0600)
+func open(fn string) (rwc io.ReadWriteCloser, err error) {
+	return os.OpenFile(mtpt+"/"+fn, os.O_RDWR, 0600)
 }
 
 func post(srv go9p.Srv) (err error) {
