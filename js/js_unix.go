@@ -11,7 +11,10 @@ import (
 	"os/user"
 )
 
-var fsys *client.Fsys
+var (
+	conn *client.Conn
+	fsys *client.Fsys
+)
 
 func dial() (err error) {
 	log.Infof("Init...")
@@ -29,6 +32,16 @@ func dial() (err error) {
 		log.Fatalf("attach: %v", err)
 	}
 	return
+}
+
+func hangup() {
+	if fsys != nil {
+		fsys = nil
+	}
+	if conn != nil {
+		conn.Close()
+		conn = nil
+	}
 }
 
 func callGojaCtl() (rwc io.ReadWriteCloser, err error) {

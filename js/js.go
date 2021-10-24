@@ -92,6 +92,7 @@ func Start(scripts ...string) (resHtm string, changed bool, err error) {
 
 func Stop() {
 	log.Infof("Stop gojafs")
+	hangup()
 	if cancel != nil {
 		cancel()
 	}
