@@ -581,6 +581,14 @@ func (cs *Map) Tlbr(key string) (s duit.Space, err error) {
 		s.Left = l
 	}
 
+	// Limit very rudimentary relative unit calculation
+	if s.Top > 100 {
+		s.Top = 0
+	}
+	if s.Bottom > 100 {
+		s.Bottom = 0
+	}
+
 	return
 }
 

@@ -157,6 +157,14 @@ func Xhr(lxhr *fs.ListenFileListener) {
 	}
 }
 
+func allowed(h http.Header, reqHost, origHost string) bool {
+	if reqHost == origHost {
+		return true
+	}
+	alOrig := h.Get("access-control-allow-origin")
+	return alOrig == "*"
+}
+
 func xhr(conn net.Conn) {
 	r := bufio.NewReader(conn)
 	defer conn.Close()
@@ -166,11 +174,12 @@ func xhr(conn net.Conn) {
 		log.Errorf("read request: %v", err)
 		return
 	}
+	log.Infof("xhr: req: %v", req)
 	url := req.URL
 	url.Host = req.Host
 	if h := url.Host; h == "" {
 		url.Host = Fetcher.Origin().Host
-	} else if h != Fetcher.Origin().Host {
+	} else if allowed(req.Header, h, Fetcher.Origin().Host) {
 		log.Errorf("no cross-origin request: %v", h)
 		return
 	}
