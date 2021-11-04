@@ -1,6 +1,7 @@
 package nodes
 
 import (
+	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/style"
 	"golang.org/x/net/html"
 	"strings"
@@ -27,7 +28,7 @@ func TestPath(t *testing.T) {
 	p := nt.Children[0].Children[1].Children[0]
 	a := p.Children[2]
 	fmt.Printf("%v\n", a.Data())
-	if p, _ := a.Path(); p != PathPrefix+"/0/1/0/2" {
+	if p, _ := a.Path(); p != opossum.PathPrefix+"/0/1/0/2" {
 		t.Fatalf("%v", p)
 	}
 }

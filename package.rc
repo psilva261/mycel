@@ -18,9 +18,9 @@ fn build {
 	cd cmd/opossum
 	go build -ldflags '-s -w' -o $name
 	cd ../..
-	cd cmd/gojafs
+	cd ../gojafs/cmd/gojafs
 	go build -ldflags '-s -w' -o gojafs
-	cd ../..
+	cd ../../../opossum
 	mv cmd/opossum/$name cmd/gojafs/gojafs ./$name/
 	cp README.md ./$name/
 	cp opossum.jpg ./$name/

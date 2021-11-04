@@ -20,8 +20,6 @@ require (
 	9fans.net/go v0.0.2
 	github.com/andybalholm/cascadia v1.1.0
 	github.com/chris-ramon/douceur v0.2.1-0.20160603235419-f3463056cd52
-	github.com/dop251/goja v0.0.0-20210810150349-acd0507c3d6f
-	github.com/dop251/goja_nodejs v0.0.0-20210225215109-d91c329300e7
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/knusbaum/go9p v1.18.0
 	github.com/mjl-/duit v0.0.0-20200330125617-580cb0b2843f
@@ -34,8 +32,7 @@ require (
 
 require (
 	github.com/Plan9-Archive/libauth v0.0.0-20180917063427-d1ca9e94969d // indirect
-	github.com/dlclark/regexp2 v1.4.1-0.20201116162257-a2a8dda75c91 // indirect
 	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21 // indirect
 	github.com/fhs/mux9p v0.3.1 // indirect
-	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

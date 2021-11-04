@@ -75,9 +75,12 @@ https://jqueryui.com/resources/demos/tabs/default.html or the toggle buttons on
 https://golang.org/pkg There is also highly experimental ES6 support with Babel.
 (Needs also https://github.com/psilva261/6to5)
 
-Build the js engine:
+Install the js engine:
 
 ```
+cd ..
+git/clone https://github.com/psilva261/gojafs
+cd gojafs
 go install ./cmd/gojafs
 ```
 
