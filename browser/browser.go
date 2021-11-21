@@ -310,6 +310,7 @@ func srcSet(n *nodes.Node) (w int, src string) {
 type Element struct {
 	duit.UI
 	n       *nodes.Node
+	rect    image.Rectangle
 	IsLink  bool
 	Click   func() duit.Event
 	Changed func(*Element)
@@ -333,10 +334,12 @@ func NewElement(ui duit.UI, n *nodes.Node) *Element {
 		}
 	}
 
-	return &Element{
+	el := &Element{
 		UI: ui,
 		n:  n,
 	}
+	n.Rectangular = el
+	return el
 }
 
 func newBoxElement(n *nodes.Node, force bool, uis ...duit.UI) (box *duitx.Box, ok bool) {
@@ -417,6 +420,13 @@ func newBoxElement(n *nodes.Node, force bool, uis ...duit.UI) (box *duitx.Box, o
 	return box, true
 }
 
+func (el *Element) Rect() image.Rectangle {
+	if el == nil {
+		log.Errorf("Rect: nil element")
+	}
+	return el.rect
+}
+
 func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
 	if el == nil {
 		return
@@ -465,6 +475,8 @@ func (el *Element) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, 
 	} else {
 		el.UI.Layout(dui, self, sizeAvail, force)
 	}
+
+	el.rect  = self.R
 
 	return
 }
@@ -854,10 +866,12 @@ func Arrange(n *nodes.Node, elements ...*Element) *Element {
 	if ui == nil {
 		return nil
 	}
-	return &Element{
+	el := &Element{
 		n:  n,
 		UI: ui,
 	}
+	n.Rectangular = el
+	return el
 }
 
 func horizontalSeq(parent *nodes.Node, wrap bool, es []*Element) duit.UI {

@@ -11,6 +11,7 @@ import (
 	"github.com/psilva261/opossum/logger"
 	"golang.org/x/image/colornames"
 	"golang.org/x/net/html"
+	"image"
 	"math"
 	"os/exec"
 	"regexp"
@@ -226,6 +227,7 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 }
 
 type DomTree interface {
+	Rect() image.Rectangle
 	Parent() (p DomTree, ok bool)
 	Style() Map
 }

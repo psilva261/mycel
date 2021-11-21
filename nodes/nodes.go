@@ -7,6 +7,7 @@ import (
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/style"
 	"golang.org/x/net/html"
+	"image"
 	"strings"
 )
 
@@ -15,8 +16,13 @@ type Node struct {
 	Text       string
 	Wrappable  bool
 	style.Map
+	Rectangular
 	Children []*Node
 	parent   *Node `json:"-"`
+}
+
+type Rectangular interface {
+	Rect() image.Rectangle
 }
 
 // NewNodeTree propagates the cascading styles to the leaves
@@ -102,6 +108,14 @@ func (n *Node) Parent() (p style.DomTree, ok bool) {
 
 func (n *Node) Style() style.Map {
 	return n.Map
+}
+
+func (n *Node) Rect() image.Rectangle {
+	if n.Rectangular == nil {
+		log.Errorf("rectangular nil")
+		return image.Rectangle{}
+	}
+	return n.Rectangular.Rect()
 }
 
 // Ancestor of tag

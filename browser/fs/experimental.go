@@ -15,7 +15,9 @@ import (
 //
 // /0
 // /0/attrs
+// /0/geom
 // /0/html
+// /0/style
 // /0/tag
 // /0/0
 //   ...
@@ -63,6 +65,7 @@ func (n Node) Children() (cs map[string]fs.FSNode) {
 	if n.nt.Type() == html.ElementNode {
 		cs["tag"] = n.tag()
 		cs["attrs"] = Attrs{attrs: &n.nt.DomSubtree.Attr}
+		cs["geom"] = n.geom()
 		cs["html"] = n.html()
 		cs["style"] = Style{cs: &n.nt.Map}
 	}
@@ -75,6 +78,20 @@ func (n Node) tag() fs.FSNode {
 		oFS.NewStat("tag", un, gn, 0666),
 		func() []byte {
 			return []byte(n.nt.Data())
+		},
+	)
+}
+
+func (n Node) geom() fs.FSNode {
+	return fs.NewDynamicFile(
+		oFS.NewStat("geom", un, gn, 0666),
+		func() (bs []byte) {
+			var dt style.DomTree
+			if dt = n.nt.Map.DomTree; dt == nil {
+				return
+			}
+			r := dt.Rect()
+			return []byte(fmt.Sprintf("%v,%v,%v,%v", r.Min.X, r.Min.Y, r.Max.X, r.Max.Y))
 		},
 	)
 }
