@@ -11,7 +11,7 @@ import (
 func (n *Node) Path() (p string, ok bool) {
 	p, ok = n.path()
 	if ok {
-		p = opossum.PathPrefix+p
+		p = opossum.PathPrefix + p
 	}
 	return
 }

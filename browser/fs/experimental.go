@@ -28,7 +28,7 @@ import (
 // (dir structure stolen from domfs)
 type Node struct {
 	name string
-	nt *nodes.Node
+	nt   *nodes.Node
 }
 
 func (n Node) Stat() (s proto.Stat) {
@@ -59,7 +59,7 @@ func (n Node) Children() (cs map[string]fs.FSNode) {
 		ddn := fmt.Sprintf("%v", i)
 		cs[ddn] = &Node{
 			name: ddn,
-			nt: c,
+			nt:   c,
 		}
 	}
 	if n.nt.Type() == html.ElementNode {
@@ -161,7 +161,7 @@ func (as Attrs) Children() (cs map[string]fs.FSNode) {
 	for _, attr := range *as.attrs {
 		cs[attr.Key] = ff(attr.Key)
 	}
-	return 
+	return
 }
 
 type Style struct {
@@ -207,5 +207,5 @@ func (st Style) Children() (cs map[string]fs.FSNode) {
 	for p := range st.cs.Declarations {
 		cs[p] = ff(p)
 	}
-	return 
+	return
 }

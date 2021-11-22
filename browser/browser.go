@@ -310,6 +310,7 @@ func srcSet(n *nodes.Node) (w int, src string) {
 type Element struct {
 	duit.UI
 	n       *nodes.Node
+	orig    image.Point
 	rect    image.Rectangle
 	IsLink  bool
 	Click   func() duit.Event
@@ -424,7 +425,7 @@ func (el *Element) Rect() image.Rectangle {
 	if el == nil {
 		log.Errorf("Rect: nil element")
 	}
-	return el.rect
+	return el.rect.Add(el.orig)
 }
 
 func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
@@ -446,6 +447,7 @@ func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig ima
 	} else {
 		el.UI.Draw(dui, self, img, orig, m, force)
 	}
+	el.orig = orig
 }
 
 func (el *Element) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, force bool) {
@@ -476,7 +478,7 @@ func (el *Element) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, 
 		el.UI.Layout(dui, self, sizeAvail, force)
 	}
 
-	el.rect  = self.R
+	el.rect = self.R
 
 	return
 }

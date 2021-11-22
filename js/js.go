@@ -75,7 +75,7 @@ func Start(scripts ...string) (resHtm string, changed bool, err error) {
 	// Prevent Zombie processes after stopping
 	go cmd.Wait()
 
-	<-time.After(5*time.Second)
+	<-time.After(5 * time.Second)
 
 	resp, err := call("ctl", "start")
 	if err != nil {

@@ -1,12 +1,12 @@
 package nodes
 
 import (
+	"fmt"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/style"
 	"golang.org/x/net/html"
 	"strings"
 	"testing"
-"fmt"
 )
 
 func TestPath(t *testing.T) {
