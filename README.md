@@ -4,6 +4,8 @@ Basic portable Web browser; only needs a Go compiler to compile. Optimized for u
 
 The UI is built with https://github.com/mjl-/duit
 
+<img src="https://psilva.sdf.org/browsing.png" width="550">
+
 Still experimental and a lot of features are missing.
 
 Supported features:
@@ -27,7 +29,7 @@ Supported features:
 
 ### Binary
 
-A binary for amd64 and 386 can be downloaded from http://psilva.sdf.org/opossum.html
+Binaries for amd64 and 386 can be downloaded from https://psilva.sdf.org/opossum.html
 
 ### Compile from Source
 
@@ -72,7 +74,7 @@ Mostly based on goja (ECMAScript 5.1) and https://github.com/fgnass/domino
 is needed, also AJAX functions, `getComputedStyle` etc. are either missing or stubs.
 Very simple jQuery based code works though, e.g. jQuery UI Tab view
 https://jqueryui.com/resources/demos/tabs/default.html or the toggle buttons on
-https://golang.org/pkg There is also highly experimental ES6 support with Babel.
+https://golang.org/dl There is also highly experimental ES6 support with Babel.
 (Needs also https://github.com/psilva261/6to5)
 
 Install the js engine:
