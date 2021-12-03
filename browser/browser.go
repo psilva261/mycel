@@ -311,10 +311,12 @@ type Element struct {
 	duit.UI
 	n       *nodes.Node
 	orig    image.Point
-	rect    image.Rectangle
 	IsLink  bool
 	Click   func() duit.Event
 	Changed func(*Element)
+
+	m    draw.Mouse
+	rect image.Rectangle
 }
 
 func NewElement(ui duit.UI, n *nodes.Node) *Element {
@@ -676,18 +678,18 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 		return
 	}
 
-	if m.Buttons == 1 {
-		if el.click() {
-			return duit.Result{
-				Consumed: true,
-			}
-		}
-	}
-	/*x := m.Point.X
+	x := m.Point.X
 	y := m.Point.Y
 	maxX := self.R.Dx()
 	maxY := self.R.Dy()
-	if 5 <= x && x <= (maxX-5) && 5 <= y && y <= (maxY-5) && el.IsLink {
+	border := 5 > x || x > (maxX-5) || 5 > y || y > (maxY-5)
+	hover := m.In(el.rect)
+	if hover && el.m.Buttons&duit.Button1 == duit.Button1 && m.Buttons&duit.Button1 == 0 && el.click() {
+		return duit.Result{
+			Consumed: true,
+		}
+	}
+	/*if !border && el.IsLink {
 		dui.Display.SwitchCursor(&draw.Cursor{
 			Black: cursor,
 		})
@@ -698,7 +700,11 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 	} else {
 		dui.Display.SwitchCursor(nil)
 	}*/
-
+	if border {
+		el.m = draw.Mouse{}
+	} else {
+		el.m = m
+	}
 	return el.UI.Mouse(dui, self, m, origM, orig)
 }
 
