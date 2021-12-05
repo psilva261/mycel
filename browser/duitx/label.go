@@ -21,11 +21,16 @@ package duitx
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import (
+	"fmt"
 	"image"
 	"math"
 
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
+)
+
+var (
+	selectedBg *draw.Image
 )
 
 // Label draws multiline text in a single font.:
@@ -34,11 +39,13 @@ import (
 //	cmd-c, copy text
 //	\n, like button1 click, calls the Click function
 type Label struct {
-	Text  string                // Text to draw, wrapped at glyph boundary.
-	Font  *draw.Font            `json:"-"` // For drawing text.
-	Click func() (e duit.Event) `json:"-"` // Called on button1 click.
+	Text     string                // Text to draw, wrapped at glyph boundary.
+	Font     *draw.Font            `json:"-"` // For drawing text.
+	Click    func() (e duit.Event) `json:"-"` // Called on button1 click.
+	Selected bool
 
 	lines []string
+	orig  image.Point
 	size  image.Point
 	m     draw.Mouse
 }
@@ -90,12 +97,25 @@ func (ui *Label) lineHeight(font *draw.Font) int {
 func (ui *Label) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
 	debugDraw(dui, self)
 
+	if selectedBg == nil {
+		var err error
+		selectedBg, err = dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, 0x9acd32ff)
+		if err != nil {
+			panic(fmt.Errorf("%v", err))
+		}
+	}
+
 	p := orig
 	font := ui.font(dui)
 	for _, line := range ui.lines {
-		img.String(p, dui.Regular.Normal.Text, image.ZP, font, line)
+		if ui.Selected {
+			img.StringBg(p, dui.Regular.Normal.Text, image.ZP, font, line, selectedBg, image.ZP)
+		} else {
+			img.String(p, dui.Regular.Normal.Text, image.ZP, font, line)
+		}
 		p.Y += ui.lineHeight(font)
 	}
+	ui.orig = orig
 }
 
 func (ui *Label) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (r duit.Result) {
@@ -148,4 +168,11 @@ func propagateEvent(self *duit.Kid, r *duit.Result, e duit.Event) {
 		self.Draw = duit.Dirty
 	}
 	r.Consumed = e.Consumed || r.Consumed
+}
+
+func (ui *Label) Rect() draw.Rectangle {
+	return draw.Rectangle{
+		ui.orig,
+		ui.orig.Add(ui.size),
+	}
 }

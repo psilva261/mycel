@@ -26,6 +26,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/mjl-/duit"
 
@@ -70,6 +71,10 @@ var (
 	dui      *duit.DUI
 	scroller *duitx.Scroll
 	display  *draw.Display
+
+	selected  int
+	dragRect  draw.Rectangle
+	fromLabel *duitx.Label
 
 	colorCache = make(map[draw.Color]*draw.Image)
 	imageCache = make(map[string]*draw.Image)
@@ -423,9 +428,10 @@ func newBoxElement(n *nodes.Node, force bool, uis ...duit.UI) (box *duitx.Box, o
 	return box, true
 }
 
-func (el *Element) Rect() image.Rectangle {
+func (el *Element) Rect() (r image.Rectangle) {
 	if el == nil {
 		log.Errorf("Rect: nil element")
+		return
 	}
 	return el.rect.Add(el.orig)
 }
@@ -665,7 +671,7 @@ func (el *Element) Key(dui *duit.DUI, self *duit.Kid, k rune, m draw.Mouse, orig
 }
 
 func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (r duit.Result) {
-	if m.Buttons == 2 {
+	if m.Buttons == 3 {
 		if el == nil {
 			log.Infof("inspect nil element")
 		} else {
@@ -683,8 +689,17 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 	maxX := self.R.Dx()
 	maxY := self.R.Dy()
 	border := 5 > x || x > (maxX-5) || 5 > y || y > (maxY-5)
-	hover := m.In(el.rect)
-	if hover && el.m.Buttons&duit.Button1 == duit.Button1 && m.Buttons&duit.Button1 == 0 && el.click() {
+
+	if l, ok := el.UI.(*Label); ok && l != nil {
+		fromLabel = l.Label
+	}
+	if el.n.Data() == "body" {
+		if el.mouseSelect(dui, self, m, origM, orig) {
+			return duit.Result{
+				Consumed: true,
+			}
+		}
+	} else if el.m.Buttons&1 == 1 && m.Buttons&1 == 0 && el.click() {
 		return duit.Result{
 			Consumed: true,
 		}
@@ -706,6 +721,98 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 		el.m = m
 	}
 	return el.UI.Mouse(dui, self, m, origM, orig)
+}
+
+func (el *Element) mouseSelect(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (consumed bool) {
+	mouseDrag := m != origM
+	changed := false
+	if mouseDrag {
+		from := origM.Point.Add(orig)
+		to := m.Point.Add(orig)
+		r := draw.Rectangle{
+			draw.Point{from.X, from.Y},
+			draw.Point{to.X, to.Y},
+		}.Canon()
+		var delta image.Point
+		if fromLabel != nil {
+			// make sure the same coordinates are used
+			// (TODO: should be consistent in the first place)
+			delta = r.Min.Sub(fromLabel.Rect().Min)
+		}
+		r = r.Sub(delta)
+		if !rectsSimilar(dragRect, r) {
+			TraverseTree(el, func(ui duit.UI) {
+				l, ok := ui.(*duitx.Label)
+				if !ok {
+					return
+				}
+				sel := l.Rect().Overlaps(r)
+				if sel == l.Selected {
+					return
+				}
+				l.Selected = sel
+				changed = true
+				if sel {
+					selected++
+				} else {
+					selected--
+				}
+			})
+			dragRect = r
+		}
+		if m.Buttons&2 == 2 && el.m.Buttons&2 == 0 {
+			var s string
+			var last *duitx.Label
+			TraverseTree(el, func(ui duit.UI) {
+				l, ok := ui.(*duitx.Label)
+				if ok && l.Selected {
+					if last != nil && l.Rect().Min.Y > last.Rect().Min.Y {
+						s += "\n"
+					}
+					s += l.Text
+					last = l
+					return
+				}
+			})
+			s = strings.TrimSpace(s)
+			s = strings.TrimFunc(s, func(r rune) bool {
+				return !unicode.IsGraphic(r)
+			})
+			s = strings.Map(func(r rune) rune {
+				if unicode.IsSpace(r) && r != '\n' {
+					return ' '
+				}
+				return r
+			}, s)
+			dui.WriteSnarf([]byte(s))
+		}
+	} else if selected > 0 && m.Buttons == 1 {
+		TraverseTree(browser.Website.UI, func(ui duit.UI) {
+			l, ok := ui.(*duitx.Label)
+			if ok && l.Selected {
+				selected--
+				changed = true
+				l.Selected = false
+			}
+		})
+		selected = 0
+	}
+	return changed
+}
+
+func rectsSimilar(r, rr draw.Rectangle) bool {
+	deltas := []float64{
+		math.Abs(float64(r.Min.X - rr.Min.X)),
+		math.Abs(float64(r.Min.Y - rr.Min.Y)),
+		math.Abs(float64(r.Max.X - rr.Max.X)),
+		math.Abs(float64(r.Max.Y - rr.Max.Y)),
+	}
+	for _, d := range deltas {
+		if d > float64(dui.Scale(10)) {
+			return false
+		}
+	}
+	return true
 }
 
 func (el *Element) FirstFocus(dui *duit.DUI, self *duit.Kid) *image.Point {
