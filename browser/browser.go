@@ -732,14 +732,14 @@ func (el *Element) mouseSelect(dui *duit.DUI, self *duit.Kid, m draw.Mouse, orig
 		r := draw.Rectangle{
 			draw.Point{from.X, from.Y},
 			draw.Point{to.X, to.Y},
-		}.Canon()
-		var delta image.Point
-		if fromLabel != nil {
-			// make sure the same coordinates are used
-			// (TODO: should be consistent in the first place)
-			delta = r.Min.Sub(fromLabel.Rect().Min)
 		}
-		r = r.Sub(delta)
+		// make sure the same coordinates are used
+		// (TODO: should be consistent in the first place)
+		if rc := r.Canon(); r == rc {
+			r = r.Sub(r.Min.Sub(fromLabel.Rect().Min))
+		} else {
+			r = rc.Sub(rc.Max.Sub(fromLabel.Rect().Max))
+		}
 		if !rectsSimilar(dragRect, r) {
 			TraverseTree(el, func(ui duit.UI) {
 				l, ok := ui.(*duitx.Label)
