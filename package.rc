@@ -21,7 +21,7 @@ fn build {
 	cd ../gojafs/cmd/gojafs
 	go build -ldflags '-s -w' -o gojafs
 	cd ../../../opossum
-	mv cmd/opossum/$name cmd/gojafs/gojafs ./$name/
+	mv cmd/opossum/$name ../gojafs/cmd/gojafs/gojafs ./$name/
 	cp README.md ./$name/
 	cp opossum.jpg ./$name/
 	tar czf $tarball $name
