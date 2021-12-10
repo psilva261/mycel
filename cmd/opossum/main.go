@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"runtime"
 	"runtime/pprof"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ var (
 	dui        *duit.DUI
 	b          *browser.Browser
 	cpuprofile string
+	memprofile string
 	loc        string = "http://9p.io"
 	dbg        bool
 	v          View
@@ -164,7 +166,7 @@ func (l *Loading) Render() []*duit.Kid {
 }
 
 func render() {
-	white, err := dui.Display.AllocImage(image.Rect(0, 0, 10, 10), draw.ARGB32, true, 0xffffffff)
+	white, err := dui.Display.AllocImage(image.Rect(0, 0, 1, 1), draw.ARGB32, true, 0xffffffff)
 	if err != nil {
 		log.Errorf("%v", err)
 	}
@@ -244,7 +246,7 @@ func Main() (err error) {
 }
 
 func usage() {
-	fmt.Printf("usage: opossum [-v|-vv] [-h] [-jsinsecure] [-cpuprofile fn] [startPage]\n")
+	fmt.Printf("usage: opossum [-v|-vv] [-h] [-jsinsecure] [-cpu|-mem fn] [startPage]\n")
 	os.Exit(1)
 }
 
@@ -266,8 +268,10 @@ func main() {
 		case "-jsinsecure":
 			browser.ExperimentalJsInsecure = true
 			args = args[1:]
-		case "-cpuprofile":
-			cpuprofile, args = args[0], args[2:]
+		case "-cpu":
+			cpuprofile, args = args[1], args[2:]
+		case "-mem":
+			memprofile, args = args[1], args[2:]
 		default:
 			if len(args) > 1 {
 				usage()
@@ -289,6 +293,21 @@ func main() {
 		go func() {
 			<-time.After(time.Minute)
 			pprof.StopCPUProfile()
+			f.Close()
+			os.Exit(2)
+		}()
+	}
+
+	if memprofile != "" {
+		f, err := os.Create(memprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		go func() {
+			<-time.After(time.Minute)
+			runtime.GC()
+			pprof.WriteHeapProfile(f)
+			f.Close()
 			os.Exit(2)
 		}()
 	}

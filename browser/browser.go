@@ -671,7 +671,7 @@ func (el *Element) Key(dui *duit.DUI, self *duit.Kid, k rune, m draw.Mouse, orig
 }
 
 func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw.Mouse, orig image.Point) (r duit.Result) {
-	if m.Buttons == 3 {
+	if m.Buttons == 4 {
 		if el == nil {
 			log.Infof("inspect nil element")
 		} else {
