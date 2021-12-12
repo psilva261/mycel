@@ -61,7 +61,7 @@ func (ui *Place) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, fo
 }
 
 func (ui *Place) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image.Point, m draw.Mouse, force bool) {
-	if self.Draw == duit.Clean {
+	if self.Draw == duit.Clean || ui == nil || len(ui.Kids) == 0 {
 		return
 	}
 	self.Draw = duit.Clean
