@@ -37,7 +37,7 @@ type Place struct {
 
 	kidsReversed []*duit.Kid
 	size         image.Point
-	img          *draw.Image
+	imgs         []*draw.Image
 	force        bool
 }
 
@@ -65,28 +65,72 @@ func (ui *Place) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image
 		return
 	}
 	self.Draw = duit.Clean
-	if ui.img == nil || ui.Kids[0].R.Size() != ui.img.R.Size() {
+	if ui.imgs == nil || ui.Kids[0].R.Size() != ui.imgs[0].R.Size() {
 		var err error
-		if ui.img != nil {
-			ui.img.Free()
-			ui.img = nil
+		if ui.imgs != nil {
+			for _, i := range ui.imgs {
+				i.Free()
+			}
+			ui.imgs = nil
 		}
 		if ui.Kids[0].R.Dx() == 0 || ui.Kids[0].R.Dy() == 0 {
 			return
 		}
-		ui.img, err = dui.Display.AllocImage(ui.Kids[0].R, draw.ARGB32, false, 0x00000000)
-		if err != nil {
-			log.Errorf("allocimage: %v", err)
-			return
+		ui.imgs = make([]*draw.Image, len(ui.Kids))
+		for i, k := range ui.Kids {
+			ui.imgs[i], err = dui.Display.AllocImage(k.R, draw.ARGB32, false, 0x00000000)
+			if err != nil {
+				log.Errorf("allocimage: %v", err)
+				return
+			}
+			k.Draw = duit.Dirty
 		}
 		self.Draw = duit.DirtyKid
 	}
 	if self.Draw == duit.DirtyKid || ui.force {
-		duit.KidsDraw(dui, self, ui.Kids, ui.size, ui.Background, ui.img, image.ZP, m, true)
+		kidsDraw(dui, self, ui.Kids, ui.size, ui.Background, ui.imgs, image.ZP, m, false)
 		self.Draw = duit.Clean
 		ui.force = false
 	}
-	img.Draw(ui.img.R.Add(orig), ui.img, nil, image.ZP)
+	for _, i := range ui.imgs {
+		if i != nil {
+			img.Draw(i.R.Add(orig), i, nil, image.ZP)
+		}
+	}
+}
+
+func kidsDraw(dui *duit.DUI, self *duit.Kid, kids []*duit.Kid, uiSize image.Point, bg *draw.Image, imgs []*draw.Image, orig image.Point, m draw.Mouse, force bool) {
+	debugDraw(dui, self)
+
+	force = force || self.Draw == duit.Dirty
+	if force {
+		self.Draw = duit.Dirty
+	}
+
+	if bg == nil {
+		bg = dui.Background
+	}
+	if force {
+		// TODO: consider resetting other backgrounds also
+		imgs[0].Draw(rect(uiSize).Add(orig), bg, nil, image.ZP)
+	}
+	for i, k := range kids {
+		if !force && k.Draw == duit.Clean {
+			continue
+		}
+		if !force && k.Draw == duit.Dirty {
+			imgs[i].Draw(k.R.Add(orig), bg, nil, image.ZP)
+		}
+
+		mm := m
+		mm.Point = mm.Point.Sub(k.R.Min)
+		if force {
+			k.Draw = duit.Dirty
+		}
+		k.UI.Draw(dui, k, imgs[i], orig.Add(k.R.Min), mm, force)
+		k.Draw = duit.Clean
+	}
+	self.Draw = duit.Clean
 }
 
 func (ui *Place) result(dui *duit.DUI, self *duit.Kid, r *duit.Result) {

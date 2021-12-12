@@ -1724,7 +1724,7 @@ func (b *Browser) Get(uri *url.URL) (buf []byte, contentType opossum.ContentType
 }
 
 func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType opossum.ContentType, err error) {
-	log.Infof(fmt.Sprintf("Get %v", uri.String()))
+	log.Infof("Get %v", uri.String())
 	req, err := http.NewRequest("GET", uri.String(), nil)
 	if err != nil {
 		return

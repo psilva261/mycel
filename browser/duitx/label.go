@@ -171,6 +171,9 @@ func propagateEvent(self *duit.Kid, r *duit.Result, e duit.Event) {
 }
 
 func (ui *Label) Rect() draw.Rectangle {
+	if ui == nil {
+		return draw.Rectangle{}
+	}
 	return draw.Rectangle{
 		ui.orig,
 		ui.orig.Add(ui.size),
