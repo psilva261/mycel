@@ -18,15 +18,15 @@ exclude github.com/hanwen/go-fuse/v2 v2.0.3
 
 require (
 	9fans.net/go v0.0.2
-	github.com/andybalholm/cascadia v1.1.0
+	github.com/andybalholm/cascadia v1.3.1
 	github.com/chris-ramon/douceur v0.2.1-0.20160603235419-f3463056cd52
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/knusbaum/go9p v1.18.0
 	github.com/mjl-/duit v0.0.0-20200330125617-580cb0b2843f
-	github.com/srwiley/oksvg v0.0.0-20210320200257-875f767ac39a
-	github.com/srwiley/rasterx v0.0.0-20200120212402-85cb7272f5e9
-	golang.org/x/image v0.0.0-20210220032944-ac19c3e999fb
-	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4
+	github.com/srwiley/oksvg v0.0.0-20211120171407-1837d6608d8c
+	github.com/srwiley/rasterx v0.0.0-20210519020934-456a8d69b780
+	golang.org/x/image v0.0.0-20211028202545-6944b10bf410
+	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8
 	golang.org/x/text v0.3.7
 )
 
