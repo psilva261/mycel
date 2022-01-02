@@ -18,8 +18,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/psilva261/duit v0.0.0-20210802155600-7e8fedefa7ba h1:p8M5yp22QzefbIU3xGERHYnGxlfkcjWV6dh62xIO0U4=
 github.com/psilva261/duit v0.0.0-20210802155600-7e8fedefa7ba/go.mod h1:Ukumf0oazEttGwdWuN21g81jNap4NVccEgKuAUAqkf0=
-github.com/psilva261/go v0.0.0-20210802153818-99e868f39f77 h1:Oy+TCTt29ad3OMoPd3z1pb8YSrmQTAE5SyC8pdM2GDc=
-github.com/psilva261/go v0.0.0-20210802153818-99e868f39f77/go.mod h1:AWpRSZZ474OlNPxa7mOyFZ6Ceg9FRel9f+EONmhPbu0=
+github.com/psilva261/go v0.0.0-20210805155101-6b9925e0d807 h1:JJqdNuwkTdbAe8hxrTaBBbX5TTk88gJrOhGigxoQb7c=
+github.com/psilva261/go v0.0.0-20210805155101-6b9925e0d807/go.mod h1:lfPdxjq9v8pVQXUMBCx5EO5oLXWQFlKRQgs1kEkjoIM=
 github.com/srwiley/oksvg v0.0.0-20211120171407-1837d6608d8c h1:+e9myEHblxwU1r2Jb5PKzepMcsuig7+NUz+K53lBNaQ=
 github.com/srwiley/oksvg v0.0.0-20211120171407-1837d6608d8c/go.mod h1:afMbS0qvv1m5tfENCwnOdZGOF8RGR/FsZ7bvBxQGZG4=
 github.com/srwiley/rasterx v0.0.0-20210519020934-456a8d69b780 h1:oDMiXaTMyBEuZMU53atpxqYsSB3U1CHkeAu2zr6wTeY=
