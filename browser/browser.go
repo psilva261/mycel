@@ -29,10 +29,6 @@ import (
 	"unicode"
 
 	"github.com/mjl-/duit"
-
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
 )
 
 const (
