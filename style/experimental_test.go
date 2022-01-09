@@ -2,7 +2,6 @@ package style
 
 import (
 	"9fans.net/go/draw"
-	"github.com/chris-ramon/douceur/css"
 	"github.com/psilva261/opossum/logger"
 	"testing"
 )
@@ -15,8 +14,8 @@ func TestBackgroundImageUrl(t *testing.T) {
 	suffix := ""
 	for _, quote := range []string{"", "'", `"`} {
 		url := "/foo.png"
-		decl := css.Declaration{
-			Value: "url(" + quote + url + quote + ")" + suffix,
+		decl := Declaration{
+			Val: "url(" + quote + url + quote + ")" + suffix,
 		}
 		imgUrl, ok := backgroundImageUrl(decl)
 		if !ok {
@@ -36,12 +35,12 @@ func TestBackgroundColor(t *testing.T) {
 
 	for _, k := range []string{"background", "background-color"} {
 		m := Map{
-			Declarations: make(map[string]css.Declaration),
+			Declarations: make(map[string]Declaration),
 		}
 		for hex, d := range colors {
-			m.Declarations[k] = css.Declaration{
-				Property: k,
-				Value:    hex,
+			m.Declarations[k] = Declaration{
+				Prop: k,
+				Val:  hex,
 			}
 
 			if b, ok := m.backgroundColor(); !ok || b != d {
@@ -59,11 +58,11 @@ func TestBackgroundGradient(t *testing.T) {
 	}
 	for v, cc := range values {
 		m := Map{
-			Declarations: make(map[string]css.Declaration),
+			Declarations: make(map[string]Declaration),
 		}
-		m.Declarations["background"] = css.Declaration{
-			Property: "background",
-			Value:    v,
+		m.Declarations["background"] = Declaration{
+			Prop: "background",
+			Val:  v,
 		}
 		c, ok := m.backgroundGradient()
 		if !ok {

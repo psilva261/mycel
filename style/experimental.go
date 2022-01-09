@@ -3,7 +3,6 @@ package style
 import (
 	"9fans.net/go/draw"
 	"fmt"
-	"github.com/chris-ramon/douceur/css"
 	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/img"
@@ -20,10 +19,10 @@ func SetFetcher(f opossum.Fetcher) {
 }
 
 var TextNode = Map{
-	Declarations: map[string]css.Declaration{
-		"display": css.Declaration{
-			Property: "display",
-			Value:    "inline",
+	Declarations: map[string]Declaration{
+		"display": Declaration{
+			Prop: "display",
+			Val:  "inline",
 		},
 	},
 }
@@ -62,7 +61,7 @@ func (cs Map) BoxBackground() (i *draw.Image, err error) {
 func (cs Map) backgroundColor() (c draw.Color, ok bool) {
 	d, ok := cs.Declarations["background-color"]
 	if ok {
-		c, ok = colorHex(d.Value)
+		c, ok = colorHex(d.Val)
 		if !ok {
 			return
 		}
@@ -70,7 +69,7 @@ func (cs Map) backgroundColor() (c draw.Color, ok bool) {
 	}
 	d, ok = cs.Declarations["background"]
 	if ok {
-		c, ok = colorHex(d.Value)
+		c, ok = colorHex(d.Val)
 		if !ok {
 			return
 		}
@@ -99,7 +98,7 @@ func (cs Map) backgroundGradient() (c draw.Color, ok bool) {
 	if !ok {
 		return
 	}
-	v := strings.TrimSpace(d.Value)
+	v := strings.TrimSpace(d.Val)
 	if strings.HasPrefix(v, "linear-gradient(") {
 		v = strings.TrimPrefix(v, "linear-gradient(")
 	} else {
@@ -155,8 +154,8 @@ func linearGradient(from, to draw.Color, x, y, xmax float64) (c draw.Color) {
 	return draw.Color(cc)
 }
 
-func backgroundImageUrl(decl css.Declaration) (url string, ok bool) {
-	if v := decl.Value; strings.Contains(v, "url(") && strings.Contains(v, ")") {
+func backgroundImageUrl(decl Declaration) (url string, ok bool) {
+	if v := decl.Val; strings.Contains(v, "url(") && strings.Contains(v, ")") {
 		v = strings.ReplaceAll(v, `"`, "")
 		v = strings.ReplaceAll(v, `'`, "")
 		from := strings.Index(v, "url(")

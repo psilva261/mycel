@@ -1,7 +1,6 @@
 package style
 
 import (
-	"github.com/chris-ramon/douceur/css"
 	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum/logger"
 	"golang.org/x/net/html"
@@ -103,10 +102,10 @@ b {
 
 		if w == 400 {
 			_ = m[body][0]
-			if v := m[body][0].Declarations[0].Value; v != "lightblue" {
+			if v := m[body][0].Declarations[0].Val; v != "lightblue" {
 				t.Fatalf("%v", v)
 			}
-			t.Logf("%v", m[body][0].Name)
+			t.Logf("%v", m[body][0])
 		} else {
 			if _, ok := m[body]; ok {
 				t.Fatalf("body ok")
@@ -197,7 +196,7 @@ func TestNewMapStyle(t *testing.T) {
 		h2 := grep(doc, "h2")
 		m := NewMap(h2)
 
-		if m.Declarations["color"].Value != "green" {
+		if m.Declarations["color"].Val != "green" {
 			t.Errorf("%+v", m)
 		}
 	}
@@ -220,10 +219,10 @@ func grep(nn *html.Node, tag string) *html.Node {
 }
 
 func TestSmaller(t *testing.T) {
-	d := css.Declaration{
+	d := Declaration{
 		Important: false,
 	}
-	dd := css.Declaration{
+	dd := Declaration{
 		Important: true,
 	}
 	if !smaller(d, dd) {
@@ -233,40 +232,40 @@ func TestSmaller(t *testing.T) {
 
 func TestApplyChildStyleInherit(t *testing.T) {
 	parent := Map{
-		Declarations: make(map[string]css.Declaration),
+		Declarations: make(map[string]Declaration),
 	}
-	parent.Declarations["height"] = css.Declaration{
-		Property: "height",
-		Value:    "80px",
+	parent.Declarations["height"] = Declaration{
+		Prop: "height",
+		Val:  "80px",
 	}
 	child := Map{
-		Declarations: make(map[string]css.Declaration),
+		Declarations: make(map[string]Declaration),
 	}
 
 	res := parent.ApplyChildStyle(child, true)
-	if v := res.Declarations["height"].Value; v != "80px" {
+	if v := res.Declarations["height"].Val; v != "80px" {
 		t.Fatalf(v)
 	}
 }
 
 func TestApplyChildStyleInherit2(t *testing.T) {
 	parent := Map{
-		Declarations: make(map[string]css.Declaration),
+		Declarations: make(map[string]Declaration),
 	}
 	child := Map{
-		Declarations: make(map[string]css.Declaration),
+		Declarations: make(map[string]Declaration),
 	}
-	parent.Declarations["font-size"] = css.Declaration{
-		Property: "font-size",
-		Value:    "12pt",
+	parent.Declarations["font-size"] = Declaration{
+		Prop: "font-size",
+		Val:  "12pt",
 	}
-	child.Declarations["font-size"] = css.Declaration{
-		Property: "font-size",
-		Value:    "inherit",
+	child.Declarations["font-size"] = Declaration{
+		Prop: "font-size",
+		Val:  "inherit",
 	}
 
 	res := parent.ApplyChildStyle(child, true)
-	if v := res.Declarations["font-size"].Value; v != "12pt" {
+	if v := res.Declarations["font-size"].Val; v != "12pt" {
 		t.Fatalf(v)
 	}
 }
@@ -339,11 +338,11 @@ func TestTlbr(tt *testing.T) {
 	}
 	for v, exp := range cases {
 		m := Map{
-			Declarations: make(map[string]css.Declaration),
+			Declarations: make(map[string]Declaration),
 		}
-		m.Declarations["margin"] = css.Declaration{
-			Property: "margin",
-			Value:    v,
+		m.Declarations["margin"] = Declaration{
+			Prop: "margin",
+			Val:  v,
 		}
 		s, err := m.Tlbr("margin")
 		if err != nil {
@@ -403,7 +402,7 @@ b {
 	}
 	d := nm[b]
 	t.Logf("d=%+v", d)
-	if d.Declarations["color"].Value != "red" {
-		t.Fail()
+	if d.Declarations["color"].Val != "red" {
+		t.Fatalf("%+v", d.Declarations)
 	}
 }

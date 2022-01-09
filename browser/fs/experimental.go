@@ -197,7 +197,7 @@ func (st Style) Children() (cs map[string]fs.FSNode) {
 				var v string
 				for p, d := range st.cs.Declarations {
 					if p == k {
-						v = d.Value
+						v = d.Val
 					}
 				}
 				return []byte(v)

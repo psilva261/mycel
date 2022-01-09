@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/andybalholm/cascadia"
-	"github.com/chris-ramon/douceur/css"
-	"github.com/chris-ramon/douceur/parser"
 	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum/logger"
 	"golang.org/x/image/colornames"
@@ -25,8 +23,8 @@ var fontCache = make(map[string]*draw.Font)
 var dui *duit.DUI
 var availableFontNames []string
 
-var rMinWidth = regexp.MustCompile(`min-width: (\d+)(px|em|rem)`)
-var rMaxWidth = regexp.MustCompile(`max-width: (\d+)(px|em|rem)`)
+var rMinWidth = regexp.MustCompile(`min-width:\s*(\d+)(px|em|rem)`)
+var rMaxWidth = regexp.MustCompile(`max-width:\s*(\d+)(px|em|rem)`)
 
 const FontBaseSize = 11.0
 
@@ -118,20 +116,20 @@ func FetchNodeMap(doc *html.Node, cssText string, windowWidth int) (m map[*html.
 	}
 	m = make(map[*html.Node]Map)
 	for n, rs := range mr {
-		ds := make(map[string]css.Declaration)
+		ds := make(map[string]Declaration)
 		for _, r := range rs {
 			for _, d := range r.Declarations {
-				if exist, ok := ds[d.Property]; ok && smaller(*d, exist) {
+				if exist, ok := ds[d.Prop]; ok && smaller(d, exist) {
 					continue
 				}
-				if strings.HasPrefix(d.Value, "var(") {
-					v := strings.TrimPrefix(d.Value, "var(")
+				if strings.HasPrefix(d.Val, "var(") {
+					v := strings.TrimPrefix(d.Val, "var(")
 					v = strings.TrimSuffix(v, ")")
 					if vv, ok := rv[v]; ok {
-						d.Value = vv
+						d.Val = vv
 					}
 				}
-				ds[d.Property] = *d
+				ds[d.Prop] = d
 			}
 		}
 		m[n] = Map{Declarations: ds}
@@ -139,46 +137,37 @@ func FetchNodeMap(doc *html.Node, cssText string, windowWidth int) (m map[*html.
 	return
 }
 
-func smaller(d, dd css.Declaration) bool {
+func smaller(d, dd Declaration) bool {
 	return dd.Important
 }
 
 func compile(v string) (cs cascadia.Selector, err error) {
-	l := strings.Split(v, " ")
-	for _, s := range l {
-		s = strings.TrimSpace(s)
-		if strings.HasSuffix(s, ":") {
-			// TODO: selectors like .selector: would crash otherwise
-			err = fmt.Errorf("unsupported selector: %v", s)
-			return
-		}
-	}
 	return cascadia.Compile(v)
 }
 
-func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*html.Node][]*css.Rule, rVars map[string]string, err error) {
-	m = make(map[*html.Node][]*css.Rule)
+func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*html.Node][]Rule, rVars map[string]string, err error) {
+	m = make(map[*html.Node][]Rule)
 	rVars = make(map[string]string)
-	s, err := parser.Parse(cssText)
+	s, err := Parse(strings.NewReader(cssText), false)
 	if err != nil {
-		return nil, nil, fmt.Errorf("douceur parse: %w", err)
+		return nil, nil, fmt.Errorf("parse: %w", err)
 	}
-	processRule := func(m map[*html.Node][]*css.Rule, r *css.Rule) (err error) {
+	processRule := func(m map[*html.Node][]Rule, r Rule) (err error) {
 		for _, sel := range r.Selectors {
-			if sel.Value == ":root" {
+			if sel.Val == ":root" {
 				for _, d := range r.Declarations {
-					rVars[d.Property] = d.Value
+					rVars[d.Prop] = d.Val
 				}
 			}
-			cs, err := compile(sel.Value)
+			cs, err := compile(sel.Val)
 			if err != nil {
-				log.Printf("cssSel compile %v: %v", sel.Value, err)
+				log.Printf("cssSel compile %v: %v", sel.Val, err)
 				continue
 			}
 			for _, el := range cascadia.QueryAll(doc, cs) {
 				existing, ok := m[el]
 				if !ok {
-					existing = make([]*css.Rule, 0, 3)
+					existing = make([]Rule, 0, 3)
 				}
 				existing = append(existing, r)
 				m[el] = existing
@@ -233,13 +222,13 @@ type DomTree interface {
 }
 
 type Map struct {
-	Declarations map[string]css.Declaration
+	Declarations map[string]Declaration
 	DomTree      `json:"-"`
 }
 
 func NewMap(n *html.Node) Map {
 	s := Map{
-		Declarations: make(map[string]css.Declaration),
+		Declarations: make(map[string]Declaration),
 	}
 
 	for _, a := range n.Attr {
@@ -248,7 +237,12 @@ func NewMap(n *html.Node) Map {
 			if !strings.HasSuffix(v, ";") {
 				v += ";"
 			}
-			decls, err := parser.ParseDeclarations(v)
+			st, err := Parse(strings.NewReader(v), true)
+
+			var decls []Declaration
+			if len(st.Rules) > 0 {
+				decls = st.Rules[0].Declarations
+			}
 
 			if err != nil {
 				log.Printf("could not parse '%v'", a.Val)
@@ -256,7 +250,7 @@ func NewMap(n *html.Node) Map {
 			}
 
 			for _, d := range decls {
-				s.Declarations[d.Property] = *d
+				s.Declarations[d.Prop] = d
 			}
 		} else if a.Key == "height" || a.Key == "width" {
 			v := a.Val
@@ -265,14 +259,14 @@ func NewMap(n *html.Node) Map {
 				v += "px"
 			}
 
-			s.Declarations[a.Key] = css.Declaration{
-				Property: a.Key,
-				Value:    v,
+			s.Declarations[a.Key] = Declaration{
+				Prop: a.Key,
+				Val:  v,
 			}
 		} else if a.Key == "bgcolor" {
-			s.Declarations["background-color"] = css.Declaration{
-				Property: "background-color",
-				Value:    a.Val,
+			s.Declarations["background-color"] = Declaration{
+				Prop: "background-color",
+				Val:  a.Val,
 			}
 		}
 	}
@@ -281,7 +275,7 @@ func NewMap(n *html.Node) Map {
 }
 
 func (cs Map) ApplyChildStyle(ccs Map, copyAll bool) (res Map) {
-	res.Declarations = make(map[string]css.Declaration)
+	res.Declarations = make(map[string]Declaration)
 
 	for k, v := range cs.Declarations {
 		switch k {
@@ -296,7 +290,7 @@ func (cs Map) ApplyChildStyle(ccs Map, copyAll bool) (res Map) {
 	}
 	// overwrite with higher prio child props
 	for k, v := range ccs.Declarations {
-		if v.Value == "inherit" {
+		if v.Val == "inherit" {
 			continue
 		}
 		res.Declarations[k] = v
@@ -361,21 +355,21 @@ func matchClosestFontSize(desired float64, available []int) (closest int) {
 
 func (cs Map) FontSize() float64 {
 	fs, ok := cs.Declarations["font-size"]
-	if !ok || fs.Value == "" {
+	if !ok || fs.Val == "" {
 		return FontBaseSize
 	}
 
-	if len(fs.Value) <= 2 {
-		log.Printf("error parsing font size %v", fs.Value)
+	if len(fs.Val) <= 2 {
+		log.Printf("error parsing font size %v", fs.Val)
 		return FontBaseSize
 	}
-	numStr := fs.Value[0 : len(fs.Value)-2]
+	numStr := fs.Val[0 : len(fs.Val)-2]
 	f, err := strconv.ParseFloat(numStr, 64)
 	if err != nil {
-		log.Printf("error parsing font size %v", fs.Value)
+		log.Printf("error parsing font size %v", fs.Val)
 		return FontBaseSize
 	}
-	if strings.HasSuffix(fs.Value, "em") {
+	if strings.HasSuffix(fs.Val, "em") {
 		f *= FontBaseSize
 	}
 	return f
@@ -388,7 +382,7 @@ func (cs Map) FontHeight() float64 {
 
 func (cs Map) Color() draw.Color {
 	if d, ok := cs.Declarations["color"]; ok {
-		if h, ok := colorHex(d.Value); ok {
+		if h, ok := colorHex(d.Val); ok {
 			c := draw.Color(h)
 			return c
 		}
@@ -486,34 +480,34 @@ default_value:
 
 func (cs Map) IsInline() bool {
 	propVal, ok := cs.Declarations["float"]
-	if ok && propVal.Value == "left" {
+	if ok && propVal.Val == "left" {
 		return true
 	}
 	propVal, ok = cs.Declarations["display"]
 	if ok {
-		return propVal.Value == "inline" ||
-			propVal.Value == "inline-block"
+		return propVal.Val == "inline" ||
+			propVal.Val == "inline-block"
 	}
 	return false
 }
 
 func (cs Map) IsDisplayNone() bool {
 	propVal, ok := cs.Declarations["display"]
-	if ok && propVal.Value == "none" {
+	if ok && propVal.Val == "none" {
 		return true
 	}
 	/*propVal, ok = cs.Declarations["position"]
-	if ok && propVal.Value == "fixed" {
+	if ok && propVal.Val == "fixed" {
 		return true
 	}*/
 	propVal, ok = cs.Declarations["clip"]
-	if ok && strings.ReplaceAll(propVal.Value, " ", "") == "rect(1px,1px,1px,1px)" {
+	if ok && strings.ReplaceAll(propVal.Val, " ", "") == "rect(1px,1px,1px,1px)" {
 		return true
 	}
 	propVal, ok = cs.Declarations["width"]
-	if ok && propVal.Value == "1px" {
+	if ok && propVal.Val == "1px" {
 		propVal, ok = cs.Declarations["height"]
-		if ok && propVal.Value == "1px" {
+		if ok && propVal.Val == "1px" {
 			return true
 		}
 	}
@@ -523,7 +517,7 @@ func (cs Map) IsDisplayNone() bool {
 func (cs Map) IsFlex() bool {
 	propVal, ok := cs.Declarations["display"]
 	if ok {
-		return propVal.Value == "flex"
+		return propVal.Val == "flex"
 	}
 	return false
 }
@@ -531,7 +525,7 @@ func (cs Map) IsFlex() bool {
 func (cs Map) IsFlexDirectionRow() bool {
 	propVal, ok := cs.Declarations["flex-direction"]
 	if ok {
-		switch propVal.Value {
+		switch propVal.Val {
 		case "row":
 			return true
 		case "column":
@@ -545,7 +539,7 @@ func (cs Map) IsFlexDirectionRow() bool {
 // margin-top, ...-right, ...-bottom, ...-left.
 func (cs *Map) Tlbr(key string) (s duit.Space, err error) {
 	if all, ok := cs.Declarations[key]; ok {
-		parts := strings.Split(all.Value, " ")
+		parts := strings.Split(all.Val, " ")
 		nums := make([]int, len(parts))
 		for i, p := range parts {
 			if f, _, err := length(cs, p); err == nil {
@@ -702,7 +696,7 @@ func length(cs *Map, l string) (f float64, unit string, err error) {
 func (cs *Map) Height() int {
 	d, ok := cs.Declarations["height"]
 	if ok {
-		f, _, err := length(cs, d.Value)
+		f, _, err := length(cs, d.Val)
 		if err != nil {
 			log.Errorf("cannot parse height: %v", err)
 		}
@@ -715,7 +709,7 @@ func (cs Map) Width() int {
 	w := cs.width()
 	if w > 0 {
 		if d, ok := cs.Declarations["max-width"]; ok {
-			f, _, err := length(&cs, d.Value)
+			f, _, err := length(&cs, d.Val)
 			if err != nil {
 				log.Errorf("cannot parse width: %v", err)
 			}
@@ -730,7 +724,7 @@ func (cs Map) Width() int {
 func (cs Map) width() int {
 	d, ok := cs.Declarations["width"]
 	if ok {
-		f, _, err := length(&cs, d.Value)
+		f, _, err := length(&cs, d.Val)
 		if err != nil {
 			log.Errorf("cannot parse width: %v", err)
 		}
@@ -762,7 +756,7 @@ func (cs Map) Css(propName string) string {
 	if !ok {
 		return ""
 	}
-	return d.Value
+	return d.Val
 }
 
 func (cs *Map) CssPx(propName string) (l int, err error) {
@@ -770,7 +764,7 @@ func (cs *Map) CssPx(propName string) (l int, err error) {
 	if !ok {
 		return 0, fmt.Errorf("property doesn't exist")
 	}
-	f, _, err := length(cs, d.Value)
+	f, _, err := length(cs, d.Val)
 	if err != nil {
 		return 0, err
 	}
@@ -779,8 +773,8 @@ func (cs *Map) CssPx(propName string) (l int, err error) {
 }
 
 func (cs Map) SetCss(k, v string) {
-	cs.Declarations[k] = css.Declaration{
-		Property: k,
-		Value:    v,
+	cs.Declarations[k] = Declaration{
+		Prop: k,
+		Val:  v,
 	}
 }

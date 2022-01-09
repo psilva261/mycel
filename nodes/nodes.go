@@ -3,7 +3,6 @@ package nodes
 import (
 	"bytes"
 	"fmt"
-	"github.com/chris-ramon/douceur/css"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/style"
 	"golang.org/x/net/html"
@@ -30,7 +29,7 @@ type Rectangular interface {
 // First applies the parent style and at the end the local style attribute's style is attached.
 func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map, parent *Node) (n *Node) {
 	ncs := style.Map{
-		Declarations: make(map[string]css.Declaration),
+		Declarations: make(map[string]style.Declaration),
 	}
 	ncs = ps.ApplyChildStyle(ncs, false)
 
@@ -58,9 +57,9 @@ func NewNodeTree(doc *html.Node, ps style.Map, nodeMap map[*html.Node]style.Map,
 	n.Wrappable = doc.Type == html.TextNode || doc.Data == "span" // TODO: probably this list needs to be extended
 	if doc.Type == html.TextNode {
 		n.Text = filterText(doc.Data)
-		n.Map.Declarations["display"] = css.Declaration{
-			Property: "display",
-			Value:    "inline",
+		n.Map.Declarations["display"] = style.Declaration{
+			Prop: "display",
+			Val:  "inline",
 		}
 	}
 	i := 0
@@ -395,7 +394,7 @@ func (n *Node) printTree(r int) {
 		if len(n.Map.Declarations) > 0 {
 			l := make([]string, 0, 2)
 			for k, d := range n.Map.Declarations {
-				s := fmt.Sprintf("%v=%v", k, d.Value)
+				s := fmt.Sprintf("%v=%v", k, d.Val)
 				if d.Important {
 					s += "!"
 				}

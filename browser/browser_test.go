@@ -3,7 +3,6 @@ package browser
 import (
 	"9fans.net/go/draw"
 	"fmt"
-	"github.com/chris-ramon/douceur/css"
 	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum/browser/duitx"
 	"github.com/psilva261/opossum/logger"
@@ -69,11 +68,11 @@ func TestArrange(t *testing.T) {
 		h3 := nt.Find("h3")
 
 		m := style.Map{
-			Declarations: make(map[string]css.Declaration),
+			Declarations: make(map[string]style.Declaration),
 		}
-		m.Declarations["display"] = css.Declaration{
-			Property: "display",
-			Value:    d,
+		m.Declarations["display"] = style.Declaration{
+			Prop: "display",
+			Val:    d,
 		}
 		h1.Map = m
 		h2.Map = m
