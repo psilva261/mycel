@@ -126,6 +126,11 @@ func TestLinkedUrl(t *testing.T) {
 			href:   "info",
 			expect: "https://example.com/info",
 		},
+		item{
+			orig:   "https://example.com",
+			href:   "/path/info",
+			expect: "https://example.com/path/info",
+		},
 	}
 
 	for _, i := range items {

@@ -163,7 +163,9 @@ func cssSrcs(f opossum.Fetcher, doc *html.Node) (csss []string) {
 	inls := ntAll.FindAll("style")
 
 	for _, inl := range inls {
-		inlines = append(inlines, inl.ContentString(true))
+		if t := strings.ToLower(inl.Attr("type")); t == "" || t == "text/css" {
+			inlines = append(inlines, inl.ContentString(true))
+		}
 	}
 	csss = make([]string, 0, len(inlines)+len(cssHrefs))
 	csss = append(csss, style.AddOnCSS)
