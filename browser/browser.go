@@ -915,12 +915,15 @@ func placeFunc(name string, place *duit.Place) func(self *duit.Kid, sizeAvail im
 				if t, err := el.n.CssPx("top"); err == nil {
 					kid.R.Min.Y += t
 					kid.R.Max.Y += t
+				} else if b, err := el.n.CssPx("bottom"); err == nil {
+					h := kid.R.Max.X
+					kid.R.Min.Y = sizeAvail.Y - b
+					kid.R.Max.Y = sizeAvail.Y - h
 				}
 				if l, err := el.n.CssPx("left"); err == nil {
 					kid.R.Max.X += l
 					kid.R.Min.X += l
-				}
-				if r, err := el.n.CssPx("right"); err == nil {
+				} else if r, err := el.n.CssPx("right"); err == nil {
 					w := kid.R.Max.X
 					kid.R.Max.X = sizeAvail.X - r
 					kid.R.Min.X = sizeAvail.X - w
@@ -936,7 +939,8 @@ func arrangeAbsolute(n *nodes.Node, elements ...*Element) (ael *Element, ok bool
 	other := make([]*Element, 0, len(elements))
 
 	for _, el := range elements {
-		if el.n.Css("position") == "absolute" {
+		if el.n.Css("position") == "absolute" || el.n.Css("position") == "fixed" {
+			// Treating fixed like absolute
 			absolutes = append(absolutes, el)
 		} else {
 			other = append(other, el)
