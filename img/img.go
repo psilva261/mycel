@@ -1,17 +1,18 @@
 package img
 
 import (
+	"9fans.net/go/draw"
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
-	"golang.org/x/image/draw"
+	xdraw "golang.org/x/image/draw"
 	"image"
-	"image/png"
-	"io"
+	imagedraw "image/draw"
 	"net/url"
 	"strings"
 
@@ -151,7 +152,23 @@ func quoteAttrs(s string) string {
 
 // Svg returns the svg+xml encoded as jpg with the sizing defined in
 // viewbox unless w and h != 0
-func Svg(data string, w, h int) (bs []byte, err error) {
+func Svg(dui *duit.DUI, data string, w, h int) (ni *draw.Image, err error) {
+	rgba, err := svg(data, w, h)
+	if err != nil {
+		return nil, err
+	}
+	ni, err = dui.Display.AllocImage(rgba.Bounds(), draw.ABGR32, false, draw.White)
+	if err != nil {
+		return nil, fmt.Errorf("allocimage: %s", err)
+	}
+	_, err = ni.Load(rgba.Bounds(), rgba.Pix)
+	if err != nil {
+		return nil, fmt.Errorf("load image: %s", err)
+	}
+	return
+}
+
+func svg(data string, w, h int) (img *image.RGBA, err error) {
 	data = strings.ReplaceAll(data, "currentColor", "black")
 	data = strings.ReplaceAll(data, "inherit", "black")
 	data = quoteAttrs(data)
@@ -171,16 +188,40 @@ func Svg(data string, w, h int) (bs []byte, err error) {
 	rgba := image.NewRGBA(image.Rect(0, 0, w, h))
 	icon.Draw(rasterx.NewDasher(w, h, rasterx.NewScannerGV(w, h, rgba, rgba.Bounds())), 1)
 
-	buf := bytes.NewBufferString("")
-	if err = png.Encode(buf, rgba); err != nil {
-		return nil, fmt.Errorf("encode: %w", err)
-	}
-
-	return buf.Bytes(), nil
+	return rgba, nil
 }
 
 // Load and resize to w and h if != 0
-func Load(f opossum.Fetcher, src string, maxW, w, h int) (r io.Reader, err error) {
+//
+// Stolen from duit.ReadImage
+func Load(dui *duit.DUI, f opossum.Fetcher, src string, maxW, w, h int) (ni *draw.Image, err error) {
+	drawImg, err := load(f, src, maxW, w, h)
+	if err != nil {
+		return nil, err
+	}
+	var rgba *image.RGBA
+	switch i := drawImg.(type) {
+	case *image.RGBA:
+		rgba = i
+	default:
+		b := drawImg.Bounds()
+		rgba = image.NewRGBA(image.Rectangle{image.ZP, b.Size()})
+		imagedraw.Draw(rgba, rgba.Bounds(), drawImg, b.Min, imagedraw.Src)
+	}
+
+	// todo: package image claims data is in r,g,b,a.  who is reversing the bytes? devdraw? will this work on big endian?
+	ni, err = dui.Display.AllocImage(rgba.Bounds(), draw.ABGR32, false, draw.White)
+	if err != nil {
+		return nil, fmt.Errorf("allocimage: %s", err)
+	}
+	_, err = ni.Load(rgba.Bounds(), rgba.Pix)
+	if err != nil {
+		return nil, fmt.Errorf("load image: %s", err)
+	}
+	return
+}
+
+func load(f opossum.Fetcher, src string, maxW, w, h int) (img image.Image, err error) {
 	var imgUrl *url.URL
 	var data []byte
 	var contentType opossum.ContentType
@@ -199,41 +240,38 @@ func Load(f opossum.Fetcher, src string, maxW, w, h int) (r io.Reader, err error
 	}
 
 	if contentType.IsSvg() {
-		data, err = Svg(string(data), w, h)
+		img, err := svg(string(data), w, h)
 		if err != nil {
 			return nil, fmt.Errorf("svg: %v", err)
 		}
-	} else if maxW != 0 || w != 0 || h != 0 {
-		img, _, err := image.Decode(bytes.NewReader(data))
+		return img, nil
+	} else {
+		img, _, err = image.Decode(bytes.NewReader(data))
 		if err != nil {
 			return nil, fmt.Errorf("decode %v: %w", imgUrl, err)
 		}
-
-		dx := img.Bounds().Max.X
-		dy := img.Bounds().Max.Y
-		log.Printf("dx,dy=%v,%v", dx, dy)
-		if w == 0 && h == 0 && 0 < maxW && maxW < dx {
-			w = maxW
-		}
-
-		newX, newY, skip := newSizes(dx, dy, w, h)
-
-		if !skip {
-			log.Printf("resize image to %v x %v", newX, newY)
-			dst := image.NewRGBA(image.Rect(0, 0, newX, newY))
-			draw.NearestNeighbor.Scale(dst, dst.Rect, img, img.Bounds(), draw.Over, nil)
-			buf := bytes.NewBufferString("")
-
-			if err = png.Encode(buf, dst); err != nil {
-				return nil, fmt.Errorf("encode: %w", err)
+		if maxW != 0 || w != 0 || h != 0 {
+			dx := img.Bounds().Max.X
+			dy := img.Bounds().Max.Y
+			log.Printf("dx,dy=%v,%v", dx, dy)
+			if w == 0 && h == 0 && 0 < maxW && maxW < dx {
+				w = maxW
 			}
-			data = buf.Bytes()
-		} else {
-			log.Printf("skip resizing")
+
+			newX, newY, skip := newSizes(dx, dy, w, h)
+
+			if !skip {
+				log.Printf("resize image to %v x %v", newX, newY)
+				dst := image.NewRGBA(image.Rect(0, 0, newX, newY))
+				xdraw.NearestNeighbor.Scale(dst, dst.Rect, img, img.Bounds(), xdraw.Over, nil)
+				img = dst
+			} else {
+				log.Printf("skip resizing")
+			}
 		}
 	}
 
-	return bytes.NewReader(data), nil
+	return img, nil
 }
 
 func newSizes(oldX, oldY, wantedX, wantedY int) (newX, newY int, skip bool) {

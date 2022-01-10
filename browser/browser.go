@@ -2,7 +2,6 @@ package browser
 
 import (
 	"9fans.net/go/draw"
-	"bytes"
 	"errors"
 	"fmt"
 	"github.com/psilva261/opossum"
@@ -200,19 +199,11 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 			return nil, fmt.Errorf("serialize: %w", err)
 		}
 		log.Printf("newImage: xml: %v", xml)
-		buf, err := img.Svg(xml, n.Width(), n.Height())
-		if err == nil {
-			var err error
-			r := bytes.NewReader(buf)
-			i, err = duit.ReadImage(display, r)
-			if err != nil {
-				return nil, fmt.Errorf("read image %v: %v", xml, err)
-			}
-
-			goto img_elem
-		} else {
+		i, err = img.Svg(dui, xml, n.Width(), n.Height())
+		if err != nil {
 			return nil, fmt.Errorf("img svg %v: %v", xml, err)
 		}
+		goto img_elem
 	} else if n.Data() == "img" {
 		_, s := srcSet(n)
 		if s != "" {
@@ -228,16 +219,10 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 		mw, _ := n.CssPx("max-width")
 		w := n.Width()
 		h := n.Height()
-		r, err := img.Load(browser, src, mw, w, h)
+		i, err = img.Load(dui, browser, src, mw, w, h)
 		if err != nil {
-			return nil, fmt.Errorf("load draw image: %w", err)
+			return nil, fmt.Errorf("load image: %w", err)
 		}
-		log.Printf("Read %v...", src)
-		i, err = duit.ReadImage(display, r)
-		if err != nil {
-			return nil, fmt.Errorf("duit read image: %w", err)
-		}
-		log.Printf("Done reading %v", src)
 		imageCache[src] = i
 	}
 

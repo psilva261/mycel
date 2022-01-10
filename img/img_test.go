@@ -46,7 +46,7 @@ func TestSvg(t *testing.T) {
                </svg>
        `
 
-	_, err := Svg(xml, 0, 0)
+	_, err := svg(xml, 0, 0)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -61,7 +61,7 @@ func TestSvgUnquoted(t *testing.T) {
        `
 	xml = `<svg xmlns=http://www.w3.org/2000/svg viewBox=0 0 37 37 fill=#000000><path class=border fill=blue stroke=green/></svg>`
 
-	_, err := Svg(xml, 0, 0)
+	_, err := svg(xml, 0, 0)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -110,13 +110,9 @@ func TestLoad(t *testing.T) {
 			t.Fail()
 		}
 		b := &MockBrowser{buf.Bytes()}
-		r, err := Load(b, "", mw, w, h)
+		img, err := load(b, "", mw, w, h)
 		if err != nil {
 			t.Errorf("load: %v", err)
-		}
-		img, _, err := image.Decode(r)
-		if err != nil {
-			t.Errorf("decode")
 		}
 		dx := img.Bounds().Max.X
 		dy := img.Bounds().Max.Y

@@ -3,7 +3,6 @@ package style
 import (
 	"9fans.net/go/draw"
 	"fmt"
-	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/img"
 	"github.com/psilva261/opossum/logger"
@@ -194,18 +193,12 @@ func (cs Map) backgroundImage() (i *draw.Image) {
 		w := cs.Width()
 		h := cs.Height()
 
-		r, err := img.Load(fetcher, imgUrl, 0, w, h)
+		var err error
+		i, err = img.Load(dui, fetcher, imgUrl, 0, w, h)
 		if err != nil {
 			log.Errorf("bg img load %v: %v", imgUrl, err)
-			return nil
-		}
-
-		i, err = duit.ReadImage(dui.Display, r)
-		if err != nil {
-			log.Errorf("bg read image %v: %v", imgUrl, err)
 			return
 		}
-		return i
 	}
 	return
 }
