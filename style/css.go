@@ -1,7 +1,9 @@
 package style
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/css"
@@ -31,11 +33,50 @@ type Declaration struct {
 	Val       string
 }
 
-func Parse(rd io.Reader, inline bool) (s Sheet, err error) {
+func Preprocess(s string) (bs []byte, ct opossum.ContentType, err error) {
+	buf := bytes.NewBufferString("")
+	l := css.NewLexer(parse.NewInputString(s))
+	ct.MediaType = "text/css"
+	ct.Params = make(map[string]string)
+	at := ""
+	for {
+		tt, data := l.Next()
+		if tt == css.ErrorToken {
+			if err != io.EOF {
+				err = l.Err()
+			}
+			break
+		}
+		if d := string(data); tt == css.AtKeywordToken && (d == "@charset" || d == "@import") {
+			at = d
+		} else if tt == css.SemicolonToken {
+			at = ""
+		}
+		switch at {
+		case "@charset":
+			if tt == css.StringToken {
+				ct.Params["charset"] = string(data)
+			}
+			continue
+		case "@import":
+			continue
+		}
+		if _, err := buf.Write(data); err != nil {
+			return nil, ct, err
+		}
+	}
+	return buf.Bytes(), ct, nil
+}
+
+func Parse(str string, inline bool) (s Sheet, err error) {
 	s.Rules = make([]Rule, 0, 1000)
 	stack := make([]Rule, 0, 2)
 	selectors := make([]Selector, 0, 1)
-	p := css.NewParser(parse.NewInput(rd), inline)
+	bs, ct, err := Preprocess(str)
+	if err != nil {
+		return s, fmt.Errorf("preprocess: %v", err)
+	}
+	p := css.NewParser(parse.NewInputString(ct.Utf8(bs)), inline)
 	if inline {
 		stack = append(stack, Rule{})
 		defer func() {

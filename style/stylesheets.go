@@ -148,7 +148,7 @@ func compile(v string) (cs cascadia.Selector, err error) {
 func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*html.Node][]Rule, rVars map[string]string, err error) {
 	m = make(map[*html.Node][]Rule)
 	rVars = make(map[string]string)
-	s, err := Parse(strings.NewReader(cssText), false)
+	s, err := Parse(cssText, false)
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse: %w", err)
 	}
@@ -237,7 +237,7 @@ func NewMap(n *html.Node) Map {
 			if !strings.HasSuffix(v, ";") {
 				v += ";"
 			}
-			st, err := Parse(strings.NewReader(v), true)
+			st, err := Parse(v, true)
 
 			var decls []Declaration
 			if len(st.Rules) > 0 {

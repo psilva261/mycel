@@ -1,13 +1,12 @@
 package style
 
 import (
-	"bytes"
 	"testing"
 )
 
 func TestParseInline(t *testing.T) {
-	b := bytes.NewBufferString("color: red;")
-	s, err := Parse(b, true)
+	css := "color: red;"
+	s, err := Parse(css, true)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -26,7 +25,7 @@ func TestParseInline(t *testing.T) {
 }
 
 func TestParseMin(t *testing.T) {
-	b := bytes.NewBufferString(`
+	css := `
 		h1 {
 			font-weight: bold;
 			font-size: 100px;
@@ -42,8 +41,8 @@ func TestParseMin(t *testing.T) {
 		b {
 			color: var(--emph);
 		}
-	`)
-	s, err := Parse(b, false)
+	`
+	s, err := Parse(css, false)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -78,14 +77,14 @@ func TestParseMin(t *testing.T) {
 }
 
 func TestParseMedia(t *testing.T) {
-	b := bytes.NewBufferString(`
+	css := `
 		@media only screen and (max-width: 600px) {
 		  body {
 		    background-color: lightblue;
 		  }
 		}
-	`)
-	s, err := Parse(b, false)
+	`
+	s, err := Parse(css, false)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -106,7 +105,7 @@ func TestParseMedia(t *testing.T) {
 }
 
 func TestParseComment(t *testing.T) {
-	b := bytes.NewBufferString(`
+	css := `
 		h1 {
 			font-weight: bold;
 			font-size: 100px;
@@ -115,8 +114,8 @@ func TestParseComment(t *testing.T) {
 		p {
 			color: grey !important;
 		}
-	`)
-	s, err := Parse(b, false)
+	`
+	s, err := Parse(css, false)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -143,7 +142,7 @@ func TestParseComment(t *testing.T) {
 }
 
 func TestParseQual(t *testing.T) {
-	b := bytes.NewBufferString(`
+	css := `
 		h1 {
 			font-weight: bold;
 			font-size: 100px;
@@ -155,8 +154,8 @@ func TestParseQual(t *testing.T) {
 		  color: blue;
 		  margin-right: 2px;
 		}
-	`)
-	s, err := Parse(b, false)
+	`
+	s, err := Parse(css, false)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -179,5 +178,59 @@ func TestParseQual(t *testing.T) {
 	d = r.Declarations[0]
 	if d.Prop != "color" || d.Val != "blue" {
 		t.Fail()
+	}
+}
+
+func TestParseAtRule(t *testing.T) {
+	css := `
+		@charset "UTF-8";.info{z-index:3;}
+		@media only screen and (max-width: 600px) {
+		  body {
+		    background-color: lightblue;
+		  }
+		}
+	`
+	s, err := Parse(css, false)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	t.Logf("s: %+v", s)
+	if len(s.Rules) != 2 {
+		t.Fail()
+	}
+	r := s.Rules[1]
+	if len(r.Declarations) != 0 || len(r.Selectors) > 0 {
+		t.Fatalf("%+v", r)
+	}
+	d := r.Rules[0].Declarations[0]
+	if d.Prop != "background-color" || d.Val != "lightblue" {
+		t.Fatalf("%+v", d)
+	}
+}
+
+func TestParseAtRule2(t *testing.T) {
+	css := `
+		@import url(https://fonts.googleapis.com/css?family=Montserrat:400,400i,700,800);.info{z-index:3;}
+		@media only screen and (max-width: 600px) {
+		  body {
+		    background-color: lightblue;
+		  }
+		}
+	`
+	s, err := Parse(css, false)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	t.Logf("s: %+v", s)
+	if len(s.Rules) != 2 {
+		t.Fail()
+	}
+	r := s.Rules[1]
+	if len(r.Declarations) != 0 || len(r.Selectors) > 0 {
+		t.Fatalf("%+v", r)
+	}
+	d := r.Rules[0].Declarations[0]
+	if d.Prop != "background-color" || d.Val != "lightblue" {
+		t.Fatalf("%+v", d)
 	}
 }
