@@ -33,7 +33,7 @@ type Declaration struct {
 	Val       string
 }
 
-func Preprocess(s string) (bs []byte, ct opossum.ContentType, err error) {
+func Preprocess(s string) (bs []byte, ct opossum.ContentType, imports []string, err error) {
 	buf := bytes.NewBufferString("")
 	l := css.NewLexer(parse.NewInputString(s))
 	ct.MediaType = "text/css"
@@ -57,24 +57,35 @@ func Preprocess(s string) (bs []byte, ct opossum.ContentType, err error) {
 			if tt == css.StringToken {
 				ct.Params["charset"] = string(data)
 			}
-			continue
 		case "@import":
-			continue
-		}
-		if _, err := buf.Write(data); err != nil {
-			return nil, ct, err
+			if tt == css.StringToken || tt == css.URLToken {
+				imports = append(imports, parseUrl(string(data)))
+			}
+		default:
+			buf.Write(data)
 		}
 	}
-	return buf.Bytes(), ct, nil
+	return buf.Bytes(), ct, imports, nil
+}
+
+func parseUrl(u string) string {
+	u = strings.TrimPrefix(u, "url(")
+	u = strings.TrimSuffix(u, ")")
+	u = strings.ReplaceAll(u, `'`, ``)
+	u = strings.ReplaceAll(u, `"`, ``)
+	return u
 }
 
 func Parse(str string, inline bool) (s Sheet, err error) {
 	s.Rules = make([]Rule, 0, 1000)
 	stack := make([]Rule, 0, 2)
 	selectors := make([]Selector, 0, 1)
-	bs, ct, err := Preprocess(str)
+	bs, ct, imports, err := Preprocess(str)
 	if err != nil {
 		return s, fmt.Errorf("preprocess: %v", err)
+	}
+	for _, imp := range imports {
+		log.Infof("skipping import %v", imp)
 	}
 	p := css.NewParser(parse.NewInputString(ct.Utf8(bs)), inline)
 	if inline {

@@ -234,3 +234,31 @@ func TestParseAtRule2(t *testing.T) {
 		t.Fatalf("%+v", d)
 	}
 }
+
+func TestPreprocessAtImport(t *testing.T) {
+	// Examples from https://developer.mozilla.org/en-US/docs/Web/CSS/@import
+	imports := map[string]string{
+		`@import url("fineprint.css") print;`:                              `fineprint.css`,
+		`@import url("bluish.css") projection, tv;`:                        `bluish.css`,
+		`@import 'custom.css';`:                                            `custom.css`,
+		`@import url("example://path/folder/");`:                           `example://path/folder/`,
+		`@import "common.css" screen, projection;`:                         `common.css`,
+		`@import url('landscape.css') screen and (orientation:landscape);`: `landscape.css`,
+	}
+	main := `
+		@media only screen and (max-width: 600px) {
+		  body {
+		    background-color: lightblue;
+		  }
+		}
+	`
+	for imp, exp := range imports {
+		_, _, is, err := Preprocess(imp + main)
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		if len(is) != 1 || is[0] != exp {
+			t.Fatalf("%+v", is)
+		}
+	}
+}
