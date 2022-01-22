@@ -103,7 +103,6 @@ func Parse(str string, inline bool) (s Sheet, err error) {
 			} else {
 				return s, fmt.Errorf("next: %v", err)
 			}
-			break
 		case css.QualifiedRuleGrammar:
 			sel := Selector{}
 			for _, val := range p.Values() {

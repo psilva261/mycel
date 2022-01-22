@@ -46,6 +46,9 @@ func TestInitPos(t *testing.T) {
 }
 
 func TestMaxWidths(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 	opts := &duit.DUIOpts{
 		Dimensions: "400x300",
 	}

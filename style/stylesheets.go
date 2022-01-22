@@ -748,7 +748,6 @@ func (cs Map) baseWidth() int {
 	} else {
 		return p.Style().baseWidth()
 	}
-	return 0
 }
 
 func (cs Map) Css(propName string) string {

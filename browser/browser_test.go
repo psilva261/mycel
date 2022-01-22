@@ -151,9 +151,6 @@ func TestLinkedUrl(t *testing.T) {
 	}
 }
 
-func TestNilPanic(t *testing.T) {
-}
-
 func TestNodeToBoxNoscript(t *testing.T) {
 	enable := true
 	EnableNoScriptTag = enable

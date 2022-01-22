@@ -16,10 +16,10 @@ func init() {
 	go fs.Srv9p()
 }
 
-func TestAtom(t *testing.T) {
-}
-
 func TestProcessJS2SkipFailure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 	h := `
 	<html>
 	<body>

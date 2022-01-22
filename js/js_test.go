@@ -25,6 +25,9 @@ func init() {
 }
 
 func TestJQueryHide(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 	buf, err := ioutil.ReadFile("jquery-3.5.1.js")
 	if err != nil {
 		t.Fatalf("%v", err)

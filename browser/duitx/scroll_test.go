@@ -9,6 +9,9 @@ import (
 )
 
 func TestFreeCur(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 	ui := &Scroll{
 		r: image.Rectangle{
 			Min: image.Point{0, 0},
