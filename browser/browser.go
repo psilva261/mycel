@@ -2,6 +2,7 @@ package browser
 
 import (
 	"9fans.net/go/draw"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/psilva261/opossum"
@@ -1495,6 +1496,9 @@ func printTree(r int, ui duit.UI) {
 }
 
 type Browser struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	history.History
 	dui      *duit.DUI
 	Website  *Website
@@ -1605,6 +1609,15 @@ func (b *Browser) SetAndLoadUrl(u *url.URL) func() duit.Event {
 	}
 }
 
+func (b *Browser) Ctx() context.Context {
+	return b.ctx
+}
+
+func (b *Browser) Cancel() {
+	b.cancel()
+	b.loading = false
+}
+
 func (b *Browser) Loading() bool {
 	return b.loading
 }
@@ -1621,6 +1634,10 @@ func (b *Browser) showBodyMessage(msg string) {
 
 // LoadUrl after from location field,
 func (b *Browser) LoadUrl(url *url.URL) (e duit.Event) {
+	if b.cancel != nil {
+		b.cancel()
+	}
+	b.ctx, b.cancel = context.WithCancel(context.Background())
 	b.loading = true
 	go b.loadUrl(url)
 	e.Consumed = true
@@ -1710,7 +1727,7 @@ func (b *Browser) Get(uri *url.URL) (buf []byte, contentType opossum.ContentType
 
 func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType opossum.ContentType, err error) {
 	log.Infof("Get %v", uri.String())
-	req, err := http.NewRequest("GET", uri.String(), nil)
+	req, err := http.NewRequestWithContext(b.ctx, "GET", uri.String(), nil)
 	if err != nil {
 		return
 	}
@@ -1740,7 +1757,7 @@ func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType o
 func (b *Browser) PostForm(uri *url.URL, data url.Values) (buf []byte, contentType opossum.ContentType, err error) {
 	b.StatusCh <- "Posting..."
 	fb := strings.NewReader(escapeValues(b.Website.ContentType, data).Encode())
-	req, err := http.NewRequest("POST", uri.String(), fb)
+	req, err := http.NewRequestWithContext(b.ctx, "POST", uri.String(), fb)
 	if err != nil {
 		return
 	}

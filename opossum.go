@@ -2,6 +2,7 @@ package opossum
 
 import (
 	"bytes"
+	"context"
 	"github.com/psilva261/opossum/logger"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/htmlindex"
@@ -13,6 +14,7 @@ import (
 )
 
 type Fetcher interface {
+	Ctx() context.Context
 	Origin() *url.URL
 
 	// LinkedUrl relative to current page

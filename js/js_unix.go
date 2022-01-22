@@ -20,7 +20,7 @@ func dial() (err error) {
 	log.Infof("Init...")
 	conn, err := client.DialService(service)
 	if err != nil {
-		log.Fatalf("dial: %v", err)
+		return fmt.Errorf("dial: %v", err)
 	}
 	u, err := user.Current()
 	if err != nil {
@@ -29,7 +29,7 @@ func dial() (err error) {
 	un := u.Username
 	fsys, err = conn.Attach(nil, un, "")
 	if err != nil {
-		log.Fatalf("attach: %v", err)
+		return fmt.Errorf("attach: %v", err)
 	}
 	return
 }

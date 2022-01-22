@@ -30,6 +30,9 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 		browser.StatusCh <- ""
 	}()
 	pass := func(htm string, csss ...string) (*html.Node, map[*html.Node]style.Map) {
+		if f.Ctx().Err() != nil {
+			return nil, nil
+		}
 
 		if debugPrintHtml {
 			log.Printf("%v\n", htm)
@@ -101,6 +104,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 		fs.SetDOM(nt)
 		log.Infof("JS pipeline start")
 		js.Stop()
+		js.SetFetcher(f)
 		jsProcessed, changed, err := processJS2()
 		if changed && err == nil {
 			htm = jsProcessed

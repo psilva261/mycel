@@ -26,15 +26,13 @@ type ReadWriteCloser struct {
 
 var (
 	fetcher opossum.Fetcher
-	nt      *nodes.Node
 
 	service string
 	cancel  context.CancelFunc
 )
 
-func NewJS(html string, fetcher opossum.Fetcher, nn *nodes.Node) {
-	nt = nn
-	return
+func SetFetcher(f opossum.Fetcher) {
+	fetcher = f
 }
 
 func call(fn, cmd string, args ...string) (resp string, err error) {
@@ -64,7 +62,7 @@ func Start(scripts ...string) (resHtm string, changed bool, err error) {
 	log.Infof("Start gojafs")
 
 	var ctx context.Context
-	ctx, cancel = context.WithCancel(context.Background())
+	ctx, cancel = context.WithCancel(fetcher.Ctx())
 	cmd := exec.CommandContext(ctx, "gojafs", args...)
 	cmd.Stderr = os.Stderr
 

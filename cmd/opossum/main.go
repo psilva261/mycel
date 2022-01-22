@@ -76,15 +76,24 @@ func (n *Nav) keys(k rune, m draw.Mouse) (e duit.Event) {
 func (n *Nav) Render() []*duit.Kid {
 	uis := []duit.UI{
 		&duit.Grid{
-			Columns: 2,
-			Padding: duit.NSpace(2, duit.SpaceXY(5, 3)),
-			Halign:  []duit.Halign{duit.HalignLeft, duit.HalignRight},
-			Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle},
+			Columns: 3,
+			Halign:  []duit.Halign{duit.HalignLeft, duit.HalignLeft, duit.HalignRight},
+			Valign:  []duit.Valign{duit.ValignMiddle, duit.ValignMiddle, duit.ValignMiddle},
 			Kids: duit.NewKids(
 				&duit.Button{
 					Text:  "Back",
 					Font:  browser.Style.Font(),
 					Click: b.Back,
+				},
+				&duit.Button{
+					Text:  "Stop",
+					Font:  browser.Style.Font(),
+					Click: func() duit.Event {
+						b.Cancel()
+						return duit.Event{
+							Consumed: true,
+						}
+					},
 				},
 				&duit.Box{
 					Kids: duit.NewKids(
@@ -157,12 +166,6 @@ func (c *Confirm) Render() []*duit.Kid {
 			Text: c.text,
 		},
 	)
-}
-
-type Loading struct{}
-
-func (l *Loading) Render() []*duit.Kid {
-	return nil
 }
 
 func render() {
