@@ -1615,7 +1615,6 @@ func (b *Browser) Ctx() context.Context {
 
 func (b *Browser) Cancel() {
 	b.cancel()
-	b.loading = false
 }
 
 func (b *Browser) Loading() bool {
