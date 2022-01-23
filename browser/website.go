@@ -117,6 +117,9 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 		}
 		log.Infof("JS pipeline end")
 	}
+	if f.Ctx().Err() != nil {
+		return
+	}
 	var countHtmlNodes func(*html.Node) int
 	countHtmlNodes = func(n *html.Node) (num int) {
 		num++
