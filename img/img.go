@@ -192,32 +192,61 @@ func svg(data string, w, h int) (img *image.RGBA, err error) {
 }
 
 // Load and resize to w and h if != 0
-//
-// Stolen from duit.ReadImage
-func Load(dui *duit.DUI, f opossum.Fetcher, src string, maxW, w, h int) (ni *draw.Image, err error) {
-	drawImg, err := load(f, src, maxW, w, h)
-	if err != nil {
-		return nil, err
-	}
-	var rgba *image.RGBA
-	switch i := drawImg.(type) {
-	case *image.RGBA:
-		rgba = i
-	default:
-		b := drawImg.Bounds()
-		rgba = image.NewRGBA(image.Rectangle{image.ZP, b.Size()})
-		imagedraw.Draw(rgba, rgba.Bounds(), drawImg, b.Min, imagedraw.Src)
+func Load(dui *duit.DUI, f opossum.Fetcher, src string, maxW, w, h int, forceSync bool) (ni *draw.Image, err error) {
+	log.Printf("Load(..., %v, maxW=%v, w=%v, h=%v, ...)", src, maxW, w, h)
+	ch := make(chan image.Image, 1)
+	var bounds draw.Rectangle
+	if w != 0 && h != 0 && !forceSync {
+		bounds = draw.Rect(0, 0, w, h)
+		go func() {
+			log.Printf("load async %v...", src)
+			drawImg, err := load(f, src, maxW, w, h)
+			if err != nil {
+				log.Errorf("load %v: %v", src, err)
+				close(ch)
+				return
+			}
+			ch <- drawImg
+			log.Printf("loaded async %v", src)
+		}()
+	} else {
+		drawImg, err := load(f, src, maxW, w, h)
+		if err != nil {
+			return nil, err
+		}
+		bounds = drawImg.Bounds()
+		ch <- drawImg
 	}
 
-	// todo: package image claims data is in r,g,b,a.  who is reversing the bytes? devdraw? will this work on big endian?
-	ni, err = dui.Display.AllocImage(rgba.Bounds(), draw.ABGR32, false, draw.White)
+	ni, err = dui.Display.AllocImage(bounds, draw.ABGR32, false, draw.White)
 	if err != nil {
 		return nil, fmt.Errorf("allocimage: %s", err)
 	}
-	_, err = ni.Load(rgba.Bounds(), rgba.Pix)
-	if err != nil {
-		return nil, fmt.Errorf("load image: %s", err)
-	}
+
+	go func() {
+		drawImg, ok := <-ch
+		if !ok {
+			log.Errorf("could not load image %v", src)
+			return
+		}
+		dui.Call <- func() {
+			// Stolen from duit.ReadImage
+			var rgba *image.RGBA
+			switch i := drawImg.(type) {
+			case *image.RGBA:
+				rgba = i
+			default:
+				b := drawImg.Bounds()
+				rgba = image.NewRGBA(image.Rectangle{image.ZP, b.Size()})
+				imagedraw.Draw(rgba, rgba.Bounds(), drawImg, b.Min, imagedraw.Src)
+			}
+			_, err = ni.Load(rgba.Bounds(), rgba.Pix)
+			if err != nil {
+				log.Errorf("load image: %s", err)
+			}
+			log.Printf("copied image %v", src)
+		}
+	}()
 	return
 }
 

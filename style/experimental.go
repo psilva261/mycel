@@ -194,7 +194,7 @@ func (cs Map) backgroundImage() (i *draw.Image) {
 		h := cs.Height()
 
 		var err error
-		i, err = img.Load(dui, fetcher, imgUrl, 0, w, h)
+		i, err = img.Load(dui, fetcher, imgUrl, 0, w, h, true)
 		if err != nil {
 			log.Errorf("bg img load %v: %v", imgUrl, err)
 			return

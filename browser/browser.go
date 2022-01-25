@@ -220,7 +220,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 		mw, _ := n.CssPx("max-width")
 		w := n.Width()
 		h := n.Height()
-		i, err = img.Load(dui, browser, src, mw, w, h)
+		i, err = img.Load(dui, browser, src, mw, w, h, false)
 		if err != nil {
 			return nil, fmt.Errorf("load image: %w", err)
 		}
@@ -1514,23 +1514,25 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.MaxIdleConns = 10
+	tr.MaxConnsPerHost = 6
+	tr.MaxIdleConnsPerHost = 6
 	b = &Browser{
 		client: &http.Client{
 			Jar: jar,
+			Transport: tr,
 		},
 		dui:      _dui,
 		Website:  &Website{},
 		LocCh:    make(chan string, 10),
 		StatusCh: make(chan string, 10),
 	}
-
 	u, err := url.Parse(initUrl)
 	if err != nil {
 		log.Fatalf("parse: %v", err)
 	}
 	b.History.Push(u, 0)
-
 	browser = b
 	b.Website.UI = &duit.Label{}
 	style.SetFetcher(b)
