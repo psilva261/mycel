@@ -2,6 +2,7 @@ package img
 
 import (
 	"bytes"
+	"context"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
 	"image"
@@ -21,6 +22,8 @@ func TestParseDataUri(t *testing.T) {
 		"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50' %3e%3cpath d='M22 38V51L32 32l19-19v12C44 26 43 10 38 0 52 15 49 39 22 38z'/%3e %3c/svg%3e",
 		"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA1MCI+PHBhdGggZD0iTTIyIDM4VjUxTDMyIDMybDE5LTE5djEyQzQ0IDI2IDQzIDEwIDM4IDAgNTIgMTUgNDkgMzkgMjIgMzh6Ii8+PC9zdmc+",
 		`data:image/svg+xml;charset=utf-8,%3Csvg xmlns=http://www.w3.org/2000/svg%3E%3C/svg%3E`,
+		// additional example
+		`data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 30' width='20' height='30' %3E%3C/svg%3E`,
 	}
 
 	for _, src := range srcs {
@@ -28,7 +31,7 @@ func TestParseDataUri(t *testing.T) {
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
-		t.Logf("%v", data)
+		t.Logf("%v", string(data))
 	}
 }
 
@@ -41,14 +44,22 @@ func TestEmpty(t *testing.T) {
 }
 
 func TestSvg(t *testing.T) {
-	xml := `
+	xmls := []string{
+		`
                <svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24">
                </svg>
-       `
+       `,
+		`
+               <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 30' width='20' height='30'>
+               </svg>
+       `,
+	}
 
-	_, err := svg(xml, 0, 0)
-	if err != nil {
-		t.Fatalf(err.Error())
+	for _, xml := range xmls {
+		_, err := svg(xml, 0, 0)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
 	}
 }
 
@@ -83,6 +94,10 @@ func TestQuoteAttrsInTag(t *testing.T) {
 
 type MockBrowser struct {
 	data []byte
+}
+
+func (b *MockBrowser) Ctx() context.Context {
+	return context.Background()
 }
 
 func (b *MockBrowser) Origin() *url.URL { return nil }

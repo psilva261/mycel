@@ -11,6 +11,9 @@ import (
 	"strings"
 )
 
+// Sheet represents a stylesheet with rules.
+//
+// structs inspired by now discontinued github.com/aymerick/douceur
 type Sheet struct {
 	Rules []Rule
 }

@@ -16,10 +16,10 @@ import (
 	"net/url"
 	"strings"
 
+	_ "golang.org/x/image/webp"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-	_ "golang.org/x/image/webp"
 )
 
 const SrcZero = "//:0"
@@ -106,6 +106,7 @@ func quoteAttrsInTag(s string) string {
 }
 
 func quoteAttrs(s string) string {
+	s = strings.ReplaceAll(s, `'`, `"`)
 	if strings.Contains(s, `"`) {
 		return s
 	}
@@ -150,7 +151,7 @@ func quoteAttrs(s string) string {
 	return s
 }
 
-// Svg returns the svg+xml encoded as jpg with the sizing defined in
+// Svg returns the svg+xml with the sizing defined in
 // viewbox unless w and h != 0
 func Svg(dui *duit.DUI, data string, w, h int) (ni *draw.Image, err error) {
 	rgba, err := svg(data, w, h)
