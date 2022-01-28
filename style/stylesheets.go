@@ -51,7 +51,7 @@ address, article, aside, blockquote, details, dialog, dd, div, dl, dt, fieldset,
   display: block;
 }
 
-a[href] {
+*[href] {
   color: blue;
   margin-right: 2px;
 }
@@ -138,11 +138,17 @@ func FetchNodeMap(doc *html.Node, cssText string, windowWidth int) (m map[*html.
 }
 
 func smaller(d, dd Declaration) bool {
-	return dd.Important
+	if dd.Important {
+		return true
+	} else if d.Important {
+		return false
+	} else {
+		return d.Specificity.Less(dd.Specificity)
+	}
 }
 
-func compile(v string) (cs cascadia.Selector, err error) {
-	return cascadia.Compile(v)
+func compile(v string) (cs cascadia.SelectorGroup, err error) {
+	return cascadia.ParseGroup(v)
 }
 
 func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*html.Node][]Rule, rVars map[string]string, err error) {
@@ -153,23 +159,37 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 		return nil, nil, fmt.Errorf("parse: %w", err)
 	}
 	processRule := func(m map[*html.Node][]Rule, r Rule) (err error) {
-		for _, sel := range r.Selectors {
+		for i, sel := range r.Selectors {
 			if sel.Val == ":root" {
 				for _, d := range r.Declarations {
 					rVars[d.Prop] = d.Val
 				}
 			}
-			cs, err := compile(sel.Val)
+			csg, err := compile(sel.Val)
 			if err != nil {
 				log.Printf("cssSel compile %v: %v", sel.Val, err)
 				continue
+			}
+			var cs cascadia.Sel
+			if n := len(csg); n == 1 {
+				cs = csg[0]
+			} else {
+				log.Errorf("csg len %v", n)
 			}
 			for _, el := range cascadia.QueryAll(doc, cs) {
 				existing, ok := m[el]
 				if !ok {
 					existing = make([]Rule, 0, 3)
 				}
-				existing = append(existing, r)
+				var sr Rule
+				sr = r
+				sr.Selectors = []Selector{r.Selectors[i]}
+				for j := range sr.Declarations {
+					sr.Declarations[j].Specificity[0] = cs.Specificity()[0]
+					sr.Declarations[j].Specificity[1] = cs.Specificity()[1]
+					sr.Declarations[j].Specificity[2] = cs.Specificity()[2]
+				}
+				existing = append(existing, sr)
 				m[el] = existing
 			}
 		}
@@ -289,11 +309,14 @@ func (cs Map) ApplyChildStyle(ccs Map, copyAll bool) (res Map) {
 		res.Declarations[k] = v
 	}
 	// overwrite with higher prio child props
-	for k, v := range ccs.Declarations {
-		if v.Val == "inherit" {
+	for k, d := range ccs.Declarations {
+		if d.Val == "inherit" {
 			continue
 		}
-		res.Declarations[k] = v
+		if exist, ok := res.Declarations[k]; ok && smaller(d, exist) {
+			continue
+		}
+		res.Declarations[k] = d
 	}
 
 	return

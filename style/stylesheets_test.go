@@ -95,6 +95,11 @@ b {
 			if r.Declarations[0].Important {
 				importantFound = true
 			}
+			for _, d := range r.Declarations {
+				if d.Specificity[0] != 0 || d.Specificity[1] != 0 || d.Specificity[2] != 1 {
+					t.Fail()
+				}
+			}
 		}
 		if !importantFound {
 			t.Fail()
@@ -182,6 +187,34 @@ func TestFetchNodeMap(t *testing.T) {
 	t.Logf("m=%+v", m)
 }
 
+func TestMergeNodeMaps(t *testing.T) {
+	nodeMap := make(map[*html.Node]Map)
+	data := `<p>
+      		<a class="link" href="http://example.com">Test</a>
+    	</p>`
+	doc, err := html.Parse(strings.NewReader(data))
+	if err != nil {
+		t.Fail()
+	}
+	a := grep(doc, "a")
+	m, err := FetchNodeMap(doc, AddOnCSS, 1024)
+	if err != nil {
+		t.Fail()
+	}
+	MergeNodeMaps(nodeMap, m)
+	if nodeMap[a].Css("color") != "blue" {
+		t.Fatalf("%v", nodeMap[a])
+	}
+	m2, err := FetchNodeMap(doc, `.link { color: red; }`, 1024)
+	if err != nil {
+		t.Fail()
+	}
+	MergeNodeMaps(nodeMap, m2)
+	if nodeMap[a].Css("color") != "red" {
+		t.Fatalf("%v", nodeMap[a])
+	}
+}
+
 func TestNewMapStyle(t *testing.T) {
 	htms := []string{
 		`<h2 style="color: green;">a header</h2>`,
@@ -262,6 +295,52 @@ func TestApplyChildStyleInherit2(t *testing.T) {
 	child.Declarations["font-size"] = Declaration{
 		Prop: "font-size",
 		Val:  "inherit",
+	}
+
+	res := parent.ApplyChildStyle(child, true)
+	if v := res.Declarations["font-size"].Val; v != "12pt" {
+		t.Fatalf(v)
+	}
+}
+
+func TestApplyChildStyleInherit3(t *testing.T) {
+	parent := Map{
+		Declarations: make(map[string]Declaration),
+	}
+	child := Map{
+		Declarations: make(map[string]Declaration),
+	}
+	parent.Declarations["font-size"] = Declaration{
+		Prop: "font-size",
+		Val:  "12pt",
+	}
+	child.Declarations["font-size"] = Declaration{
+		Prop: "font-size",
+		Val:  "13pt",
+	}
+
+	res := parent.ApplyChildStyle(child, true)
+	if v := res.Declarations["font-size"].Val; v != "13pt" {
+		t.Fatalf(v)
+	}
+}
+
+func TestApplyChildStyleInherit4(t *testing.T) {
+	parent := Map{
+		Declarations: make(map[string]Declaration),
+	}
+	child := Map{
+		Declarations: make(map[string]Declaration),
+	}
+	parent.Declarations["font-size"] = Declaration{
+		Prop:        "font-size",
+		Val:         "12pt",
+		Specificity: [3]int{0, 2, 0},
+	}
+	child.Declarations["font-size"] = Declaration{
+		Prop:        "font-size",
+		Val:         "13pt",
+		Specificity: [3]int{0, 1, 0},
 	}
 
 	res := parent.ApplyChildStyle(child, true)

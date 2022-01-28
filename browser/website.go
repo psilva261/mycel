@@ -164,6 +164,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 }
 
 func cssSrcs(f opossum.Fetcher, doc *html.Node) (csss []string) {
+	// TODO: keep order of inline and referenced files
 	cssHrefs := style.Hrefs(doc)
 	inlines := make([]string, 0, 3)
 	ntAll := nodes.NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)

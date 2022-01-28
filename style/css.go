@@ -3,6 +3,7 @@ package style
 import (
 	"bytes"
 	"fmt"
+	"github.com/andybalholm/cascadia"
 	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/logger"
 	"github.com/tdewolff/parse/v2"
@@ -31,9 +32,10 @@ type Selector struct {
 }
 
 type Declaration struct {
-	Important bool
-	Prop      string
-	Val       string
+	Important   bool
+	Specificity cascadia.Specificity
+	Prop        string
+	Val         string
 }
 
 func Preprocess(s string) (bs []byte, ct opossum.ContentType, imports []string, err error) {
