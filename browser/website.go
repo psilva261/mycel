@@ -163,40 +163,39 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 	log.Flush()
 }
 
-func cssSrcs(f opossum.Fetcher, doc *html.Node) (csss []string) {
-	// TODO: keep order of inline and referenced files
-	cssHrefs := style.Hrefs(doc)
-	inlines := make([]string, 0, 3)
+func cssSrcs(f opossum.Fetcher, doc *html.Node) (srcs []string) {
+	srcs = make([]string, 0, 20)
+	srcs = append(srcs, style.AddOnCSS)
 	ntAll := nodes.NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
-	inls := ntAll.FindAll("style")
-
-	for _, inl := range inls {
-		if t := strings.ToLower(inl.Attr("type")); t == "" || t == "text/css" {
-			inlines = append(inlines, inl.ContentString(true))
+	ntAll.Traverse(func(r int, n *nodes.Node) {
+		switch n.Data() {
+		case "style":
+			if t := strings.ToLower(n.Attr("type")); t == "" || t == "text/css" {
+				srcs = append(srcs, n.ContentString(true))
+			}
+		case "link":
+			isStylesheet := n.Attr("rel") == "stylesheet"
+			isPrint := n.Attr("media") == "print"
+			href := n.Attr("href")
+			if isStylesheet && !isPrint {
+				url, err := f.LinkedUrl(href)
+				if err != nil {
+					log.Errorf("error parsing %v", href)
+					return
+				}
+				buf, contentType, err := f.Get(url)
+				if err != nil {
+					log.Errorf("error downloading %v", url)
+					return
+				}
+				if contentType.IsCSS() {
+					srcs = append(srcs, string(buf))
+				} else {
+					log.Printf("css: unexpected %v", contentType)
+				}
+			}
 		}
-	}
-	csss = make([]string, 0, len(inlines)+len(cssHrefs))
-	csss = append(csss, style.AddOnCSS)
-	csss = append(csss, inlines...)
-	for _, href := range cssHrefs {
-		url, err := f.LinkedUrl(href)
-		if err != nil {
-			log.Printf("error parsing %v", href)
-			continue
-		}
-		log.Printf("Download %v", url)
-		buf, contentType, err := f.Get(url)
-		if err != nil {
-			log.Printf("error downloading %v", url)
-			continue
-		}
-		if contentType.IsCSS() {
-			csss = append(csss, string(buf))
-		} else {
-			log.Printf("css: unexpected %v", contentType)
-		}
-	}
-
+	})
 	return
 }
 

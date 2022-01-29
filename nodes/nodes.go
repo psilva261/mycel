@@ -381,34 +381,40 @@ func (n *Node) SetText(t string) {
 	return
 }
 
-func (n *Node) PrintTree() {
-	n.printTree(0)
+func (n *Node) Traverse(f func(r int, c *Node)) {
+	n.traverse(0, f)
 }
 
-func (n *Node) printTree(r int) {
-	for i := 0; i < r; i++ {
-		fmt.Printf("  ")
-	}
-	if n.Type() == html.ElementNode {
-		sty := ""
-		if len(n.Map.Declarations) > 0 {
-			l := make([]string, 0, 2)
-			for k, d := range n.Map.Declarations {
-				s := fmt.Sprintf("%v=%v", k, d.Val)
-				if d.Important {
-					s += "!"
-				}
-				l = append(l, s)
-			}
-			sty += ` style="` + strings.Join(l, " ") + `"`
-		}
-		fmt.Printf("<%v%v>\n", n.Data(), sty)
-	} else if n.Type() == html.TextNode {
-		fmt.Printf("\"%v\"\n", strings.TrimSpace(n.Data()))
-	} else {
-		fmt.Printf("%v\n", n.Data())
-	}
+func (n *Node) traverse(rr int, f func(r int, c *Node)) {
+	f(rr, n)
 	for _, c := range n.Children {
-		c.printTree(r + 1)
+		c.traverse(rr+1, f)
 	}
+}
+
+func (n *Node) PrintTree() {
+	n.Traverse(func(r int, n *Node) {
+		for i := 0; i < r; i++ {
+			fmt.Printf("  ")
+		}
+		if n.Type() == html.ElementNode {
+			sty := ""
+			if len(n.Map.Declarations) > 0 {
+				l := make([]string, 0, 2)
+				for k, d := range n.Map.Declarations {
+					s := fmt.Sprintf("%v=%v", k, d.Val)
+					if d.Important {
+						s += "!"
+					}
+					l = append(l, s)
+				}
+				sty += ` style="` + strings.Join(l, " ") + `"`
+			}
+			fmt.Printf("<%v%v>\n", n.Data(), sty)
+		} else if n.Type() == html.TextNode {
+			fmt.Printf("\"%v\"\n", strings.TrimSpace(n.Data()))
+		} else {
+			fmt.Printf("%v\n", n.Data())
+		}
+	})
 }

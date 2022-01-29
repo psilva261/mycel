@@ -72,7 +72,7 @@ func TestArrange(t *testing.T) {
 		}
 		m.Declarations["display"] = style.Declaration{
 			Prop: "display",
-			Val:    d,
+			Val:  d,
 		}
 		h1.Map = m
 		h2.Map = m

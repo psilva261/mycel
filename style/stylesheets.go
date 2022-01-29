@@ -63,43 +63,6 @@ func Init(d *duit.DUI) {
 	initFontserver()
 }
 
-func Hrefs(doc *html.Node) (hrefs []string) {
-	hrefs = make([]string, 0, 3)
-
-	var f func(n *html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "link" {
-			isStylesheet := false
-			isPrint := false
-			href := ""
-
-			for _, a := range n.Attr {
-				switch strings.ToLower(a.Key) {
-				case "rel":
-					if a.Val == "stylesheet" {
-						isStylesheet = true
-					}
-				case "href":
-					href = a.Val
-				case "media":
-					isPrint = a.Val == "print"
-				}
-			}
-
-			if isStylesheet && !isPrint {
-				hrefs = append(hrefs, href)
-			}
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
-	}
-
-	f(doc)
-
-	return
-}
-
 func MergeNodeMaps(m, addOn map[*html.Node]Map) {
 	for n, mp := range addOn {
 		// "zero" valued Map if it doesn't exist yet

@@ -1520,7 +1520,7 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	tr.MaxIdleConnsPerHost = 6
 	b = &Browser{
 		client: &http.Client{
-			Jar: jar,
+			Jar:       jar,
 			Transport: tr,
 		},
 		dui:      _dui,
