@@ -210,7 +210,7 @@ func digestHtm(htm string) (nt *nodes.Node, boxed *Element, err error) {
 		return nil, nil, fmt.Errorf("parse url: %w", err)
 	}
 	b.History.Push(u, 0)
-	nm, err := style.FetchNodeMap(doc, style.AddOnCSS, 1280)
+	nm, err := style.FetchNodeMap(doc, style.AddOnCSS)
 	if err != nil {
 		return nil, nil, fmt.Errorf("FetchNodeMap: %w", err)
 	}

@@ -1,6 +1,7 @@
 package style
 
 import (
+	"fmt"
 	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum/logger"
 	"golang.org/x/net/html"
@@ -65,8 +66,9 @@ b {
 }
 	`
 	for _, w := range []int{400, 800} {
+		MediaValues["width"] = fmt.Sprintf("%vpx", w)
 		t.Logf("w=%v", w)
-		m, _, err := FetchNodeRules(doc, css, w)
+		m, _, err := FetchNodeRules(doc, css)
 		if err != nil {
 			t.Fail()
 		}
@@ -128,7 +130,7 @@ func TestFetchNodeRules2(t *testing.T) {
 	if err != nil {
 		t.Fail()
 	}
-	m, _, err := FetchNodeRules(doc, AddOnCSS, 1024)
+	m, _, err := FetchNodeRules(doc, AddOnCSS)
 	if err != nil {
 		t.Fail()
 	}
@@ -180,7 +182,7 @@ func TestFetchNodeMap(t *testing.T) {
 	if err != nil {
 		t.Fail()
 	}
-	m, err := FetchNodeMap(doc, AddOnCSS, 1024)
+	m, err := FetchNodeMap(doc, AddOnCSS)
 	if err != nil {
 		t.Fail()
 	}
@@ -197,7 +199,7 @@ func TestMergeNodeMaps(t *testing.T) {
 		t.Fail()
 	}
 	a := grep(doc, "a")
-	m, err := FetchNodeMap(doc, AddOnCSS, 1024)
+	m, err := FetchNodeMap(doc, AddOnCSS)
 	if err != nil {
 		t.Fail()
 	}
@@ -205,7 +207,7 @@ func TestMergeNodeMaps(t *testing.T) {
 	if nodeMap[a].Css("color") != "blue" {
 		t.Fatalf("%v", nodeMap[a])
 	}
-	m2, err := FetchNodeMap(doc, `.link { color: red; }`, 1024)
+	m2, err := FetchNodeMap(doc, `.link { color: red; }`)
 	if err != nil {
 		t.Fail()
 	}
@@ -454,7 +456,7 @@ b {
 }
 	`
 
-	_, rv, err := FetchNodeRules(doc, css, 1280)
+	_, rv, err := FetchNodeRules(doc, css)
 	if err != nil {
 		t.Fail()
 	}
@@ -475,7 +477,7 @@ b {
 	}
 	f(doc)
 
-	nm, err := FetchNodeMap(doc, css, 1280)
+	nm, err := FetchNodeMap(doc, css)
 	if err != nil {
 		t.Fail()
 	}

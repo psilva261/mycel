@@ -23,13 +23,17 @@ var fontCache = make(map[string]*draw.Font)
 var dui *duit.DUI
 var availableFontNames []string
 
-var rMinWidth = regexp.MustCompile(`min-width:\s*(\d+)(px|em|rem)`)
-var rMaxWidth = regexp.MustCompile(`max-width:\s*(\d+)(px|em|rem)`)
-
 const FontBaseSize = 11.0
 
 var WindowWidth = 1280
 var WindowHeight = 1080
+
+var MediaValues = map[string]string{
+	"type": "screen",
+	"width": fmt.Sprintf("%vpx", WindowWidth),
+	"orientation": "landscape",
+	"prefers-color-scheme": "dark",
+}
 
 const AddOnCSS = `
 /* https://developer.mozilla.org/en-US/docs/Web/HTML/Inline_elements */
@@ -72,8 +76,8 @@ func MergeNodeMaps(m, addOn map[*html.Node]Map) {
 	}
 }
 
-func FetchNodeMap(doc *html.Node, cssText string, windowWidth int) (m map[*html.Node]Map, err error) {
-	mr, rv, err := FetchNodeRules(doc, cssText, windowWidth)
+func FetchNodeMap(doc *html.Node, cssText string) (m map[*html.Node]Map, err error) {
+	mr, rv, err := FetchNodeRules(doc, cssText)
 	if err != nil {
 		return nil, fmt.Errorf("fetch rules: %w", err)
 	}
@@ -114,7 +118,7 @@ func compile(v string) (cs cascadia.SelectorGroup, err error) {
 	return cascadia.ParseGroup(v)
 }
 
-func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*html.Node][]Rule, rVars map[string]string, err error) {
+func FetchNodeRules(doc *html.Node, cssText string) (m map[*html.Node][]Rule, rVars map[string]string, err error) {
 	m = make(map[*html.Node][]Rule)
 	rVars = make(map[string]string)
 	s, err := Parse(cssText, false)
@@ -164,28 +168,13 @@ func FetchNodeRules(doc *html.Node, cssText string, windowWidth int) (m map[*htm
 		}
 
 		// for media queries
-		if strings.Contains(r.Prelude, "print") && !strings.Contains(r.Prelude, "screen") {
-			continue
-		}
-		if rMaxWidth.MatchString(r.Prelude) {
-			m := rMaxWidth.FindStringSubmatch(r.Prelude)
-			l := m[1] + m[2]
-			maxWidth, _, err := length(nil, l)
+		if strings.HasPrefix(r.Prelude, "@media") {
+			p := strings.TrimPrefix(r.Prelude, "@media")
+			p = strings.TrimSpace(p)
+			yes, err := MatchQuery(p, MediaValues)
 			if err != nil {
-				return nil, nil, fmt.Errorf("atoi: %w", err)
-			}
-			if float64(windowWidth) > maxWidth {
-				continue
-			}
-		}
-		if rMinWidth.MatchString(r.Prelude) {
-			m := rMinWidth.FindStringSubmatch(r.Prelude)
-			l := m[1] + m[2]
-			minWidth, _, err := length(nil, l)
-			if err != nil {
-				return nil, nil, fmt.Errorf("atoi: %w", err)
-			}
-			if float64(windowWidth) < minWidth {
+				log.Errorf("match query %v: %v", r.Prelude, err)
+			} else if !yes {
 				continue
 			}
 		}

@@ -55,7 +55,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 
 			log.Printf("CSS size %v kB", cssSize/1024)
 
-			nm, err := style.FetchNodeMap(doc, css, 1280)
+			nm, err := style.FetchNodeMap(doc, css)
 			if err == nil {
 				if debugPrintHtml {
 					log.Printf("%v", nm)
@@ -175,9 +175,17 @@ func cssSrcs(f opossum.Fetcher, doc *html.Node) (srcs []string) {
 			}
 		case "link":
 			isStylesheet := n.Attr("rel") == "stylesheet"
-			isPrint := n.Attr("media") == "print"
+			if m := n.Attr("media"); m != "" {
+				matches, errMatch := style.MatchQuery(m, style.MediaValues)
+				if errMatch != nil {
+					log.Errorf("match query %v: %v", m, errMatch)
+				}
+				if !matches {
+					return
+				}
+			}
 			href := n.Attr("href")
-			if isStylesheet && !isPrint {
+			if isStylesheet {
 				url, err := f.LinkedUrl(href)
 				if err != nil {
 					log.Errorf("error parsing %v", href)

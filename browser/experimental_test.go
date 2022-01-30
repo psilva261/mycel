@@ -46,7 +46,6 @@ func TestProcessJS2SkipFailure(t *testing.T) {
 	}
 	fs.SetDOM(nt)
 	fs.Update(h, nil, scripts)
-	js.NewJS(h, nil, nt)
 	js.Start()
 	h, _, err = processJS2()
 	if err != nil {
