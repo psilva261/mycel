@@ -3,6 +3,7 @@ name32='opossum-386'
 version=`{date -i} ^ '-' ^ `{cat .git/fs/branch/heads/master/hash | read -c 6}
 tarball64=`{pwd} ^ '/packages/' ^ $name64 ^ '-' ^ $version ^ '.tgz'
 tarball32=`{pwd} ^ '/packages/' ^ $name32 ^ '-' ^ $version ^ '.tgz'
+a='-buildvcs=false'
 
 fn build {
 	tarball=$1
@@ -16,10 +17,10 @@ fn build {
 
 	echo Compiling $GOARCH...
 	cd cmd/opossum
-	go build -ldflags '-s -w' -o $name
+	go build $a -ldflags '-s -w' -o $name
 	cd ../..
 	cd ../gojafs/cmd/gojafs
-	go build -ldflags '-s -w' -o gojafs
+	go build $a -ldflags '-s -w' -o gojafs
 	cd ../../../opossum
 	mv cmd/opossum/$name ../gojafs/cmd/gojafs/gojafs ./$name/
 	cp README.md ./$name/
@@ -30,8 +31,8 @@ fn build {
 }
 
 echo Testing...
-go vet ./...
-go test -cover ./...
+go vet $a ./...
+go test $a -cover ./...
 
 build $tarball64 $name64 amd64
 build $tarball32 $name32 386

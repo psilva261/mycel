@@ -1,6 +1,6 @@
 module github.com/psilva261/opossum
 
-go 1.17
+go 1.18
 
 replace 9fans.net/go v0.0.0-00010101000000-000000000000 => github.com/psilva261/go v0.0.0-20210805155101-6b9925e0d807
 
