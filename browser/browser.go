@@ -809,7 +809,9 @@ func (el *Element) FirstFocus(dui *duit.DUI, self *duit.Kid) *image.Point {
 func (el *Element) click() (consumed bool) {
 	if ExperimentalJsInsecure {
 		q := el.n.QueryRef()
-		res, consumed, err := js.TriggerClick(q)
+		var res string
+		var err error
+		res, consumed, err = js.TriggerClick(q)
 		if err != nil {
 			log.Errorf("trigger click %v: %v", q, err)
 		} else if consumed {

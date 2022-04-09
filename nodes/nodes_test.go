@@ -35,7 +35,7 @@ func TestQueryRef(t *testing.T) {
 	nt := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
 	p := nt.Children[0].Children[1].Children[0]
 	a := p.Children[2]
-	if q := a.QueryRef(); q != "p:nth-child(1) > a:nth-child(3)" {
+	if q := a.QueryRef(); q != "p:nth-child(1) > a:nth-child(1)" {
 		t.Fatalf("%v", q)
 	}
 }
