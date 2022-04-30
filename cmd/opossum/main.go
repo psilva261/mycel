@@ -290,7 +290,7 @@ func main() {
 	if cpuprofile != "" {
 		f, err := os.Create(cpuprofile)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("%v", err)
 		}
 		pprof.StartCPUProfile(f)
 		go func() {
@@ -304,7 +304,7 @@ func main() {
 	if memprofile != "" {
 		f, err := os.Create(memprofile)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("%v", err)
 		}
 		go func() {
 			<-time.After(time.Minute)

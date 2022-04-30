@@ -292,7 +292,6 @@ func (ui *Scroll) drawChild(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig
 		ui.Kid.Draw = duit.Clean
 	} else if ui.Kid.Draw != duit.Clean || force {
 		log.Printf("drawChild: refresh: ui.Kid.Draw=%v  force=%v", ui.Kid.Draw, force)
-		log.Flush()
 		ui.freeCur()
 		tmp := img.Clipr
 		img.ReplClipr(false, ui.childR.Add(orig))

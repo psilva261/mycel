@@ -159,8 +159,6 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 
 	fs.Update(htm, csss, scripts)
 	fs.SetDOM(nt)
-
-	log.Flush()
 }
 
 func cssSrcs(f opossum.Fetcher, doc *html.Node) (srcs []string) {

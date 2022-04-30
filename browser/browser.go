@@ -1514,7 +1514,7 @@ type Browser struct {
 func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%v", err)
 	}
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.MaxIdleConns = 10
