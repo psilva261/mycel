@@ -7,6 +7,6 @@ import (
 
 func hangup() {}
 
-func callGojaCtl() (rwc io.ReadWriteCloser, err error) {
-	return os.OpenFile("/mnt/goja/ctl", os.O_RDWR, 0600)
+func callSparkleCtl() (rwc io.ReadWriteCloser, err error) {
+	return os.OpenFile("/mnt/sparkle/ctl", os.O_RDWR, 0600)
 }

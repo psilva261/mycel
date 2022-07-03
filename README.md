@@ -25,7 +25,7 @@ Supported features:
     hget https://curl.haxx.se/ca/cacert.pem > /sys/lib/tls/ca.pem
     # Create mountpoints (needed on 9legacy)
     mkdir /mnt/opossum
-    mkdir /mnt/goja
+    mkdir /mnt/sparkle
 
 ### Binary
 
@@ -69,24 +69,22 @@ is really needed. A rudimentary AJAX implementation is there though.
 
 Use on your own Risk!
 
-Mostly based on goja (ECMAScript 5.1) and https://github.com/fgnass/domino
-(fork of DOM implementation from Mozilla in JS). Some sort of DOM diffing
-is needed, also AJAX functions, `getComputedStyle` etc. are either missing or stubs.
-Very simple jQuery based code works though, e.g. jQuery UI Tab view
-https://jqueryui.com/resources/demos/tabs/default.html or the toggle buttons on
-https://golang.org/dl There is also highly experimental ES6 support with Babel.
-(Needs also https://github.com/psilva261/6to5)
+JS implementation forked from goja (and thus otto). Since the implementation
+is very limited anyway, DOM changes are only computed initially and during
+click events. A handful of jQuery UI widgets work though, e.g. jQuery UI Tab
+view https://jqueryui.com/resources/demos/tabs/default.html. There is also
+highly experimental ES6 support with Babel. (https://github.com/psilva261/6to5)
 
 Install the js engine:
 
 ```
 cd ..
-git/clone https://github.com/psilva261/gojafs
-cd gojafs
-go install ./cmd/gojafs
+git/clone https://github.com/psilva261/sparklefs
+cd sparklefs
+go install ./cmd/sparklefs
 ```
 
-On 9legacy also the folders `/mnt/opossum` and `/mnt/goja` need to exist.
+On 9legacy also the folders `/mnt/opossum` and `/mnt/sparkle` need to exist.
 
 Then it can be tested with:
 

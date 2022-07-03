@@ -44,7 +44,7 @@ func hangup() {
 	}
 }
 
-func callGojaCtl() (rwc io.ReadWriteCloser, err error) {
+func callSparkleCtl() (rwc io.ReadWriteCloser, err error) {
 	if fsys == nil {
 		if err := dial(); err != nil {
 			return nil, fmt.Errorf("dial: %v", err)

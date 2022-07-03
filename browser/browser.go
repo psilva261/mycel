@@ -33,6 +33,8 @@ import (
 
 const (
 	EnterKey = 10
+
+	UserAgent = "opossum"
 )
 
 var debugPrintHtml = false
@@ -1734,7 +1736,7 @@ func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType o
 	if err != nil {
 		return
 	}
-	req.Header.Add("User-Agent", "opossum")
+	req.Header.Add("User-Agent", UserAgent)
 	resp, err := b.client.Do(req)
 	if err != nil {
 		return nil, opossum.ContentType{}, fmt.Errorf("error loading %v: %w", uri, err)
@@ -1764,7 +1766,7 @@ func (b *Browser) PostForm(uri *url.URL, data url.Values) (buf []byte, contentTy
 	if err != nil {
 		return
 	}
-	req.Header.Add("User-Agent", "opossum")
+	req.Header.Add("User-Agent", UserAgent)
 	req.Header.Set("Content-Type", fmt.Sprintf("application/x-www-form-urlencoded; charset=%v", b.Website.Charset()))
 	resp, err := b.client.Do(req)
 	if err != nil {

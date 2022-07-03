@@ -241,6 +241,7 @@ func Main() (err error) {
 		case err, ok := <-dui.Error:
 			//log.Infof("err=%v", err)
 			if !ok {
+				finalize()
 				return nil
 			}
 			log.Printf("main: duit: %s\n", err)
@@ -323,11 +324,15 @@ func main() {
 
 	go func() {
 		<-done
-		js.Stop()
-		os.Exit(1)
+		finalize()
 	}()
 
 	if err := Main(); err != nil {
 		log.Fatalf("Main: %v", err)
 	}
+}
+
+func finalize() {
+	js.Stop()
+	os.Exit(1)
 }

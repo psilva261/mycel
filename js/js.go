@@ -18,16 +18,11 @@ import (
 
 var timeout = 60 * time.Second
 
-type ReadWriteCloser struct {
-	io.Reader
-	io.Writer
-	io.Closer
-}
-
 var (
 	fetcher opossum.Fetcher
 
 	service string
+	cmd *exec.Cmd
 	cancel  context.CancelFunc
 )
 
@@ -36,9 +31,16 @@ func SetFetcher(f opossum.Fetcher) {
 }
 
 func call(fn, cmd string, args ...string) (resp string, err error) {
-	rwc, err := callGojaCtl()
+	var rwc io.ReadWriteCloser
+	for t := 100*time.Millisecond; t < 5*time.Second; t *= 2 {
+		rwc, err = callSparkleCtl()
+		if err == nil {
+			break
+		}
+		<-time.After(t)
+	}
 	if err != nil {
-		return "", fmt.Errorf("call goja ctl: %v", err)
+		return "", fmt.Errorf("call sparkle ctl: %v", err)
 	}
 	defer rwc.Close()
 	rwc.Write([]byte(cmd + "\n"))
@@ -56,24 +58,20 @@ func call(fn, cmd string, args ...string) (resp string, err error) {
 
 // Start with pre-defined scripts
 func Start(scripts ...string) (resHtm string, changed bool, err error) {
-	service = fmt.Sprintf("goja.%d", os.Getpid())
+	service = fmt.Sprintf("sparkle.%d", os.Getpid())
 	args := make([]string, 0, len(scripts)+2)
 	args = append(args, "-s", service)
-	log.Infof("Start gojafs")
+	log.Infof("Start sparklefs")
 
 	var ctx context.Context
 	ctx, cancel = context.WithCancel(fetcher.Ctx())
-	cmd := exec.CommandContext(ctx, "gojafs", args...)
+	cmd = exec.CommandContext(ctx, "sparklefs", args...)
 	cmd.Stderr = os.Stderr
 
 	log.Infof("cmd.Start...")
 	if err = cmd.Start(); err != nil {
 		return "", false, fmt.Errorf("cmd start: %w", err)
 	}
-	// Prevent Zombie processes after stopping
-	go cmd.Wait()
-
-	<-time.After(5 * time.Second)
 
 	resp, err := call("ctl", "start")
 	if err != nil {
@@ -89,10 +87,17 @@ func Start(scripts ...string) (resHtm string, changed bool, err error) {
 }
 
 func Stop() {
-	log.Infof("Stop gojafs")
+	log.Infof("Stop sparklefs")
 	hangup()
 	if cancel != nil {
+		log.Infof("cancel()")
 		cancel()
+		cancel = nil
+		if cmd != nil {
+			// Prevent Zombie processes after stopping
+			cmd.Wait()
+			cmd = nil
+		}
 	}
 }
 
@@ -190,12 +195,3 @@ func iterateJsElements(doc *nodes.Node, fn func(src string, inlineCode string)) 
 
 	return
 }
-
-// AJAX:
-// https://stackoverflow.com/questions/7086858/loading-ajax-app-with-jsdom
-
-// Babel on Goja:
-// https://github.com/dop251/goja/issues/5#issuecomment-259996573
-
-// Goja supports ES5.1 which is essentially JS assembly:
-// https://github.com/dop251/goja/issues/76#issuecomment-399253779

@@ -77,7 +77,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 	csss := cssSrcs(f, doc)
 	doc, nodeMap := pass(htm, csss...)
 
-	// 3rd pass is only needed initially to load the scripts and set the goja VM
+	// 3rd pass is only needed initially to load the scripts and set the js VM
 	// state. During subsequent calls from click handlers that state is kept.
 	var scripts []string
 	if ExperimentalJsInsecure && layouting != ClickRelayout {
