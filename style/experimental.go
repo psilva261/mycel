@@ -101,7 +101,7 @@ func (cs Map) backgroundGradient() (c draw.Color, ok bool) {
 	if strings.HasPrefix(v, "linear-gradient(") {
 		v = strings.TrimPrefix(v, "linear-gradient(")
 	} else {
-		return
+		return c, false
 	}
 	v = strings.TrimSuffix(v, ")")
 

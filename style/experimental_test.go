@@ -72,4 +72,15 @@ func TestBackgroundGradient(t *testing.T) {
 			t.Fail()
 		}
 	}
+	m := Map{
+		Declarations: make(map[string]Declaration),
+	}
+	m.Declarations["background"] = Declaration{
+		Prop: "background",
+		Val:  "#123456",
+	}
+	_, ok := m.backgroundGradient()
+	if ok {
+		t.Fail()
+	}
 }
