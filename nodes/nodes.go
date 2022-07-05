@@ -288,7 +288,7 @@ func (n *Node) queryRef() (ref string, ok bool) {
 		if c == n {
 			break
 		}
-		if c.Type() == html.ElementNode && c.Data() == n.Data() {
+		if c.Type() == html.ElementNode {
 			i++
 		}
 	}

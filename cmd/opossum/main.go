@@ -193,6 +193,7 @@ func Main() (err error) {
 		return fmt.Errorf("new dui: %w", err)
 	}
 	dui.Debug = dbg
+	resize()
 
 	style.Init(dui)
 	v = NewNav()
@@ -219,6 +220,9 @@ func Main() (err error) {
 		case e := <-dui.Inputs:
 			//log.Infof("e=%v", e)
 			dui.Input(e)
+			if e.Type == duit.InputResize {
+				resize()
+			}
 
 		case loc = <-b.LocCh:
 			log.Infof("loc=%v", loc)
@@ -335,4 +339,10 @@ func main() {
 func finalize() {
 	js.Stop()
 	os.Exit(1)
+}
+
+func resize() {
+	size := dui.Display.ScreenImage.R.Size()
+	style.WindowWidth = size.X/dui.Scale(1)
+	style.WindowHeight = size.Y/dui.Scale(1)
 }

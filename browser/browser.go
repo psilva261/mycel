@@ -202,7 +202,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 			return nil, fmt.Errorf("serialize: %w", err)
 		}
 		log.Printf("newImage: xml: %v", xml)
-		i, err = img.Svg(dui, xml, n.Width(), n.Height())
+		i, err = img.Svg(dui, xml, dui.Scale(n.Width()), dui.Scale(n.Height()))
 		if err != nil {
 			return nil, fmt.Errorf("img svg %v: %v", xml, err)
 		}
@@ -220,8 +220,9 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 
 	if i, cached = imageCache[src]; !cached {
 		mw, _ := n.CssPx("max-width")
-		w := n.Width()
-		h := n.Height()
+		mw = dui.Scale(mw)
+		w := dui.Scale(n.Width())
+		h := dui.Scale(n.Height())
 		i, err = img.Load(dui, browser, src, mw, w, h, false)
 		if err != nil {
 			return nil, fmt.Errorf("load image: %w", err)
@@ -434,7 +435,10 @@ func (el *Element) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig ima
 	// Make boxes use full size for image backgrounds
 	box, ok := el.UI.(*duitx.Box)
 	if ok && box.Width > 0 && box.Height > 0 {
-		uiSize := image.Point{X: box.Width, Y: box.Height}
+		uiSize := image.Point{
+			X: dui.Scale(box.Width),
+			Y: dui.Scale(box.Height),
+		}
 		duit.KidsDraw(dui, self, box.Kids, uiSize, box.Background, img, orig, m, force)
 	} else {
 		el.UI.Draw(dui, self, img, orig, m, force)
@@ -465,7 +469,7 @@ func (el *Element) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, 
 		//duit.KidsLayout(dui, self, box.Kids, true)
 
 		el.UI.Layout(dui, self, sizeAvail, force)
-		self.R = image.Rect(0, 0, box.Width, box.Height)
+		self.R = image.Rect(0, 0, dui.Scale(box.Width), dui.Scale(box.Height))
 	} else {
 		el.UI.Layout(dui, self, sizeAvail, force)
 	}
@@ -672,7 +676,7 @@ func (el *Element) Mouse(dui *duit.DUI, self *duit.Kid, m draw.Mouse, origM draw
 	y := m.Point.Y
 	maxX := self.R.Dx()
 	maxY := self.R.Dy()
-	border := 5 > x || x > (maxX-5) || 5 > y || y > (maxY-5)
+	border := 1 > x || x > (maxX-1) || 1 > y || y > (maxY-1)
 
 	if l, ok := el.UI.(*Label); ok && l != nil {
 		fromLabel = l.Label
@@ -903,17 +907,21 @@ func placeFunc(name string, place *duit.Place) func(self *duit.Kid, sizeAvail im
 			} else {
 				kid.UI.Layout(dui, kid, sizeAvail, true)
 				if t, err := el.n.CssPx("top"); err == nil {
+					t = dui.Scale(t)
 					kid.R.Min.Y += t
 					kid.R.Max.Y += t
 				} else if b, err := el.n.CssPx("bottom"); err == nil {
+					b = dui.Scale(b)
 					h := kid.R.Max.X
 					kid.R.Min.Y = sizeAvail.Y - b
 					kid.R.Max.Y = sizeAvail.Y - h
 				}
 				if l, err := el.n.CssPx("left"); err == nil {
+					l = dui.Scale(l)
 					kid.R.Max.X += l
 					kid.R.Min.X += l
 				} else if r, err := el.n.CssPx("right"); err == nil {
+					r = dui.Scale(r)
 					w := kid.R.Max.X
 					kid.R.Max.X = sizeAvail.X - r
 					kid.R.Min.X = sizeAvail.X - w

@@ -35,7 +35,38 @@ func TestQueryRef(t *testing.T) {
 	nt := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
 	p := nt.Children[0].Children[1].Children[0]
 	a := p.Children[2]
-	if q := a.QueryRef(); q != "p:nth-child(1) > a:nth-child(1)" {
+	if q := a.QueryRef(); q != "p:nth-child(1) > a:nth-child(3)" {
+		t.Fatalf("%v", q)
+	}
+}
+
+func TestQueryRef2(t *testing.T) {
+	buf := strings.NewReader(`
+	<html>
+    <body>
+        <header>
+            <div class="header-left">
+            </div>
+            <div class="header-right">
+            </div>
+            <div class="hamburger-menu active">
+                <ul>
+                </ul>
+                <a href="#" class="close">Close</a>
+            </div>
+        </header>
+    </body>
+	</html>`)
+	doc, err := html.Parse(buf)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	nt := NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
+	t.Logf("%v", nt.Children[0].Children[1].Children[0].Data())
+	div3 := nt.Children[0].Children[1].Children[0].Children[2]
+	t.Logf("%v", div3.Data())
+	a := div3.Children[1]
+	if q := a.QueryRef(); q != "header:nth-child(1) > div:nth-child(3) > a:nth-child(2)" {
 		t.Fatalf("%v", q)
 	}
 }
