@@ -1,14 +1,19 @@
 package js
 
 import (
+	"context"
+	"fmt"
+	"github.com/psilva261/opossum"
 	"github.com/psilva261/opossum/browser/fs"
 	"github.com/psilva261/opossum/logger"
 	"github.com/psilva261/opossum/nodes"
 	"github.com/psilva261/opossum/style"
 	"golang.org/x/net/html"
 	"io/ioutil"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 const simpleHTML = `
@@ -21,7 +26,28 @@ const simpleHTML = `
 
 func init() {
 	log.Debug = true
+	SetFetcher(&TestFetcher{})
 	go fs.Srv9p()
+	<-time.After(2*time.Second)
+}
+
+type TestFetcher struct {}
+
+func (tf *TestFetcher) Ctx() context.Context {
+	return context.Background()
+}
+
+func (tf *TestFetcher) Origin() (u *url.URL) {
+	u, _ = url.Parse("https://example.com")
+	return
+}
+
+func (tf *TestFetcher) LinkedUrl(string) (*url.URL, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (tf *TestFetcher) Get(*url.URL) ([]byte, opossum.ContentType, error) {
+	return nil, opossum.ContentType{}, fmt.Errorf("not implemented")
 }
 
 func TestJQueryHide(t *testing.T) {
@@ -47,7 +73,6 @@ func TestJQueryHide(t *testing.T) {
 	fs.SetDOM(nt)
 	fs.Update(simpleHTML, nil, []string{string(buf), script})
 
-	NewJS(simpleHTML, nil, nil)
 	resHtm, changed, err := Start(string(buf), script)
 	if err != nil {
 		t.Fatalf("%v", err)

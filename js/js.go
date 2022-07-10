@@ -60,6 +60,9 @@ func call(fn, cmd string, args ...string) (resp string, err error) {
 func Start(scripts ...string) (resHtm string, changed bool, err error) {
 	service = fmt.Sprintf("sparkle.%d", os.Getpid())
 	args := make([]string, 0, len(scripts)+2)
+	if log.Debug {
+		args = append(args, "-v")
+	}
 	args = append(args, "-s", service)
 	log.Infof("Start sparklefs")
 

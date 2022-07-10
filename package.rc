@@ -19,10 +19,10 @@ fn build {
 	cd cmd/opossum
 	go build $a -ldflags '-s -w' -o $name
 	cd ../..
-	cd ../gojafs/cmd/gojafs
-	go build $a -ldflags '-s -w' -o gojafs
+	cd ../sparklefs/cmd/sparklefs
+	go build $a -ldflags '-s -w' -o sparklefs
 	cd ../../../opossum
-	mv cmd/opossum/$name ../gojafs/cmd/gojafs/gojafs ./$name/
+	mv cmd/opossum/$name ../sparklefs/cmd/sparklefs/sparklefs ./$name/
 	cp README.md ./$name/
 	cp opossum.jpg ./$name/
 	tar czf $tarball $name
