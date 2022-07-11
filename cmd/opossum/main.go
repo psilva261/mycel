@@ -226,6 +226,12 @@ func Main() (err error) {
 
 		case loc = <-b.LocCh:
 			log.Infof("loc=%v", loc)
+			ue, err := url.QueryUnescape(loc)
+			if err == nil {
+				loc = ue
+			} else {
+				log.Errorf("unescape %v: %v", loc, err)
+			}
 			if nav, ok := v.(*Nav); ok {
 				nav.LocationField.Text = loc
 			}
