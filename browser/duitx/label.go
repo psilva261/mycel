@@ -44,7 +44,6 @@ type Label struct {
 	Click    func() (e duit.Event) `json:"-"` // Called on button1 click.
 	Selected bool
 
-	lines []string
 	orig  image.Point
 	size  image.Point
 	m     draw.Mouse
@@ -58,35 +57,12 @@ func (ui *Label) font(dui *duit.DUI) *draw.Font {
 
 func (ui *Label) Layout(dui *duit.DUI, self *duit.Kid, sizeAvail image.Point, force bool) {
 	debugLayout(dui, self)
+	if ui.Text == "" || ui.size != image.ZP {
+		return
+	}
 
 	font := ui.font(dui)
-	ui.lines = []string{}
-	s := 0
-	x := 0
-	xmax := 0
-	for i, c := range ui.Text {
-		if c == '\n' {
-			xmax = maximum(xmax, x)
-			ui.lines = append(ui.lines, ui.Text[s:i])
-			s = i + 1
-			x = 0
-			continue
-		}
-		dx := font.StringWidth(string(c))
-		x += dx
-		if i-s == 0 || x <= sizeAvail.X {
-			continue
-		}
-		xmax = maximum(xmax, x-dx)
-		ui.lines = append(ui.lines, ui.Text[s:i])
-		s = i
-		x = dx
-	}
-	if s < len(ui.Text) || s == 0 {
-		ui.lines = append(ui.lines, ui.Text[s:])
-		xmax = maximum(xmax, x)
-	}
-	ui.size = image.Pt(xmax, len(ui.lines)*ui.lineHeight(font))
+	ui.size = image.Pt(font.StringWidth(ui.Text), ui.lineHeight(font))
 	self.R = rect(ui.size)
 }
 
@@ -105,15 +81,11 @@ func (ui *Label) Draw(dui *duit.DUI, self *duit.Kid, img *draw.Image, orig image
 		}
 	}
 
-	p := orig
 	font := ui.font(dui)
-	for _, line := range ui.lines {
-		if ui.Selected {
-			img.StringBg(p, dui.Regular.Normal.Text, image.ZP, font, line, selectedBg, image.ZP)
-		} else {
-			img.String(p, dui.Regular.Normal.Text, image.ZP, font, line)
-		}
-		p.Y += ui.lineHeight(font)
+	if ui.Selected {
+		img.StringBg(orig, dui.Regular.Normal.Text, image.ZP, font, ui.Text, selectedBg, image.ZP)
+	} else {
+		img.String(orig, dui.Regular.Normal.Text, image.ZP, font, ui.Text)
 	}
 	ui.orig = orig
 }
