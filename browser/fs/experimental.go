@@ -142,7 +142,7 @@ func (as Attrs) Parent() fs.Dir {
 }
 
 func (as Attrs) Children() (cs map[string]fs.FSNode) {
-	log.Infof("Attrs#Children()")
+	log.Printf("Attrs#Children()")
 	cs = make(map[string]fs.FSNode)
 	ff := func(k string) fs.FSNode {
 		return fs.NewDynamicFile(
@@ -188,7 +188,7 @@ func (st Style) Parent() fs.Dir {
 }
 
 func (st Style) Children() (cs map[string]fs.FSNode) {
-	log.Infof("Style#Children()")
+	log.Printf("Style#Children()")
 	cs = make(map[string]fs.FSNode)
 	ff := func(k string) fs.FSNode {
 		return fs.NewDynamicFile(
