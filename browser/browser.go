@@ -906,21 +906,21 @@ func placeFunc(name string, place *duit.Place) func(self *duit.Kid, sizeAvail im
 				kid.R = self.R
 			} else {
 				kid.UI.Layout(dui, kid, sizeAvail, true)
-				if t, err := el.n.CssPx("top"); err == nil {
+				if t, err := el.n.CssPx("top"); err == nil && el.n.Css("top") != "auto" {
 					t = dui.Scale(t)
 					kid.R.Min.Y += t
 					kid.R.Max.Y += t
-				} else if b, err := el.n.CssPx("bottom"); err == nil {
+				} else if b, err := el.n.CssPx("bottom"); err == nil && el.n.Css("bottom") != "auto" {
 					b = dui.Scale(b)
 					h := kid.R.Max.X
 					kid.R.Min.Y = sizeAvail.Y - b
 					kid.R.Max.Y = sizeAvail.Y - h
 				}
-				if l, err := el.n.CssPx("left"); err == nil {
+				if l, err := el.n.CssPx("left"); err == nil && el.n.Css("left") != "auto" {
 					l = dui.Scale(l)
 					kid.R.Max.X += l
 					kid.R.Min.X += l
-				} else if r, err := el.n.CssPx("right"); err == nil {
+				} else if r, err := el.n.CssPx("right"); err == nil && el.n.Css("right") != "auto"  {
 					r = dui.Scale(r)
 					w := kid.R.Max.X
 					kid.R.Max.X = sizeAvail.X - r
