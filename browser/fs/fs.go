@@ -179,7 +179,7 @@ func xhr(conn net.Conn) {
 	url.Host = req.Host
 	if h := url.Host; h == "" {
 		url.Host = Fetcher.Origin().Host
-	} else if allowed(req.Header, h, Fetcher.Origin().Host) {
+	} else if !allowed(req.Header, h, Fetcher.Origin().Host) {
 		log.Errorf("no cross-origin request: %v", h)
 		return
 	}
