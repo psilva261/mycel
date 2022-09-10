@@ -63,8 +63,9 @@ func userGroup() (un, gn string, err error) {
 func Srv9p() {
 	c.L.Lock()
 	var root *fs.StaticDir
+	var err error
 
-	un, gn, err := userGroup()
+	un, gn, err = userGroup()
 	if err != nil {
 		log.Errorf("get user: %v", err)
 		c.L.Unlock()
