@@ -23,9 +23,10 @@ var (
 	oFS     *fs.FS
 	un      string
 	gn      string
+	url     string
+	htm     string
 	cssDir  *fs.StaticDir
 	jsDir   *fs.StaticDir
-	htm     string
 	rt      *Node
 	Client  *http.Client
 	Fetcher opossum.Fetcher
@@ -46,24 +47,40 @@ func SetDOM(d *nodes.Node) {
 	rt.nt = d
 }
 
+func userGroup() (un, gn string, err error) {
+	u, err := user.Current()
+	if err != nil {
+		return "", "", fmt.Errorf("current user: %w", err)
+	}
+	un = u.Username
+	gn, err = opossum.Group(u)
+	if err != nil {
+		return "", "", fmt.Errorf("group: %v", err)
+	}
+	return
+}
+
 func Srv9p() {
 	c.L.Lock()
 	var root *fs.StaticDir
 
-	u, err := user.Current()
+	un, gn, err := userGroup()
 	if err != nil {
 		log.Errorf("get user: %v", err)
 		c.L.Unlock()
 		return
 	}
-	un = u.Username
-	gn, err = opossum.Group(u)
-	if err != nil {
-		log.Errorf("get group: %v", err)
-		c.L.Unlock()
-		return
-	}
 	oFS, root = fs.NewFS(un, gn, 0500)
+	u := fs.NewDynamicFile(
+		oFS.NewStat("url", un, gn, 0400),
+		func() []byte {
+			mu.RLock()
+			defer mu.RUnlock()
+
+			return []byte(url)
+		},
+	)
+	root.AddChild(u)
 	h := fs.NewDynamicFile(
 		oFS.NewStat("html", un, gn, 0400),
 		func() []byte {
@@ -179,9 +196,6 @@ func xhr(conn net.Conn) {
 	url.Host = req.Host
 	if h := url.Host; h == "" {
 		url.Host = Fetcher.Origin().Host
-	} else if !allowed(req.Header, h, Fetcher.Origin().Host) {
-		log.Errorf("no cross-origin request: %v", h)
-		return
 	}
 	url.Scheme = "https"
 	proxyReq, err := http.NewRequest(req.Method, url.String(), req.Body)
@@ -200,13 +214,17 @@ func xhr(conn net.Conn) {
 		log.Errorf("do request: %v", err)
 		return
 	}
+	if h := url.Host; !allowed(resp.Header, h, Fetcher.Origin().Host) {
+		log.Errorf("no cross-origin request: %v", h)
+		return
+	}
 	if err := resp.Write(conn); err != nil {
 		log.Errorf("write response: %v", err)
 		return
 	}
 }
 
-func Update(html string, css []string, js []string) {
+func Update(uri, html string, css []string, js []string) {
 	c.L.Lock()
 	defer c.L.Unlock()
 
@@ -214,6 +232,7 @@ func Update(html string, css []string, js []string) {
 		c.Wait()
 	}
 
+	url = uri
 	htm = html
 	if cssDir != nil {
 		for name := range cssDir.Children() {

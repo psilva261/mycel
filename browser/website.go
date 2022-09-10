@@ -100,7 +100,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 			downloads[src] = string(buf)
 		}
 		scripts = js.Scripts(nt, downloads)
-		fs.Update(htm, csss, scripts)
+		fs.Update(f.Origin().String(), htm, csss, scripts)
 		fs.SetDOM(nt)
 		log.Infof("JS pipeline start")
 		js.Stop()
@@ -157,7 +157,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 		w.UI = scroller
 	}
 
-	fs.Update(htm, csss, scripts)
+	fs.Update(f.Origin().String(), htm, csss, scripts)
 	fs.SetDOM(nt)
 }
 
