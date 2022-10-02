@@ -3,7 +3,6 @@ package main
 import (
 	"9fans.net/go/draw"
 	"fmt"
-	"github.com/knusbaum/go9p"
 	"github.com/mjl-/duit"
 	"github.com/psilva261/opossum/browser"
 	"github.com/psilva261/opossum/js"
@@ -327,7 +326,6 @@ func main() {
 	}
 
 	log.Debug = dbg
-	go9p.Verbose = log.Debug
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, os.Kill)
