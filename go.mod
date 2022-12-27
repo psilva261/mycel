@@ -12,6 +12,8 @@ exclude github.com/hanwen/go-fuse v1.0.0
 
 exclude github.com/hanwen/go-fuse/v2 v2.0.3
 
+exclude github.com/hanwen/go-fuse/v2 v2.1.0
+
 require (
 	9fans.net/go v0.0.2
 	github.com/andybalholm/cascadia v1.3.1
