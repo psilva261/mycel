@@ -1,10 +1,10 @@
-package opossum
+package mycel
 
 import (
 	"os/user"
 )
 
-const PathPrefix = "/mnt/opossum"
+const PathPrefix = "/mnt/mycel"
 
 func Group(u *user.User) (string, error) {
 	return u.Gid, nil

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/knusbaum/go9p/fs"
 	"github.com/knusbaum/go9p/proto"
-	"github.com/psilva261/opossum"
-	"github.com/psilva261/opossum/logger"
-	"github.com/psilva261/opossum/nodes"
+	"github.com/psilva261/mycel"
+	"github.com/psilva261/mycel/logger"
+	"github.com/psilva261/mycel/nodes"
 	"net"
 	"net/http"
 	"os/user"
@@ -29,7 +29,7 @@ var (
 	jsDir   *fs.StaticDir
 	rt      *Node
 	Client  *http.Client
-	Fetcher opossum.Fetcher
+	Fetcher mycel.Fetcher
 )
 
 func init() {
@@ -53,7 +53,7 @@ func userGroup() (un, gn string, err error) {
 		return "", "", fmt.Errorf("current user: %w", err)
 	}
 	un = u.Username
-	gn, err = opossum.Group(u)
+	gn, err = mycel.Group(u)
 	if err != nil {
 		return "", "", fmt.Errorf("group: %v", err)
 	}

@@ -1,4 +1,4 @@
-# Opossum Web Browser
+# Mycel Web Browser
 
 Basic portable Web browser; only needs a Go compiler to compile. Optimized for use on 9front and 9legacy, supports plan9port and 9pi as well.
 
@@ -24,18 +24,18 @@ Supported features:
     # Setup TLS
     hget https://curl.haxx.se/ca/cacert.pem > /sys/lib/tls/ca.pem
     # Create mountpoints (needed on 9legacy)
-    mkdir /mnt/opossum
+    mkdir /mnt/mycel
     mkdir /mnt/sparkle
 
 ### Binary
 
-Binaries for amd64 and 386 can be downloaded from https://psilva.sdf.org/opossum.html
+Binaries for amd64 and 386 can be downloaded from https://psilva.sdf.org/mycel.html
 
 ### Compile from Source
 
 Set `$GOPROXY` to `https://proxy.golang.org` and then:
 
-    go install ./cmd/opossum
+    go install ./cmd/mycel
 
 Command line options:
 
@@ -59,7 +59,7 @@ Requirements:
 - Plan9Port
 
 ```
-go install ./cmd/opossum
+go install ./cmd/mycel
 ```
 
 # JS support
@@ -84,12 +84,12 @@ cd sparklefs
 go install ./cmd/sparklefs
 ```
 
-On 9legacy also the folders `/mnt/opossum` and `/mnt/sparkle` need to exist.
+On 9legacy also the folders `/mnt/mycel` and `/mnt/sparkle` need to exist.
 
 Then it can be tested with:
 
 ```
-opossum -jsinsecure https://jqueryui.com/resources/demos/tabs/default.html
+mycel -jsinsecure https://jqueryui.com/resources/demos/tabs/default.html
 ```
 
 # TODO

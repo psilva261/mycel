@@ -1,4 +1,4 @@
-module github.com/psilva261/opossum
+module github.com/psilva261/mycel
 
 go 1.18
 

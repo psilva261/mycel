@@ -1,7 +1,7 @@
 package browser
 
 import (
-	"github.com/psilva261/opossum"
+	"github.com/psilva261/mycel"
 	"golang.org/x/net/html"
 	"net/url"
 	"strings"
@@ -52,7 +52,7 @@ func TestPercentEncoding(t *testing.T) {
 		q.Set(k, vs[0])
 	}
 
-	ct := opossum.ContentType{
+	ct := mycel.ContentType{
 		MediaType: "text/html",
 		Params: map[string]string{
 			"charset": "UTF-8",

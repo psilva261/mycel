@@ -3,7 +3,7 @@ package nodes
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/psilva261/opossum/style"
+	"github.com/psilva261/mycel/style"
 	"golang.org/x/net/html"
 	"strings"
 	"testing"

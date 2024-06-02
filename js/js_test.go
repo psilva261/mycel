@@ -3,11 +3,11 @@ package js
 import (
 	"context"
 	"fmt"
-	"github.com/psilva261/opossum"
-	"github.com/psilva261/opossum/browser/fs"
-	"github.com/psilva261/opossum/logger"
-	"github.com/psilva261/opossum/nodes"
-	"github.com/psilva261/opossum/style"
+	"github.com/psilva261/mycel"
+	"github.com/psilva261/mycel/browser/fs"
+	"github.com/psilva261/mycel/logger"
+	"github.com/psilva261/mycel/nodes"
+	"github.com/psilva261/mycel/style"
 	"golang.org/x/net/html"
 	"io/ioutil"
 	"net/url"
@@ -46,8 +46,8 @@ func (tf *TestFetcher) LinkedUrl(string) (*url.URL, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (tf *TestFetcher) Get(*url.URL) ([]byte, opossum.ContentType, error) {
-	return nil, opossum.ContentType{}, fmt.Errorf("not implemented")
+func (tf *TestFetcher) Get(*url.URL) ([]byte, mycel.ContentType, error) {
+	return nil, mycel.ContentType{}, fmt.Errorf("not implemented")
 }
 
 func TestJQueryHide(t *testing.T) {

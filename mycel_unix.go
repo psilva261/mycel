@@ -1,13 +1,13 @@
 //go:build !plan9
 
-package opossum
+package mycel
 
 import (
 	"fmt"
 	"os/user"
 )
 
-const PathPrefix = "opossum"
+const PathPrefix = "mycel"
 
 func Group(u *user.User) (string, error) {
 	g, err := user.LookupGroupId(u.Gid)

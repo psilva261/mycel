@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/knusbaum/go9p/fs"
 	"github.com/knusbaum/go9p/proto"
-	"github.com/psilva261/opossum/logger"
-	"github.com/psilva261/opossum/nodes"
-	"github.com/psilva261/opossum/style"
+	"github.com/psilva261/mycel/logger"
+	"github.com/psilva261/mycel/nodes"
+	"github.com/psilva261/mycel/style"
 	"golang.org/x/net/html"
 )
 

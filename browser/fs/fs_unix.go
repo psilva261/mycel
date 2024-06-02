@@ -7,5 +7,5 @@ import (
 )
 
 func post(srv go9p.Srv) (err error) {
-	return go9p.PostSrv("opossum", srv)
+	return go9p.PostSrv("mycel", srv)
 }

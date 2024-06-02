@@ -5,9 +5,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/psilva261/opossum"
-	"github.com/psilva261/opossum/logger"
-	"github.com/psilva261/opossum/nodes"
+	"github.com/psilva261/mycel"
+	"github.com/psilva261/mycel/logger"
+	"github.com/psilva261/mycel/nodes"
 	"golang.org/x/net/html"
 	"io"
 	"os"
@@ -19,14 +19,14 @@ import (
 var timeout = 60 * time.Second
 
 var (
-	fetcher opossum.Fetcher
+	fetcher mycel.Fetcher
 
 	service string
 	cmd *exec.Cmd
 	cancel  context.CancelFunc
 )
 
-func SetFetcher(f opossum.Fetcher) {
+func SetFetcher(f mycel.Fetcher) {
 	fetcher = f
 }
 
@@ -171,7 +171,7 @@ func iterateJsElements(doc *nodes.Node, fn func(src string, inlineCode string)) 
 			for _, a := range n.DomSubtree.Attr {
 				switch strings.ToLower(a.Key) {
 				case "type":
-					t, err := opossum.NewContentType(a.Val, nil)
+					t, err := mycel.NewContentType(a.Val, nil)
 					if err != nil {
 						log.Printf("t: %v", err)
 					}

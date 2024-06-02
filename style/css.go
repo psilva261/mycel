@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/andybalholm/cascadia"
-	"github.com/psilva261/opossum"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel"
+	"github.com/psilva261/mycel/logger"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/css"
 	"io"
@@ -38,7 +38,7 @@ type Declaration struct {
 	Val         string
 }
 
-func Preprocess(s string) (bs []byte, ct opossum.ContentType, imports []string, err error) {
+func Preprocess(s string) (bs []byte, ct mycel.ContentType, imports []string, err error) {
 	buf := bytes.NewBufferString("")
 	l := css.NewLexer(parse.NewInputString(s))
 	ct.MediaType = "text/css"

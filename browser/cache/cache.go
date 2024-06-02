@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"github.com/psilva261/opossum"
+	"github.com/psilva261/mycel"
 	"sort"
 	"time"
 )
@@ -24,7 +24,7 @@ func (is Items) Less(i, j int) bool {
 
 type Item struct {
 	Addr string
-	opossum.ContentType
+	mycel.ContentType
 	Buf  []byte
 	Used time.Time
 }

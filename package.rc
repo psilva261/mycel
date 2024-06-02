@@ -1,5 +1,5 @@
-name64='opossum-amd64'
-name32='opossum-386'
+name64='mycel-amd64'
+name32='mycel-386'
 version=`{date -i} ^ '-' ^ `{cat .git/fs/branch/heads/master/hash | read -c 6}
 tarball64=`{pwd} ^ '/packages/' ^ $name64 ^ '-' ^ $version ^ '.tgz'
 tarball32=`{pwd} ^ '/packages/' ^ $name32 ^ '-' ^ $version ^ '.tgz'
@@ -16,15 +16,15 @@ fn build {
 	chmod +t ./$name
 
 	echo Compiling $GOARCH...
-	cd cmd/opossum
+	cd cmd/mycel
 	go build $a -ldflags '-s -w' -o $name
 	cd ../..
 	cd ../sparklefs/cmd/sparklefs
 	go build $a -ldflags '-s -w' -o sparklefs
-	cd ../../../opossum
-	mv cmd/opossum/$name ../sparklefs/cmd/sparklefs/sparklefs ./$name/
+	cd ../../../mycel
+	mv cmd/mycel/$name ../sparklefs/cmd/sparklefs/sparklefs ./$name/
 	cp README.md ./$name/
-	cp opossum.jpg ./$name/
+	cp mycel.jpg ./$name/
 	tar czf $tarball $name
 	chmod +t $tarball
 	echo Created $tarball

@@ -26,7 +26,7 @@ import (
 
 	"9fans.net/go/draw"
 	"github.com/mjl-/duit"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel/logger"
 )
 
 // Grid lays out other duit.UIs in a table-like grid.

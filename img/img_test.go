@@ -3,8 +3,8 @@ package img
 import (
 	"bytes"
 	"context"
-	"github.com/psilva261/opossum"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel"
+	"github.com/psilva261/mycel/logger"
 	"image"
 	"image/png"
 	"net/url"
@@ -104,8 +104,8 @@ func (b *MockBrowser) Origin() *url.URL { return nil }
 
 func (b *MockBrowser) LinkedUrl(string) (*url.URL, error) { return nil, nil }
 
-func (b *MockBrowser) Get(*url.URL) ([]byte, opossum.ContentType, error) {
-	return b.data, opossum.ContentType{}, nil
+func (b *MockBrowser) Get(*url.URL) ([]byte, mycel.ContentType, error) {
+	return b.data, mycel.ContentType{}, nil
 }
 
 func TestLoad(t *testing.T) {

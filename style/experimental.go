@@ -3,17 +3,17 @@ package style
 import (
 	"9fans.net/go/draw"
 	"fmt"
-	"github.com/psilva261/opossum"
-	"github.com/psilva261/opossum/img"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel"
+	"github.com/psilva261/mycel/img"
+	"github.com/psilva261/mycel/logger"
 	"image"
 	"strings"
 )
 
 var colorCache = make(map[draw.Color]*draw.Image)
-var fetcher opossum.Fetcher
+var fetcher mycel.Fetcher
 
-func SetFetcher(f opossum.Fetcher) {
+func SetFetcher(f mycel.Fetcher) {
 	fetcher = f
 }
 

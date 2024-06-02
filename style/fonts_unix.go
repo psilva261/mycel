@@ -4,7 +4,7 @@ package style
 
 import (
 	"fmt"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel/logger"
 	"os/exec"
 	"regexp"
 	"strconv"

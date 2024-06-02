@@ -3,7 +3,7 @@ package style
 import (
 	"fmt"
 	"github.com/mjl-/duit"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel/logger"
 	"golang.org/x/net/html"
 	"strings"
 	"testing"

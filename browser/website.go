@@ -2,13 +2,13 @@ package browser
 
 import (
 	"github.com/mjl-/duit"
-	"github.com/psilva261/opossum"
-	"github.com/psilva261/opossum/browser/duitx"
-	"github.com/psilva261/opossum/browser/fs"
-	"github.com/psilva261/opossum/js"
-	"github.com/psilva261/opossum/logger"
-	"github.com/psilva261/opossum/nodes"
-	"github.com/psilva261/opossum/style"
+	"github.com/psilva261/mycel"
+	"github.com/psilva261/mycel/browser/duitx"
+	"github.com/psilva261/mycel/browser/fs"
+	"github.com/psilva261/mycel/js"
+	"github.com/psilva261/mycel/logger"
+	"github.com/psilva261/mycel/nodes"
+	"github.com/psilva261/mycel/style"
 	"golang.org/x/net/html"
 	"golang.org/x/text/encoding"
 	"net/url"
@@ -22,10 +22,10 @@ const (
 
 type Website struct {
 	duit.UI
-	opossum.ContentType
+	mycel.ContentType
 }
 
-func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
+func (w *Website) layout(f mycel.Fetcher, htm string, layouting int) {
 	defer func() {
 		browser.StatusCh <- ""
 	}()
@@ -62,7 +62,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 				}
 				style.MergeNodeMaps(nodeMap, nm)
 			} else {
-				log.Errorf("%v/css/%v.css: Fetch CSS Rules failed: %v", opossum.PathPrefix, i, err)
+				log.Errorf("%v/css/%v.css: Fetch CSS Rules failed: %v", mycel.PathPrefix, i, err)
 			}
 		}
 
@@ -161,7 +161,7 @@ func (w *Website) layout(f opossum.Fetcher, htm string, layouting int) {
 	fs.SetDOM(nt)
 }
 
-func cssSrcs(f opossum.Fetcher, doc *html.Node) (srcs []string) {
+func cssSrcs(f mycel.Fetcher, doc *html.Node) (srcs []string) {
 	srcs = make([]string, 0, 20)
 	srcs = append(srcs, style.AddOnCSS)
 	ntAll := nodes.NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
@@ -236,7 +236,7 @@ func formData(n, submitBtn *html.Node) (data url.Values) {
 	return
 }
 
-func escapeValues(ct opossum.ContentType, q url.Values) (qe url.Values) {
+func escapeValues(ct mycel.ContentType, q url.Values) (qe url.Values) {
 	qe = make(url.Values)
 	enc := encoding.HTMLEscapeUnsupported(ct.Encoding().NewEncoder())
 
@@ -262,7 +262,7 @@ func escapeValues(ct opossum.ContentType, q url.Values) (qe url.Values) {
 func (b *Browser) submit(form *html.Node, submitBtn *html.Node) {
 	var err error
 	var buf []byte
-	var contentType opossum.ContentType
+	var contentType mycel.ContentType
 
 	method := "GET" // TODO
 	if m := attr(*form, "method"); m != "" {

@@ -3,8 +3,8 @@ package nodes
 import (
 	"bytes"
 	"fmt"
-	"github.com/psilva261/opossum/logger"
-	"github.com/psilva261/opossum/style"
+	"github.com/psilva261/mycel/logger"
+	"github.com/psilva261/mycel/style"
 	"golang.org/x/net/html"
 	"image"
 	"strings"

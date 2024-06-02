@@ -2,8 +2,8 @@ package browser
 
 import (
 	"fmt"
-	"github.com/psilva261/opossum/js"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel/js"
+	"github.com/psilva261/mycel/logger"
 )
 
 func processJS2() (resHtm string, changed bool, err error) {

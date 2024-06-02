@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/andybalholm/cascadia"
 	"github.com/mjl-/duit"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel/logger"
 	"golang.org/x/image/colornames"
 	"golang.org/x/net/html"
 	"image"

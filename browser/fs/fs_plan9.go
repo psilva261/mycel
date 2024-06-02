@@ -3,7 +3,7 @@ package fs
 import (
 	"fmt"
 	"github.com/knusbaum/go9p"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel/logger"
 	"os"
 	"syscall"
 )
@@ -21,7 +21,7 @@ func post(srv go9p.Srv) (err error) {
 		}
 	}()
 
-	if err = syscall.Mount(int(f2.Fd()), -1, "/mnt/opossum", syscall.MCREATE, ""); err != nil {
+	if err = syscall.Mount(int(f2.Fd()), -1, "/mnt/mycel", syscall.MCREATE, ""); err != nil {
 		return fmt.Errorf("mount: %w", err)
 	}
 	return

@@ -6,8 +6,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/mjl-/duit"
-	"github.com/psilva261/opossum"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel"
+	"github.com/psilva261/mycel/logger"
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
 	xdraw "golang.org/x/image/draw"
@@ -24,7 +24,7 @@ import (
 
 const SrcZero = "//:0"
 
-func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) {
+func parseDataUri(addr string) (data []byte, ct mycel.ContentType, err error) {
 	addr = strings.TrimPrefix(addr, "data:")
 	if strings.Contains(addr, "charset=UTF-8") {
 		return nil, ct, fmt.Errorf("cannot handle charset")
@@ -38,7 +38,7 @@ func parseDataUri(addr string) (data []byte, ct opossum.ContentType, err error) 
 	} else {
 		ctStr = parts[0]
 	}
-	if ct, err = opossum.NewContentType(ctStr, nil); err != nil {
+	if ct, err = mycel.NewContentType(ctStr, nil); err != nil {
 		return nil, ct, fmt.Errorf("content type: %v: %w", ctStr, err)
 	}
 
@@ -193,7 +193,7 @@ func svg(data string, w, h int) (img *image.RGBA, err error) {
 }
 
 // Load and resize to w and h if != 0
-func Load(dui *duit.DUI, f opossum.Fetcher, src string, maxW, w, h int, forceSync bool) (ni *draw.Image, err error) {
+func Load(dui *duit.DUI, f mycel.Fetcher, src string, maxW, w, h int, forceSync bool) (ni *draw.Image, err error) {
 	log.Printf("Load(..., %v, maxW=%v, w=%v, h=%v, ...)", src, maxW, w, h)
 	ch := make(chan image.Image, 1)
 	var bounds draw.Rectangle
@@ -251,10 +251,10 @@ func Load(dui *duit.DUI, f opossum.Fetcher, src string, maxW, w, h int, forceSyn
 	return
 }
 
-func load(f opossum.Fetcher, src string, maxW, w, h int) (img image.Image, err error) {
+func load(f mycel.Fetcher, src string, maxW, w, h int) (img image.Image, err error) {
 	var imgUrl *url.URL
 	var data []byte
-	var contentType opossum.ContentType
+	var contentType mycel.ContentType
 
 	if strings.HasPrefix(src, "data:") {
 		if data, contentType, err = parseDataUri(src); err != nil {

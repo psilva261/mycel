@@ -2,7 +2,7 @@ package style
 
 import (
 	"9fans.net/go/draw"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel/logger"
 	"testing"
 )
 

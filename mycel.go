@@ -1,9 +1,9 @@
-package opossum
+package mycel
 
 import (
 	"bytes"
 	"context"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel/logger"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/htmlindex"
 	"golang.org/x/text/encoding/unicode"

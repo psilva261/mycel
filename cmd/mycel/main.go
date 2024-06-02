@@ -4,10 +4,10 @@ import (
 	"9fans.net/go/draw"
 	"fmt"
 	"github.com/mjl-/duit"
-	"github.com/psilva261/opossum/browser"
-	"github.com/psilva261/opossum/js"
-	"github.com/psilva261/opossum/logger"
-	"github.com/psilva261/opossum/style"
+	"github.com/psilva261/mycel/browser"
+	"github.com/psilva261/mycel/js"
+	"github.com/psilva261/mycel/logger"
+	"github.com/psilva261/mycel/style"
 	"image"
 	"net/url"
 	"os"
@@ -187,7 +187,7 @@ func render() {
 }
 
 func Main() (err error) {
-	dui, err = duit.NewDUI("opossum", nil) // TODO: rm global var
+	dui, err = duit.NewDUI("mycel", nil) // TODO: rm global var
 	if err != nil {
 		return fmt.Errorf("new dui: %w", err)
 	}
@@ -259,7 +259,7 @@ func Main() (err error) {
 }
 
 func usage() {
-	fmt.Printf("usage: opossum [-v|-vv] [-h] [-jsinsecure] [-cpu|-mem fn] [startPage]\n")
+	fmt.Printf("usage: mycel [-v|-vv] [-h] [-jsinsecure] [-cpu|-mem fn] [startPage]\n")
 	os.Exit(1)
 }
 

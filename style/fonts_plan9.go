@@ -5,7 +5,7 @@ package style
 import (
 	"9fans.net/go/draw"
 	"fmt"
-	"github.com/psilva261/opossum/logger"
+	"github.com/psilva261/mycel/logger"
 	"io/fs"
 	"os"
 	"regexp"

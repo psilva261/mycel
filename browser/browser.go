@@ -5,16 +5,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/psilva261/opossum"
-	"github.com/psilva261/opossum/browser/cache"
-	"github.com/psilva261/opossum/browser/duitx"
-	"github.com/psilva261/opossum/browser/fs"
-	"github.com/psilva261/opossum/browser/history"
-	"github.com/psilva261/opossum/img"
-	"github.com/psilva261/opossum/js"
-	"github.com/psilva261/opossum/logger"
-	"github.com/psilva261/opossum/nodes"
-	"github.com/psilva261/opossum/style"
+	"github.com/psilva261/mycel"
+	"github.com/psilva261/mycel/browser/cache"
+	"github.com/psilva261/mycel/browser/duitx"
+	"github.com/psilva261/mycel/browser/fs"
+	"github.com/psilva261/mycel/browser/history"
+	"github.com/psilva261/mycel/img"
+	"github.com/psilva261/mycel/js"
+	"github.com/psilva261/mycel/logger"
+	"github.com/psilva261/mycel/nodes"
+	"github.com/psilva261/mycel/style"
 	"golang.org/x/net/html"
 	"golang.org/x/net/publicsuffix"
 	"image"
@@ -34,7 +34,7 @@ import (
 const (
 	EnterKey = 10
 
-	UserAgent = "opossum"
+	UserAgent = "mycel"
 )
 
 var debugPrintHtml = false
@@ -1692,7 +1692,7 @@ func (b *Browser) loadUrl(url *url.URL) {
 	}
 }
 
-func (b *Browser) render(ct opossum.ContentType, buf []byte) {
+func (b *Browser) render(ct mycel.ContentType, buf []byte) {
 	log.Printf("Empty some cache...")
 	cache.Tidy()
 	imageCache = make(map[string]*draw.Image)
@@ -1723,7 +1723,7 @@ func (b *Browser) render(ct opossum.ContentType, buf []byte) {
 	log.Printf("Rendering done")
 }
 
-func (b *Browser) Get(uri *url.URL) (buf []byte, contentType opossum.ContentType, err error) {
+func (b *Browser) Get(uri *url.URL) (buf []byte, contentType mycel.ContentType, err error) {
 	c, ok := cache.Get(uri.String())
 	if ok {
 		log.Printf("use %v from cache", uri)
@@ -1738,7 +1738,7 @@ func (b *Browser) Get(uri *url.URL) (buf []byte, contentType opossum.ContentType
 	return c.Buf, c.ContentType, err
 }
 
-func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType opossum.ContentType, err error) {
+func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType mycel.ContentType, err error) {
 	log.Infof("Get %v", uri.String())
 	req, err := http.NewRequestWithContext(b.ctx, "GET", uri.String(), nil)
 	if err != nil {
@@ -1747,14 +1747,14 @@ func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType o
 	req.Header.Add("User-Agent", UserAgent)
 	resp, err := b.client.Do(req)
 	if err != nil {
-		return nil, opossum.ContentType{}, fmt.Errorf("error loading %v: %w", uri, err)
+		return nil, mycel.ContentType{}, fmt.Errorf("error loading %v: %w", uri, err)
 	}
 	defer resp.Body.Close()
 	buf, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, opossum.ContentType{}, fmt.Errorf("error reading")
+		return nil, mycel.ContentType{}, fmt.Errorf("error reading")
 	}
-	contentType, err = opossum.NewContentType(resp.Header.Get("Content-Type"), resp.Request.URL)
+	contentType, err = mycel.NewContentType(resp.Header.Get("Content-Type"), resp.Request.URL)
 	if isNewOrigin {
 		of := 0
 		if scroller != nil {
@@ -1767,7 +1767,7 @@ func (b *Browser) get(uri *url.URL, isNewOrigin bool) (buf []byte, contentType o
 	return
 }
 
-func (b *Browser) PostForm(uri *url.URL, data url.Values) (buf []byte, contentType opossum.ContentType, err error) {
+func (b *Browser) PostForm(uri *url.URL, data url.Values) (buf []byte, contentType mycel.ContentType, err error) {
 	b.StatusCh <- "Posting..."
 	fb := strings.NewReader(escapeValues(b.Website.ContentType, data).Encode())
 	req, err := http.NewRequestWithContext(b.ctx, "POST", uri.String(), fb)
@@ -1778,14 +1778,14 @@ func (b *Browser) PostForm(uri *url.URL, data url.Values) (buf []byte, contentTy
 	req.Header.Set("Content-Type", fmt.Sprintf("application/x-www-form-urlencoded; charset=%v", b.Website.Charset()))
 	resp, err := b.client.Do(req)
 	if err != nil {
-		return nil, opossum.ContentType{}, fmt.Errorf("error loading %v: %w", uri, err)
+		return nil, mycel.ContentType{}, fmt.Errorf("error loading %v: %w", uri, err)
 	}
 	defer resp.Body.Close()
 	b.History.Push(resp.Request.URL, scroller.Offset)
 	buf, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, opossum.ContentType{}, fmt.Errorf("error reading")
+		return nil, mycel.ContentType{}, fmt.Errorf("error reading")
 	}
-	contentType, err = opossum.NewContentType(resp.Header.Get("Content-Type"), resp.Request.URL)
+	contentType, err = mycel.NewContentType(resp.Header.Get("Content-Type"), resp.Request.URL)
 	return
 }
