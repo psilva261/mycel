@@ -64,7 +64,6 @@ var (
 )
 
 var (
-	browser  *Browser
 	Style    = style.Map{}
 	dui      *duit.DUI
 	scroller *duitx.Scroll
@@ -94,7 +93,7 @@ func NewLabel(t string, n *nodes.Node) *Label {
 	}
 }
 
-func NewText(content []string, n *nodes.Node) (el []*Element) {
+func NewText(b *Browser, content []string, n *nodes.Node) (el []*Element) {
 	tt := strings.Join(content, " ")
 
 	// '\n' is nowhere visible
@@ -111,6 +110,7 @@ func NewText(content []string, n *nodes.Node) (el []*Element) {
 		}
 
 		l := &Element{
+			b: b,
 			UI: NewLabel(t, n),
 			n:  n,
 		}
@@ -170,8 +170,8 @@ type Image struct {
 	src string
 }
 
-func NewImage(n *nodes.Node) duit.UI {
-	img, err := newImage(n)
+func NewImage(b *Browser, n *nodes.Node) duit.UI {
+	img, err := newImage(b, n)
 	if err != nil {
 		log.Errorf("could not load image: %v", err)
 		return &duit.Label{}
@@ -179,7 +179,7 @@ func NewImage(n *nodes.Node) duit.UI {
 	return img
 }
 
-func newImage(n *nodes.Node) (ui duit.UI, err error) {
+func newImage(b *Browser, n *nodes.Node) (ui duit.UI, err error) {
 	var i *draw.Image
 	var cached bool
 	src := attr(*n.DomSubtree, "src")
@@ -223,7 +223,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 		mw = dui.Scale(mw)
 		w := dui.Scale(n.Width())
 		h := dui.Scale(n.Height())
-		i, err = img.Load(dui, browser, src, mw, w, h, false)
+		i, err = img.Load(dui, b, src, mw, w, h, false)
 		if err != nil {
 			return nil, fmt.Errorf("load image: %w", err)
 		}
@@ -232,6 +232,7 @@ func newImage(n *nodes.Node) (ui duit.UI, err error) {
 
 img_elem:
 	return NewElement(
+		b,
 		&Image{
 			Image: &duit.Image{
 				Image: i,
@@ -299,6 +300,7 @@ func srcSet(n *nodes.Node) (w int, src string) {
 
 type Element struct {
 	duit.UI
+	b       *Browser
 	n       *nodes.Node
 	orig    image.Point
 	IsLink  bool
@@ -309,7 +311,7 @@ type Element struct {
 	rect image.Rectangle
 }
 
-func NewElement(ui duit.UI, n *nodes.Node) *Element {
+func NewElement(b *Browser, ui duit.UI, n *nodes.Node) *Element {
 	if ui == nil {
 		return nil
 	}
@@ -328,6 +330,7 @@ func NewElement(ui duit.UI, n *nodes.Node) *Element {
 	}
 
 	el := &Element{
+		b: b,
 		UI: ui,
 		n:  n,
 	}
@@ -524,10 +527,10 @@ func NewSubmitButton(b *Browser, n *nodes.Node) *Element {
 		Font:  n.Font(),
 		Click: click,
 	}
-	return NewElement(btn, n)
+	return NewElement(b, btn, n)
 }
 
-func NewInputField(n *nodes.Node) *Element {
+func NewInputField(b *Browser, n *nodes.Node) *Element {
 	t := attr(*n.DomSubtree, "type")
 	if n.Css("width") == "" && n.Css("max-width") == "" {
 		n.SetCss("max-width", "200px")
@@ -548,9 +551,9 @@ func NewInputField(n *nodes.Node) *Element {
 				if f == nil {
 					return
 				}
-				if !browser.loading {
-					browser.loading = true
-					go browser.submit(f.DomSubtree, nil)
+				if !b.loading {
+					b.loading = true
+					go b.submit(f.DomSubtree, nil)
 				}
 				return duit.Event{
 					Consumed:   true,
@@ -561,10 +564,10 @@ func NewInputField(n *nodes.Node) *Element {
 			return
 		},
 	}
-	return NewElement(f, n)
+	return NewElement(b, f, n)
 }
 
-func NewSelect(n *nodes.Node) *Element {
+func NewSelect(b *Browser, n *nodes.Node) *Element {
 	var l *duit.List
 	l = &duit.List{
 		Values: make([]*duit.ListValue, 0, len(n.Children)),
@@ -597,10 +600,10 @@ func NewSelect(n *nodes.Node) *Element {
 	if n.Css("height") == "" {
 		n.SetCss("height", fmt.Sprintf("%vpx", 4*n.Font().Height))
 	}
-	return NewElement(duit.NewScroll(l), n)
+	return NewElement(b, duit.NewScroll(l), n)
 }
 
-func NewTextArea(n *nodes.Node) *Element {
+func NewTextArea(b *Browser, n *nodes.Node) *Element {
 	t := n.ContentString(true)
 	lines := len(strings.Split(t, "\n"))
 	edit := &duit.Edit{
@@ -616,7 +619,7 @@ func NewTextArea(n *nodes.Node) *Element {
 		n.SetCss("height", fmt.Sprintf("%vpx", (int(n.FontHeight())*(lines+2))))
 	}
 
-	el := NewElement(edit, n)
+	el := NewElement(b, edit, n)
 	el.Changed = func(e *Element) {
 		ed := e.UI.(*duitx.Box).Kids[0].UI.(*duit.Edit)
 
@@ -775,7 +778,7 @@ func (el *Element) mouseSelect(dui *duit.DUI, self *duit.Kid, m draw.Mouse, orig
 			dui.WriteSnarf([]byte(s))
 		}
 	} else if selected > 0 && m.Buttons == 1 {
-		TraverseTree(browser.Website.UI, func(ui duit.UI) {
+		TraverseTree(el.b.Website.UI, func(ui duit.UI) {
 			l, ok := ui.(*duitx.Label)
 			if ok && l.Selected {
 				selected--
@@ -822,7 +825,7 @@ func (el *Element) click() (consumed bool) {
 			log.Errorf("trigger click %v: %v", q, err)
 		} else if consumed {
 			offset := scroller.Offset
-			browser.Website.layout(browser, res, ClickRelayout)
+			el.b.Website.layout(el.b, res, ClickRelayout)
 			scroller.Offset = offset
 			dui.MarkLayout(dui.Top.UI)
 			dui.MarkDraw(dui.Top.UI)
@@ -844,12 +847,12 @@ func (el *Element) makeLink(href string) {
 		return
 	}
 
-	u, err := browser.LinkedUrl(href)
+	u, err := el.b.LinkedUrl(href)
 	if err != nil {
 		log.Errorf("makeLink from %v: %v", href, err)
 		return
 	}
-	f := browser.SetAndLoadUrl(u)
+	f := el.b.SetAndLoadUrl(u)
 	TraverseTree(el, func(ui duit.UI) {
 		el, ok := ui.(*Element)
 		if ok && el != nil {
@@ -932,7 +935,7 @@ func placeFunc(name string, place *duit.Place) func(self *duit.Kid, sizeAvail im
 }
 
 // arrangeAbsolute positioned elements, if any
-func arrangeAbsolute(n *nodes.Node, elements ...*Element) (ael *Element, ok bool) {
+func arrangeAbsolute(b *Browser, n *nodes.Node, elements ...*Element) (ael *Element, ok bool) {
 	absolutes := make([]*Element, 0, 1)
 	other := make([]*Element, 0, len(elements))
 
@@ -954,7 +957,7 @@ func arrangeAbsolute(n *nodes.Node, elements ...*Element) (ael *Element, ok bool
 		log.Fatalf("%v", err)
 	}
 	uis := make([]duit.UI, 0, len(other)+1)
-	na := Arrange(n, other...)
+	na := Arrange(b, n, other...)
 	if na != nil {
 		uis = append(uis, na)
 	}
@@ -967,19 +970,20 @@ func arrangeAbsolute(n *nodes.Node, elements ...*Element) (ael *Element, ok bool
 	}
 	pl.Place = placeFunc(n.QueryRef(), pl)
 
-	return NewElement(pl, n), true
+	return NewElement(b, pl, n), true
 }
 
-func Arrange(n *nodes.Node, elements ...*Element) *Element {
-	if ael, ok := arrangeAbsolute(n, elements...); ok {
+func Arrange(b *Browser, n *nodes.Node, elements ...*Element) *Element {
+	if ael, ok := arrangeAbsolute(b, n, elements...); ok {
 		return ael
 	}
 
-	ui := horizontalSeq(n, true, elements)
+	ui := horizontalSeq(b, n, true, elements)
 	if ui == nil {
 		return nil
 	}
 	el := &Element{
+		b: b,
 		n:  n,
 		UI: ui,
 	}
@@ -987,7 +991,7 @@ func Arrange(n *nodes.Node, elements ...*Element) *Element {
 	return el
 }
 
-func horizontalSeq(parent *nodes.Node, wrap bool, es []*Element) duit.UI {
+func horizontalSeq(b *Browser, parent *nodes.Node, wrap bool, es []*Element) duit.UI {
 	if len(es) == 0 {
 		return nil
 	}
@@ -998,7 +1002,7 @@ func horizontalSeq(parent *nodes.Node, wrap bool, es []*Element) duit.UI {
 		if isLabel {
 			tts := strings.Split(label.Text, " ")
 			for _, t := range tts {
-				finalUis = append(finalUis, NewElement(&duit.Label{
+				finalUis = append(finalUis, NewElement(b, &duit.Label{
 					Text: t,
 					Font: label.Font,
 				}, el.n))
@@ -1010,11 +1014,11 @@ func horizontalSeq(parent *nodes.Node, wrap bool, es []*Element) duit.UI {
 		}
 	}
 
-	b, ok := newBoxElement(parent, true, finalUis...)
+	box, ok := newBoxElement(parent, true, finalUis...)
 	if !ok {
 		return nil
 	}
-	return b
+	return box
 }
 
 func duitDisplay(n *nodes.Node) duitx.Display {
@@ -1173,6 +1177,7 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 		}
 
 		return NewElement(
+			b,
 			&duitx.Grid{
 				Columns:  numCols,
 				Rows:     len(t.rows),
@@ -1193,17 +1198,17 @@ func (t *Table) Element(r int, b *Browser, n *nodes.Node) *Element {
 			for _, col := range row.columns {
 				ui := NodeToBox(r+1, b, col)
 				if ui != nil {
-					el := NewElement(ui, col)
+					el := NewElement(b, ui, col)
 					rowEls = append(rowEls, el)
 				}
 			}
 
 			if len(rowEls) > 0 {
-				seq := horizontalSeq(nil, false, rowEls)
-				seqs = append(seqs, NewElement(seq, row.n))
+				seq := horizontalSeq(b, nil, false, rowEls)
+				seqs = append(seqs, NewElement(b, seq, row.n))
 			}
 		}
-		return NewElement(verticalSeq(seqs), n)
+		return NewElement(b, verticalSeq(seqs), n)
 	}
 }
 
@@ -1272,14 +1277,14 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 		case "input":
 			t := n.Attr("type")
 			if t == "" || t == "text" || t == "email" || t == "search" || t == "password" {
-				return NewInputField(n)
+				return NewInputField(b, n)
 			} else if t == "submit" {
 				return NewSubmitButton(b, n)
 			}
 		case "select":
-			return NewSelect(n)
+			return NewSelect(b, n)
 		case "textarea":
-			return NewTextArea(n)
+			return NewTextArea(b, n)
 		case "button":
 			if t := n.Attr("type"); t == "" || t == "submit" {
 				return NewSubmitButton(b, n)
@@ -1290,13 +1295,14 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 				Font: n.Font(),
 			}
 
-			return NewElement(btn, n)
+			return NewElement(b, btn, n)
 		case "table":
 			return NewTable(n).Element(r+1, b, n)
 		case "picture", "img", "svg":
-			return NewElement(NewImage(n), n)
+			return NewElement(b, NewImage(b, n), n)
 		case "pre":
 			return NewElement(
+				b,
 				NewCodeView(n.ContentString(true), n.Map),
 				n,
 			)
@@ -1316,7 +1322,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 				return InnerNodesToBox(r+1, b, n)
 			}
 
-			return NewElement(innerContent, n)
+			return NewElement(b, innerContent, n)
 		case "a":
 			var href = n.Attr("href")
 			var innerContent duit.UI
@@ -1331,7 +1337,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 			if innerContent == nil {
 				return nil
 			}
-			el := NewElement(innerContent, n)
+			el := NewElement(b, innerContent, n)
 			el.makeLink(href)
 			return el
 		case "noscript":
@@ -1348,7 +1354,7 @@ func NodeToBox(r int, b *Browser, n *nodes.Node) (el *Element) {
 		if text := n.ContentString(false); text != "" {
 			ui := NewLabel(text, n)
 
-			return NewElement(ui, n)
+			return NewElement(b, ui, n)
 		}
 	}
 
@@ -1375,15 +1381,15 @@ func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
 			continue
 		}
 		if isWrapped(c) {
-			ls := NewText(c.Content(false), c)
+			ls := NewText(b, c.Content(false), c)
 			els = append(els, ls...)
 		} else if nodes.IsPureTextContent(*n) && n.IsInline() {
 			// Handle text wrapped in unwrappable tags like p, div, ...
-			ls := NewText(c.Content(false), items[0])
+			ls := NewText(b, c.Content(false), items[0])
 			if len(ls) == 0 {
 				continue
 			}
-			el := NewElement(horizontalSeq(c, true, ls), c)
+			el := NewElement(b, horizontalSeq(b, c, true, ls), c)
 			if el == nil {
 				continue
 			}
@@ -1397,7 +1403,7 @@ func InnerNodesToBox(r int, b *Browser, n *nodes.Node) *Element {
 		return nil
 	}
 
-	return Arrange(n, els...)
+	return Arrange(b, n, els...)
 }
 
 func TraverseTree(ui duit.UI, f func(ui duit.UI)) {
@@ -1536,16 +1542,15 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 			Transport: tr,
 		},
 		dui:      _dui,
-		Website:  &Website{},
 		LocCh:    make(chan string, 10),
 		StatusCh: make(chan string, 10),
 	}
+	b.Website = &Website{b: b}
 	u, err := url.Parse(initUrl)
 	if err != nil {
 		log.Fatalf("parse: %v", err)
 	}
 	b.History.Push(u, 0)
-	browser = b
 	b.Website.UI = &duit.Label{}
 	style.SetFetcher(b)
 	dui = _dui
@@ -1558,7 +1563,7 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 
 	if ExperimentalJsInsecure {
 		fs.Client = &http.Client{}
-		fs.Fetcher = browser
+		fs.Fetcher = b
 	}
 	go fs.Srv9p()
 

@@ -46,6 +46,7 @@ func TestElementClick(t *testing.T) {
 }
 
 func TestArrange(t *testing.T) {
+	b := &Browser{}
 	htm := `
 		<div>
 			<h1>title 1</h1>
@@ -83,7 +84,7 @@ func TestArrange(t *testing.T) {
 			&Element{n: h2},
 			&Element{n: h3},
 		}
-		v := Arrange(nt, es...)
+		v := Arrange(b, nt, es...)
 		for _, e := range es {
 			if e.n.IsInline() != (d == "inline") {
 				t.Fatalf("%+v", e)
@@ -174,7 +175,6 @@ func TestNodeToBoxNoscript(t *testing.T) {
 	body := grep(doc, "body")
 	b := &Browser{}
 	b.client = &http.Client{}
-	browser = b
 	u, err := url.Parse("https://example.com")
 	if err != nil {
 		log.Fatalf("parse: %v", err)
@@ -204,7 +204,6 @@ func digestHtm(htm string) (nt *nodes.Node, boxed *Element, err error) {
 	body := grep(doc, "body")
 	b := &Browser{}
 	b.client = &http.Client{}
-	browser = b
 	u, err := url.Parse("https://example.com")
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse url: %w", err)
@@ -441,6 +440,7 @@ func TestAlwaysOneElement(t *testing.T) {
 }
 
 func TestTextArea(t *testing.T) {
+	b := &Browser{}
 	htm := `
 		<textarea height="100">
 		</textarea>
@@ -451,7 +451,7 @@ func TestTextArea(t *testing.T) {
 	}
 
 	ta := nt.Find("textarea")
-	el := NewTextArea(ta)
+	el := NewTextArea(b, ta)
 	// Trigger key press to trigger call to changed
 	el.Key(nil, nil, 'a', draw.Mouse{}, image.Point{})
 }

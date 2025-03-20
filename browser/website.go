@@ -21,13 +21,14 @@ const (
 )
 
 type Website struct {
+	b *Browser
 	duit.UI
 	mycel.ContentType
 }
 
 func (w *Website) layout(f mycel.Fetcher, htm string, layouting int) {
 	defer func() {
-		browser.StatusCh <- ""
+		w.b.StatusCh <- ""
 	}()
 	pass := func(htm string, csss ...string) (*html.Node, map[*html.Node]style.Map) {
 		if f.Ctx().Err() != nil {
@@ -143,7 +144,7 @@ func (w *Website) layout(f mycel.Fetcher, htm string, layouting int) {
 		scroller.Free()
 		scroller = nil
 	}
-	scroller = duitx.NewScroll(dui, NodeToBox(0, browser, nt))
+	scroller = duitx.NewScroll(dui, NodeToBox(0, w.b, nt))
 	numElements := 0
 	TraverseTree(scroller, func(ui duit.UI) {
 		numElements++
@@ -153,7 +154,7 @@ func (w *Website) layout(f mycel.Fetcher, htm string, layouting int) {
 	if numElements < 10 {
 		log.Errorf("Less than 10 elements layouted, seems css processing failed. Will layout without css")
 		nt = nodes.NewNodeTree(body, style.Map{}, make(map[*html.Node]style.Map), nil)
-		scroller = duitx.NewScroll(dui, NodeToBox(0, browser, nt))
+		scroller = duitx.NewScroll(dui, NodeToBox(0, w.b, nt))
 		w.UI = scroller
 	}
 
