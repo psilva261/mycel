@@ -13,27 +13,26 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 )
 
 var timeout = 60 * time.Second
 
 var (
-	fetcher mycel.Fetcher
+	instances sync.Map
+)
 
+type JS struct {
 	service string
 	cmd *exec.Cmd
 	cancel  context.CancelFunc
-)
-
-func SetFetcher(f mycel.Fetcher) {
-	fetcher = f
 }
 
-func call(fn, cmd string, args ...string) (resp string, err error) {
+func (js *JS) call(fn, cmd string, args ...string) (resp string, err error) {
 	var rwc io.ReadWriteCloser
 	for t := 100*time.Millisecond; t < 5*time.Second; t *= 2 {
-		rwc, err = callSparkleCtl()
+		rwc, err = js.callSparkleCtl()
 		if err == nil {
 			break
 		}
@@ -57,28 +56,32 @@ func call(fn, cmd string, args ...string) (resp string, err error) {
 }
 
 // Start with pre-defined scripts
-func Start(scripts ...string) (resHtm string, changed bool, err error) {
-	service = fmt.Sprintf("sparkle.%d", os.Getpid())
+func Start(f mycel.Fetcher, scripts ...string) (js *JS, resHtm string, changed bool, err error) {
+	js = &JS{
+		service: fmt.Sprintf("sparkle.%d", os.Getpid()),
+	}
 	args := make([]string, 0, len(scripts)+2)
 	if log.Debug {
 		args = append(args, "-v")
 	}
-	args = append(args, "-s", service)
+	args = append(args, "-s", js.service)
 	log.Infof("Start sparklefs")
 
 	var ctx context.Context
-	ctx, cancel = context.WithCancel(fetcher.Ctx())
-	cmd = exec.CommandContext(ctx, "sparklefs", args...)
-	cmd.Stderr = os.Stderr
+	ctx, js.cancel = context.WithCancel(f.Ctx())
+	js.cmd = exec.CommandContext(ctx, "sparklefs", args...)
+	js.cmd.Stderr = os.Stderr
 
 	log.Infof("cmd.Start...")
-	if err = cmd.Start(); err != nil {
-		return "", false, fmt.Errorf("cmd start: %w", err)
+	if err = js.cmd.Start(); err != nil {
+		return nil, "", false, fmt.Errorf("cmd start: %w", err)
 	}
 
-	resp, err := call("ctl", "start")
+	instances.Store(js, js)
+
+	resp, err := js.call("ctl", "start")
 	if err != nil {
-		return "", false, fmt.Errorf("call start: %v", err)
+		return nil, "", false, fmt.Errorf("call start: %v", err)
 	}
 
 	if resp != "" {
@@ -89,26 +92,36 @@ func Start(scripts ...string) (resHtm string, changed bool, err error) {
 	return
 }
 
-func Stop() {
+func StopAll() {
+	instances.Range(func(k, _ any) bool {
+		js := k.(*JS)
+		js.Stop()
+		instances.Delete(js)
+		return true
+	})
+}
+
+func (js *JS) Stop() {
 	log.Infof("Stop sparklefs")
-	hangup()
-	if cancel != nil {
+	js.hangup()
+	if js.cancel != nil {
 		log.Infof("cancel()")
-		cancel()
-		cancel = nil
-		if cmd != nil {
+		js.cancel()
+		js.cancel = nil
+		if js.cmd != nil {
 			// Prevent Zombie processes after stopping
-			cmd.Wait()
-			cmd = nil
+			js.cmd.Wait()
+			js.cmd = nil
 		}
 	}
+	instances.Delete(js)
 }
 
 // TriggerClick, and return the result html
 // ...then HTML5 parse it, diff the node tree
 // (probably faster and cleaner than anything else)
-func TriggerClick(selector string) (newHTML string, ok bool, err error) {
-	newHTML, err = call("ctl", "click", selector)
+func (js *JS) TriggerClick(selector string) (newHTML string, ok bool, err error) {
+	newHTML, err = js.call("ctl", "click", selector)
 	ok = newHTML != "" && err == nil
 	return
 }

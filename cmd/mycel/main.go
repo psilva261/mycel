@@ -341,7 +341,7 @@ func main() {
 }
 
 func finalize() {
-	js.Stop()
+	js.StopAll()
 	os.Exit(1)
 }
 

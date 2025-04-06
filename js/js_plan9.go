@@ -5,8 +5,8 @@ import (
 	"os"
 )
 
-func hangup() {}
+func (js *JS) hangup() {}
 
-func callSparkleCtl() (rwc io.ReadWriteCloser, err error) {
+func (js *JS) callSparkleCtl() (rwc io.ReadWriteCloser, err error) {
 	return os.OpenFile("/mnt/sparkle/ctl", os.O_RDWR, 0600)
 }

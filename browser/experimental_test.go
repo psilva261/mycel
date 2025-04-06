@@ -18,7 +18,6 @@ import (
 
 func init() {
 	log.Debug = true
-	js.SetFetcher(&TestFetcher{})
 	style.Init(nil)
 	go fs.Srv9p()
 }
@@ -46,6 +45,7 @@ func TestProcessJS2SkipFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
+	f := &TestFetcher{}
 	h := `
 	<html>
 	<body>
@@ -72,8 +72,8 @@ func TestProcessJS2SkipFailure(t *testing.T) {
 	}
 	fs.SetDOM(nt)
 	fs.Update("", h, nil, scripts)
-	js.Start()
-	h, _, err = processJS2()
+	js.Start(f)
+	s, h, _, err := processJS2(f)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -81,5 +81,5 @@ func TestProcessJS2SkipFailure(t *testing.T) {
 	if !strings.Contains(h, `<body style="display: none; ">`) {
 		t.Fail()
 	}
-	js.Stop()
+	s.Stop()
 }

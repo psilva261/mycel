@@ -16,9 +16,9 @@ var (
 	fsys *client.Fsys
 )
 
-func dial() (err error) {
+func (js *JS) dial() (err error) {
 	log.Infof("Init...")
-	conn, err := client.DialService(service)
+	conn, err := client.DialService(js.service)
 	if err != nil {
 		return fmt.Errorf("dial: %v", err)
 	}
@@ -34,7 +34,7 @@ func dial() (err error) {
 	return
 }
 
-func hangup() {
+func (js *JS) hangup() {
 	if fsys != nil {
 		fsys = nil
 	}
@@ -44,9 +44,9 @@ func hangup() {
 	}
 }
 
-func callSparkleCtl() (rwc io.ReadWriteCloser, err error) {
+func (js *JS) callSparkleCtl() (rwc io.ReadWriteCloser, err error) {
 	if fsys == nil {
-		if err := dial(); err != nil {
+		if err := js.dial(); err != nil {
 			return nil, fmt.Errorf("dial: %v", err)
 		}
 	}

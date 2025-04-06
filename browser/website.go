@@ -82,6 +82,12 @@ func (w *Website) layout(f mycel.Fetcher, htm string, layouting int) {
 	// state. During subsequent calls from click handlers that state is kept.
 	var scripts []string
 	if ExperimentalJsInsecure && layouting != ClickRelayout {
+		var (
+			jsProcessed string
+			changed bool
+			err error
+		)
+
 		log.Printf("3rd pass")
 		nt := nodes.NewNodeTree(doc, style.Map{}, nodeMap, nil)
 		jsSrcs := js.Srcs(nt)
@@ -104,9 +110,8 @@ func (w *Website) layout(f mycel.Fetcher, htm string, layouting int) {
 		fs.Update(f.Origin().String(), htm, csss, scripts)
 		fs.SetDOM(nt)
 		log.Infof("JS pipeline start")
-		js.Stop()
-		js.SetFetcher(f)
-		jsProcessed, changed, err := processJS2()
+		w.b.js.Stop()
+		w.b.js, jsProcessed, changed, err = processJS2(f)
 		if changed && err == nil {
 			htm = jsProcessed
 			if debugPrintHtml {

@@ -26,7 +26,6 @@ const simpleHTML = `
 
 func init() {
 	log.Debug = true
-	SetFetcher(&TestFetcher{})
 	go fs.Srv9p()
 	<-time.After(2*time.Second)
 }
@@ -51,6 +50,7 @@ func (tf *TestFetcher) Get(*url.URL) ([]byte, mycel.ContentType, error) {
 }
 
 func TestJQueryHide(t *testing.T) {
+	f := &TestFetcher{}
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
@@ -73,7 +73,7 @@ func TestJQueryHide(t *testing.T) {
 	fs.SetDOM(nt)
 	fs.Update("", simpleHTML, nil, []string{string(buf), script})
 
-	resHtm, changed, err := Start(string(buf), script)
+	svc, resHtm, changed, err := Start(f, string(buf), script)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -91,5 +91,5 @@ func TestJQueryHide(t *testing.T) {
 	if v := nt.Find("h1").Css("display"); v != "none" {
 		t.Fatalf("%v", v)
 	}
-	Stop()
+	svc.Stop()
 }

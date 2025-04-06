@@ -820,7 +820,7 @@ func (el *Element) click() (consumed bool) {
 		q := el.n.QueryRef()
 		var res string
 		var err error
-		res, consumed, err = js.TriggerClick(q)
+		res, consumed, err = el.b.js.TriggerClick(q)
 		if err != nil {
 			log.Errorf("trigger click %v: %v", q, err)
 		} else if consumed {
@@ -1519,6 +1519,7 @@ type Browser struct {
 
 	history.History
 	dui      *duit.DUI
+	js       *js.JS
 	Website  *Website
 	loading  bool
 	client   *http.Client
