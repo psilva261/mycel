@@ -4,7 +4,7 @@ import (
 	"github.com/mjl-/duit"
 	"github.com/psilva261/mycel"
 	"github.com/psilva261/mycel/browser/duitx"
-	"github.com/psilva261/mycel/browser/fs"
+	//"github.com/psilva261/mycel/browser/fs"
 	"github.com/psilva261/mycel/js"
 	"github.com/psilva261/mycel/logger"
 	"github.com/psilva261/mycel/nodes"
@@ -107,8 +107,8 @@ func (w *Website) layout(f mycel.Fetcher, htm string, layouting int) {
 			downloads[src] = string(buf)
 		}
 		scripts = js.Scripts(nt, downloads)
-		fs.Update(f.Origin().String(), htm, csss, scripts)
-		fs.SetDOM(nt)
+		w.b.fs.Update(f.Origin().String(), htm, csss, scripts)
+		w.b.fs.SetDOM(nt)
 		log.Infof("JS pipeline start")
 		w.b.js.Stop()
 		w.b.js, jsProcessed, changed, err = processJS2(f)
@@ -163,8 +163,8 @@ func (w *Website) layout(f mycel.Fetcher, htm string, layouting int) {
 		w.UI = scroller
 	}
 
-	fs.Update(f.Origin().String(), htm, csss, scripts)
-	fs.SetDOM(nt)
+	w.b.fs.Update(f.Origin().String(), htm, csss, scripts)
+	w.b.fs.SetDOM(nt)
 }
 
 func cssSrcs(f mycel.Fetcher, doc *html.Node) (srcs []string) {

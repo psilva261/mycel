@@ -27,12 +27,13 @@ import (
 //
 // (dir structure stolen from domfs)
 type Node struct {
+	fs   *FS
 	name string
 	nt   *nodes.Node
 }
 
 func (n Node) Stat() (s proto.Stat) {
-	s = *oFS.NewStat(n.name, un, gn, 0700)
+	s = *n.fs.oFS.NewStat(n.name, n.fs.un, n.fs.gn, 0700)
 	s.Mode |= proto.DMDIR
 	// qtype bits should be consistent with Stat mode.
 	s.Qid.Qtype = uint8(s.Mode >> 24)
@@ -58,6 +59,7 @@ func (n Node) Children() (cs map[string]fs.FSNode) {
 	for i, c := range n.nt.Children {
 		ddn := fmt.Sprintf("%v", i)
 		cs[ddn] = &Node{
+			fs: n.fs,
 			name: ddn,
 			nt:   c,
 		}
@@ -75,7 +77,7 @@ func (n Node) Children() (cs map[string]fs.FSNode) {
 
 func (n Node) tag() fs.FSNode {
 	return fs.NewDynamicFile(
-		oFS.NewStat("tag", un, gn, 0666),
+		n.fs.oFS.NewStat("tag", n.fs.un, n.fs.gn, 0666),
 		func() []byte {
 			return []byte(n.nt.Data())
 		},
@@ -84,7 +86,7 @@ func (n Node) tag() fs.FSNode {
 
 func (n Node) geom() fs.FSNode {
 	return fs.NewDynamicFile(
-		oFS.NewStat("geom", un, gn, 0666),
+		n.fs.oFS.NewStat("geom", n.fs.un, n.fs.gn, 0666),
 		func() (bs []byte) {
 			var dt style.DomTree
 			if dt = n.nt.Map.DomTree; dt == nil {
@@ -98,7 +100,7 @@ func (n Node) geom() fs.FSNode {
 
 func (n Node) html() fs.FSNode {
 	return fs.NewDynamicFile(
-		oFS.NewStat("html", un, gn, 0666),
+		n.fs.oFS.NewStat("html", n.fs.un, n.fs.gn, 0666),
 		func() []byte {
 			buf := bytes.NewBufferString("")
 			if err := html.Render(buf, n.nt.DomSubtree); err != nil {
@@ -119,11 +121,12 @@ func (n Node) DeleteChild(name string) error {
 }
 
 type Attrs struct {
+	n     *Node
 	attrs *[]html.Attribute
 }
 
 func (as Attrs) Stat() (s proto.Stat) {
-	s = *oFS.NewStat("attrs", un, gn, 0500)
+	s = *as.n.fs.oFS.NewStat("attrs", as.n.fs.un, as.n.fs.gn, 0500)
 	s.Mode |= proto.DMDIR
 	// qtype bits should be consistent with Stat mode.
 	s.Qid.Qtype = uint8(s.Mode >> 24)
@@ -146,7 +149,7 @@ func (as Attrs) Children() (cs map[string]fs.FSNode) {
 	cs = make(map[string]fs.FSNode)
 	ff := func(k string) fs.FSNode {
 		return fs.NewDynamicFile(
-			oFS.NewStat(k, un, gn, 0666),
+			as.n.fs.oFS.NewStat(k, as.n.fs.un, as.n.fs.gn, 0666),
 			func() []byte {
 				var v string
 				for _, a := range *as.attrs {
@@ -165,11 +168,12 @@ func (as Attrs) Children() (cs map[string]fs.FSNode) {
 }
 
 type Style struct {
+	n  *Node
 	cs *style.Map
 }
 
 func (st Style) Stat() (s proto.Stat) {
-	s = *oFS.NewStat("style", un, gn, 0500)
+	s = *st.n.fs.oFS.NewStat("style", st.n.fs.un, st.n.fs.gn, 0500)
 	s.Mode |= proto.DMDIR
 	// qtype bits should be consistent with Stat mode.
 	s.Qid.Qtype = uint8(s.Mode >> 24)
@@ -192,7 +196,7 @@ func (st Style) Children() (cs map[string]fs.FSNode) {
 	cs = make(map[string]fs.FSNode)
 	ff := func(k string) fs.FSNode {
 		return fs.NewDynamicFile(
-			oFS.NewStat(k, un, gn, 0666),
+			st.n.fs.oFS.NewStat(k, st.n.fs.un, st.n.fs.gn, 0666),
 			func() []byte {
 				var v string
 				for p, d := range st.cs.Declarations {

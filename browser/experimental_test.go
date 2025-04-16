@@ -19,7 +19,6 @@ import (
 func init() {
 	log.Debug = true
 	style.Init(nil)
-	go fs.Srv9p()
 }
 
 type TestFetcher struct {}
@@ -70,6 +69,8 @@ func TestProcessJS2SkipFailure(t *testing.T) {
 		`$('body').hide()`,
 		`throw 'fail';`,
 	}
+	fs := fs.New()
+	go fs.Srv9p()
 	fs.SetDOM(nt)
 	fs.Update("", h, nil, scripts)
 	js.Start(f)

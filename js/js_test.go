@@ -26,11 +26,10 @@ const simpleHTML = `
 
 func init() {
 	log.Debug = true
-	go fs.Srv9p()
-	<-time.After(2*time.Second)
+	<-time.After(2 * time.Second)
 }
 
-type TestFetcher struct {}
+type TestFetcher struct{}
 
 func (tf *TestFetcher) Ctx() context.Context {
 	return context.Background()
@@ -70,6 +69,8 @@ func TestJQueryHide(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	nt := nodes.NewNodeTree(doc, style.Map{}, make(map[*html.Node]style.Map), nil)
+	fs := fs.New()
+	go fs.Srv9p()
 	fs.SetDOM(nt)
 	fs.Update("", simpleHTML, nil, []string{string(buf), script})
 

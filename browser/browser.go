@@ -1520,6 +1520,7 @@ type Browser struct {
 	history.History
 	dui      *duit.DUI
 	js       *js.JS
+	fs       *fs.FS
 	Website  *Website
 	loading  bool
 	client   *http.Client
@@ -1563,10 +1564,10 @@ func NewBrowser(_dui *duit.DUI, initUrl string) (b *Browser) {
 	b.LoadUrl(u)
 
 	if ExperimentalJsInsecure {
-		fs.Client = &http.Client{}
-		fs.Fetcher = b
+		b.fs.Client = &http.Client{}
+		b.fs.Fetcher = b
 	}
-	go fs.Srv9p()
+	go b.fs.Srv9p()
 
 	return
 }

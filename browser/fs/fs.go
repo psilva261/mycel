@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/knusbaum/go9p/fs"
+	go9pfs "github.com/knusbaum/go9p/fs"
 	"github.com/knusbaum/go9p/proto"
 	"github.com/psilva261/mycel"
 	"github.com/psilva261/mycel/logger"
@@ -16,35 +16,40 @@ import (
 	"sync"
 )
 
-var (
+type FS struct {
 	mu *sync.RWMutex
 	c  *sync.Cond
 
-	oFS     *fs.FS
+	root     *go9pfs.FS
+	oFS     *go9pfs.FS
 	un      string
 	gn      string
 	url     string
 	htm     string
-	cssDir  *fs.StaticDir
-	jsDir   *fs.StaticDir
+	cssDir  *go9pfs.StaticDir
+	jsDir   *go9pfs.StaticDir
 	rt      *Node
 	Client  *http.Client
 	Fetcher mycel.Fetcher
-)
-
-func init() {
-	mu = &sync.RWMutex{}
-	c = sync.NewCond(mu)
-	SetDOM(nil)
 }
 
-func SetDOM(d *nodes.Node) {
-	if rt == nil {
-		rt = &Node{
+func New() *FS {
+	fs := &FS{}
+	fs.mu = &sync.RWMutex{}
+	fs.c = sync.NewCond(fs.mu)
+	fs.SetDOM(nil)
+
+	return fs
+}
+
+func (fs *FS) SetDOM(d *nodes.Node) {
+	if fs.rt == nil {
+		fs.rt = &Node{
+			fs:   fs,
 			name: "0",
 		}
 	}
-	rt.nt = d
+	fs.rt.nt = d
 }
 
 func userGroup() (un, gn string, err error) {
@@ -60,85 +65,85 @@ func userGroup() (un, gn string, err error) {
 	return
 }
 
-func Srv9p() {
-	c.L.Lock()
-	var root *fs.StaticDir
+func (fs *FS) Srv9p() {
+	fs.c.L.Lock()
+	var root *go9pfs.StaticDir
 	var err error
 
-	un, gn, err = userGroup()
+	fs.un, fs.gn, err = userGroup()
 	if err != nil {
 		log.Errorf("get user: %v", err)
-		c.L.Unlock()
+		fs.c.L.Unlock()
 		return
 	}
-	oFS, root = fs.NewFS(un, gn, 0500)
-	u := fs.NewDynamicFile(
-		oFS.NewStat("url", un, gn, 0400),
+	fs.oFS, root = go9pfs.NewFS(fs.un, fs.gn, 0500)
+	u := go9pfs.NewDynamicFile(
+		fs.oFS.NewStat("url", fs.un, fs.gn, 0400),
 		func() []byte {
-			mu.RLock()
-			defer mu.RUnlock()
+			fs.mu.RLock()
+			defer fs.mu.RUnlock()
 
-			return []byte(url)
+			return []byte(fs.url)
 		},
 	)
 	root.AddChild(u)
-	h := fs.NewDynamicFile(
-		oFS.NewStat("html", un, gn, 0400),
+	h := go9pfs.NewDynamicFile(
+		fs.oFS.NewStat("html", fs.un, fs.gn, 0400),
 		func() []byte {
-			mu.RLock()
-			defer mu.RUnlock()
+			fs.mu.RLock()
+			defer fs.mu.RUnlock()
 
-			return []byte(htm)
+			return []byte(fs.htm)
 		},
 	)
 	root.AddChild(h)
-	d, err := fs.CreateStaticDir(oFS, root, un, "css", 0500|proto.DMDIR, 0)
+	d, err := go9pfs.CreateStaticDir(fs.oFS, root, fs.un, "css", 0500|proto.DMDIR, 0)
 	if err != nil {
 		log.Errorf("create static dir: %v", err)
-		c.L.Unlock()
+		fs.c.L.Unlock()
 		return
 	}
-	cssDir = d.(*fs.StaticDir)
-	root.AddChild(cssDir)
-	d, err = fs.CreateStaticDir(oFS, root, un, "js", 0500|proto.DMDIR, 0)
+	fs.cssDir = d.(*go9pfs.StaticDir)
+	root.AddChild(fs.cssDir)
+	d, err = go9pfs.CreateStaticDir(fs.oFS, root, fs.un, "js", 0500|proto.DMDIR, 0)
 	if err != nil {
 		log.Errorf("create static dir: %v", err)
-		c.L.Unlock()
+		fs.c.L.Unlock()
 		return
 	}
-	jsDir = d.(*fs.StaticDir)
-	root.AddChild(jsDir)
-	q := fs.NewListenFile(oFS.NewStat("query", un, gn, 0600))
+	fs.jsDir = d.(*go9pfs.StaticDir)
+	root.AddChild(fs.jsDir)
+	q := go9pfs.NewListenFile(fs.oFS.NewStat("query", fs.un, fs.gn, 0600))
 	root.AddChild(q)
-	lq := (*fs.ListenFileListener)(q)
-	root.AddChild(rt)
-	go Query(lq)
-	if Client != nil {
-		xhr := fs.NewListenFile(oFS.NewStat("xhr", un, gn, 0600))
+	lq := (*go9pfs.ListenFileListener)(q)
+	root.AddChild(fs.rt)
+	go fs.Query(lq)
+	if fs.Client != nil {
+		xhr := go9pfs.NewListenFile(fs.oFS.NewStat("xhr", fs.un, fs.gn, 0600))
 		root.AddChild(xhr)
-		lxhr := (*fs.ListenFileListener)(xhr)
-		go Xhr(lxhr)
+		lxhr := (*go9pfs.ListenFileListener)(xhr)
+		go fs.Xhr(lxhr)
 	}
-	c.Broadcast()
-	c.L.Unlock()
+	fs.c.Broadcast()
+	fs.c.L.Unlock()
 
-	if err := post(oFS.Server()); err != nil {
+	if err := post(fs.oFS.Server()); err != nil {
 		log.Errorf("srv9p: %v", err)
 	}
 }
 
-func Query(lq *fs.ListenFileListener) {
+func (fs *FS) Query(lq *go9pfs.ListenFileListener) {
 	for {
 		conn, err := lq.Accept()
 		if err != nil {
 			log.Errorf("query: accept: %v", err)
 			continue
 		}
-		go query(conn)
+		go fs.query(conn)
 	}
 }
 
-func query(conn net.Conn) {
+func (fs *FS) query(conn net.Conn) {
 	r := bufio.NewReader(conn)
 	enc := json.NewEncoder(conn)
 	defer conn.Close()
@@ -150,11 +155,11 @@ func query(conn net.Conn) {
 	}
 	l = strings.TrimSpace(l)
 
-	if rt.nt == nil {
+	if fs.rt.nt == nil {
 		log.Infof("DOM is nil")
 		return
 	}
-	nodes, err := rt.nt.Query(l)
+	nodes, err := fs.rt.nt.Query(l)
 	if err != nil {
 		log.Errorf("query nodes: %v", err)
 		return
@@ -164,14 +169,14 @@ func query(conn net.Conn) {
 	}
 }
 
-func Xhr(lxhr *fs.ListenFileListener) {
+func (fs *FS) Xhr(lxhr *go9pfs.ListenFileListener) {
 	for {
 		conn, err := lxhr.Accept()
 		if err != nil {
 			log.Errorf("xhr: accept: %v", err)
 			continue
 		}
-		go xhr(conn)
+		go fs.xhr(conn)
 	}
 }
 
@@ -183,7 +188,7 @@ func allowed(h http.Header, reqHost, origHost string) bool {
 	return alOrig == "*"
 }
 
-func xhr(conn net.Conn) {
+func (fs *FS) xhr(conn net.Conn) {
 	r := bufio.NewReader(conn)
 	defer conn.Close()
 
@@ -196,7 +201,7 @@ func xhr(conn net.Conn) {
 	url := req.URL
 	url.Host = req.Host
 	if h := url.Host; h == "" {
-		url.Host = Fetcher.Origin().Host
+		url.Host = fs.Fetcher.Origin().Host
 	}
 	url.Scheme = "https"
 	proxyReq, err := http.NewRequest(req.Method, url.String(), req.Body)
@@ -210,12 +215,12 @@ func xhr(conn net.Conn) {
 			proxyReq.Header.Add(header, value)
 		}
 	}
-	resp, err := Client.Do(proxyReq)
+	resp, err := fs.Client.Do(proxyReq)
 	if err != nil {
 		log.Errorf("do request: %v", err)
 		return
 	}
-	if h := url.Host; !allowed(resp.Header, h, Fetcher.Origin().Host) {
+	if h := url.Host; !allowed(resp.Header, h, fs.Fetcher.Origin().Host) {
 		log.Errorf("no cross-origin request: %v", h)
 		return
 	}
@@ -225,40 +230,40 @@ func xhr(conn net.Conn) {
 	}
 }
 
-func Update(uri, html string, css []string, js []string) {
-	c.L.Lock()
-	defer c.L.Unlock()
+func (fs *FS) Update(uri, html string, css []string, js []string) {
+	fs.c.L.Lock()
+	defer fs.c.L.Unlock()
 
-	if cssDir == nil && jsDir == nil {
-		c.Wait()
+	if fs.cssDir == nil && fs.jsDir == nil {
+		fs.c.Wait()
 	}
 
-	url = uri
-	htm = html
-	if cssDir != nil {
-		for name := range cssDir.Children() {
-			cssDir.DeleteChild(name)
+	fs.url = uri
+	fs.htm = html
+	if fs.cssDir != nil {
+		for name := range fs.cssDir.Children() {
+			fs.cssDir.DeleteChild(name)
 		}
 		for i, s := range css {
 			fn := fmt.Sprintf("%d.css", i)
-			f := fs.NewStaticFile(
-				oFS.NewStat(fn, un, gn, 0400),
+			f := go9pfs.NewStaticFile(
+				fs.oFS.NewStat(fn, fs.un, fs.gn, 0400),
 				[]byte(s),
 			)
-			cssDir.AddChild(f)
+			fs.cssDir.AddChild(f)
 		}
 	}
-	if jsDir != nil {
-		for name := range jsDir.Children() {
-			jsDir.DeleteChild(name)
+	if fs.jsDir != nil {
+		for name := range fs.jsDir.Children() {
+			fs.jsDir.DeleteChild(name)
 		}
 		for i, s := range js {
 			fn := fmt.Sprintf("%d.js", i)
-			f := fs.NewStaticFile(
-				oFS.NewStat(fn, un, gn, 0400),
+			f := go9pfs.NewStaticFile(
+				fs.oFS.NewStat(fn, fs.un, fs.gn, 0400),
 				[]byte(s),
 			)
-			jsDir.AddChild(f)
+			fs.jsDir.AddChild(f)
 		}
 	}
 }
